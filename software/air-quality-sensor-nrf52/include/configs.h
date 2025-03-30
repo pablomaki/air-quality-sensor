@@ -1,8 +1,40 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-#define DATA_INTERVAL =  10000  // milliseconds
-#define DEBUG_LED = 1           // 1 for on, 0 off
-#define STATUS_LED = 1          // 1 for on, 0 off    
+// Data config
+#define DATA_INTERVAL 20000 // milliseconds
+#define ADV_TIMEOUT 10000   // milliseconds
+
+// LED config
+#define LED_MODE 1             // 0 = OFF, 1 = Show bluetooth mode
+#define LED_BLINK_INTERVAL 200 // milliseconds
+#define ENABLE_DEBUG_LED       // Enable or disable debug LED
+
+// Sensors
+#define ENABLE_SHT4X
+#define ENABLE_SGP40
+// #define ENABLE_SCD4X
+// #define ENABLE_BMP280
+
+// Value scaling and min max for warning
+#define TEMPERATURE_SCALE 100
+#define TEMPERATURE_MIN -100
+#define TEMPERATURE_MAX 100
+
+#define HUMIDITY_SCALE 100
+#define HUMIDITY_MIN 0
+#define HUMIDITY_MAX 100
+
+#define PRESSURE_SCALE 10
+#define PRESSURE_MIN 0
+#define PRESSURE_MAX 2000
+
+#define CO2_CONCENTRATION_SCALE 10
+#define CO2_CONCENTRATION_MIN 0
+#define CO2_CONCENTRATION_MAX 10000
+
+#define VOC_INDEX_SCALE 10
+#define VOC_INDEX_MIN 0
+#define VOC_INDEX_MAX 10000
 
 #endif
