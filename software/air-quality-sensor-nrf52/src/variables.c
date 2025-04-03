@@ -35,6 +35,9 @@ state_t get_state(void)
 void register_state_callback(state_change_cb_t cb)
 {
 	state_change_callback = cb;
+
+	// Call function to get feedback immediately
+	state_change_callback(state);
 }
 
 void set_battery_level(float new_battery_level)
