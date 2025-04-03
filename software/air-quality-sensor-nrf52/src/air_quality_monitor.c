@@ -5,6 +5,7 @@
 #include <bluetooth_handler.h>
 #include <led_controller.h>
 #include <e_ink_display.h>
+#include <power_manager.h>
 #include <configs.h>
 #include <sensors.h>
 #include <battery.h>
@@ -17,6 +18,17 @@ static struct k_work_delayable periodic_work;
 int init_air_quality_monitor(void)
 {
 	int err;
+	set_state(INITIALIZING);
+
+	// Initialize LED controller
+	LOG_INF("Initializing power manager...");
+	err = init_power_manager();
+	if (err)
+	{
+		LOG_ERR("Error while initializing power manager (err %d)", err);
+		return err;
+	}
+	LOG_INF("power manager initialized succesfully.");
 
 	// Initialize LED controller
 	LOG_INF("Initializing LED controller...");
@@ -27,7 +39,6 @@ int init_air_quality_monitor(void)
 		return err;
 	}
 	LOG_INF("LED controller initialized succesfully.");
-	set_state(INITIALIZING);
 
 	// Initialize E-ink display
 	LOG_INF("Initializing E-ink display...");
@@ -172,6 +183,7 @@ void periodic_task(struct k_work *work)
 	{
 		LOG_INF("Task scheduled, entering idle state.");
 		set_state(STANDBY);
+		enter_low_power_mode();
 	}
 	else
 	{
@@ -183,4 +195,5 @@ void stop_advertising_cb(void)
 {
 	LOG_INF("Advertising stopped, entering idle state.");
 	set_state(STANDBY);
+	enter_low_power_mode();
 }

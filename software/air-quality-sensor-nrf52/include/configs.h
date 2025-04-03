@@ -6,13 +6,12 @@
 #define ADV_TIMEOUT 10000   // milliseconds
 
 // LED config
-#define LED_MODE 1             // 0 = OFF, 1 = Show bluetooth mode
 #define LED_BLINK_INTERVAL 200 // milliseconds
-#define ENABLE_DEBUG_LED       // Enable or disable debug LED
+// #define ENABLE_DEBUG_LED       // Enable or disable debug LED
 
 // Sensors
-#define ENABLE_SHT4X
-#define ENABLE_SGP40
+// #define ENABLE_SHT4X
+// #define ENABLE_SGP40
 // #define ENABLE_SCD4X
 // #define ENABLE_BMP280
 
