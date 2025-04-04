@@ -9,11 +9,18 @@
 int init_power_manager(void);
 
 /**
- * @brief Enter low power mode
+ * @brief Enter low power mode, SYSTEM_OFF if ENABLE_SYSTEM_OFF is defined and SYSTEM_ON IDLE otherwise
  * 
  * @return int, 0 if ok, non-zero if an error occured
  */
 int enter_low_power_mode(void);
+
+/**
+ * @brief Wake up from SYSTEM_OFF sleep
+ * 
+ * @return int, 0 if ok, non-zero if an error occured
+ */
+int wake_up(void);
 
 
 #endif // POWER_MANAGER_H

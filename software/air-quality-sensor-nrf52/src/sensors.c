@@ -6,8 +6,14 @@
 #include <zephyr/device.h>
 #include <zephyr/drivers/sensor.h>
 #include <zephyr/logging/log.h>
-#include <zephyr/drivers/sensor/sgp40.h>
+
+#ifdef ENABLE_SHT4X
 #include <zephyr/drivers/sensor/sht4x.h>
+#endif
+
+#ifdef ENABLE_SGP40
+#include <zephyr/drivers/sensor/sgp40.h>
+#endif
 
 LOG_MODULE_REGISTER(sensors);
 
@@ -55,6 +61,7 @@ int init_sensors(void)
     return 0;
 }
 
+#ifdef ENABLE_SHT4X
 int read_sht4x_data()
 {
     int err, err2;
@@ -78,7 +85,10 @@ int read_sht4x_data()
     set_humidity(sensor_value_to_float(&humidity));
     return 0;
 }
+#endif
 
+
+#ifdef ENABLE_SGP40
 int read_sgp4x_data()
 {
     int err, err2;
@@ -114,7 +124,9 @@ int read_sgp4x_data()
     set_voc_index(sensor_value_to_float(&voc_index));
     return 0;
 }
+#endif
 
+#ifdef ENABLE_BMP280
 int read_bmp280_data()
 {
     int err;
@@ -136,7 +148,9 @@ int read_bmp280_data()
     set_pressure(sensor_value_to_float(&pressure));
     return 0;
 }
+#endif
 
+#ifdef ENABLE_SCD4X
 int read_scd4x_data()
 {
     int err, err2, err3;
@@ -162,3 +176,4 @@ int read_scd4x_data()
     set_co2_concentration(sensor_value_to_float(&co2_concentration));
     return 0;
 }
+#endif
