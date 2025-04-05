@@ -20,12 +20,12 @@
 		reg = <0x44>;
 		repeatability = <2>;
 	};
-	sgp40@59 {
-		status = "okay";
-		compatible = "sensirion,sgp40";
-		reg = <0x59>;
-		enable-selftest;
-	};
+	// sgp40@59 {
+	// 	status = "okay";
+	// 	compatible = "sensirion,sgp40";
+	// 	reg = <0x59>;
+	// 	enable-selftest;
+	// };
 	// bmp280@77 {
 	// 	    status = "okay";
 	// 	    compatible = "bosch,bmp280";
