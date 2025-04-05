@@ -30,6 +30,39 @@ static struct bt_conn_cb conn_callbacks = {
     .disconnected = on_disconnect,
 };
 
+#ifdef ENABLE_CONN_FILTER_LIST
+/**
+ * @brief Struct for allowed connections
+ *
+ */
+bt_addr_le_t phone_1_address = {
+    .type = BT_ADDR_LE_RANDOM,
+    .a = {{0x53, 0xC4, 0x5A, 0x49, 0xA9, 0x2D}},
+};
+bt_addr_le_t phone_2_address = {
+    .type = BT_ADDR_LE_RANDOM,
+    .a = {{0xA0, 0xFB, 0xC5, 0x84, 0x2C, 0x85}},
+};
+bt_addr_le_t rpi_address = {
+    .type = BT_ADDR_LE_RANDOM,
+    .a = {{0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}},
+};
+
+/**
+ * @brief Struct for advertisement parameters
+ *
+ */
+static const struct bt_le_adv_param adv_params_multi_whitelist = {
+    .options = BT_LE_ADV_OPT_CONNECTABLE |
+               BT_LE_ADV_OPT_FILTER_CONN |
+               BT_LE_ADV_OPT_USE_IDENTITY |
+               BT_LE_ADV_OPT_ONE_TIME,
+    .interval_min = BT_GAP_ADV_FAST_INT_MIN_2,
+    .interval_max = BT_GAP_ADV_FAST_INT_MAX_2,
+    .peer = NULL, // NULL means use acceptlist (multiple allowed)
+};
+#endif
+
 static adv_stop_cb_t advertising_stopped_cb = NULL; // Callback for when advertising is stopped for state handling
 
 static struct bt_conn *default_conn = NULL; // Connection tracking variable
@@ -48,10 +81,17 @@ int init_ble(adv_stop_cb_t cb)
     bt_conn_cb_register(&conn_callbacks);
 
     // Register advertising stopped callback
-	advertising_stopped_cb = cb;
+    advertising_stopped_cb = cb;
 
     // Initialize work delayable queue for advertisement timeout handling
     k_work_init_delayable(&adv_stop_work, advertise_timeout);
+
+#ifdef ENABLE_CONN_FILTER_LIST
+    // Register connectable addresses if filter is used
+    bt_le_filter_accept_list_add(&phone_1_address);
+    bt_le_filter_accept_list_add(&phone_2_address);
+    bt_le_filter_accept_list_add(&rpi_address);
+#endif
     return 0;
 }
 
@@ -63,7 +103,12 @@ void on_connect(struct bt_conn *conn, uint8_t err)
         return;
     }
     default_conn = bt_conn_ref(conn);
-    LOG_INF("Device connected, stopping advertisement.");
+    const bt_addr_le_t *addr = bt_conn_get_dst(conn);
+    char addr_str[BT_ADDR_LE_STR_LEN];
+    bt_addr_le_to_str(addr, addr_str, sizeof(addr_str));
+
+    LOG_INF("Device connected (%s), stopping advertisement.", addr_str);
+
     k_work_cancel_delayable(&adv_stop_work);
     stop_advertise();
 }
@@ -144,7 +189,12 @@ int start_advertise(void)
 {
     LOG_INF("Starting BLE advertisement");
     int err;
+
+#ifdef ENABLE_CONN_FILTER_LIST
+    err = bt_le_adv_start(&adv_params_multi_whitelist, adv_data, ARRAY_SIZE(adv_data), NULL, 0);
+#else
     err = bt_le_adv_start(BT_LE_ADV_CONN_ONE_TIME, adv_data, ARRAY_SIZE(adv_data), NULL, 0);
+#endif
     if (err)
     {
         LOG_ERR("Failed to start data advertisement (err %d)", err);
