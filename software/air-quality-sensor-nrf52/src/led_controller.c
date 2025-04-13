@@ -31,7 +31,7 @@ static struct k_timer blink_timer;
 int init_led_controller(void)
 {
     int err;
-#ifdef ENABLE_DEBUG_LED
+#if defined(ENABLE_DEBUG_LED) || defined(ENABLE_EVENT_LED)
     err = setup_rgb_led();
     if (err)
     {
@@ -59,8 +59,14 @@ int setup_rgb_led(void)
         return err ? err : (err2 ? err2 : err3);
     }
 
+#ifdef ENABLE_DEBUG_LED
     k_timer_init(&blink_timer, blink_timer_handler, NULL);
     register_state_callback(state_change_callback);
+#endif
+
+#ifdef ENABLE_EVENT_LED
+    register_event_callback(event_callback);
+#endif
     return 0;
 }
 
@@ -107,6 +113,45 @@ void state_change_callback(state_t new_state)
         set_led_rgb(yellow_rgb_arr);
         break;
     case MEASURING:
+        // Blinking blue light
+        k_timer_user_data_set(&blink_timer, (void *)green_rgb_arr);
+        k_timer_start(&blink_timer, K_NO_WAIT, K_MSEC(LED_BLINK_INTERVAL / 2));
+        break;
+    case ADVERTISING:
+        // Blinking blue light when advertising
+        k_timer_user_data_set(&blink_timer, (void *)blue_rgb_arr);
+        k_timer_start(&blink_timer, K_NO_WAIT, K_MSEC(LED_BLINK_INTERVAL / 2));
+        break;
+    default:
+        break;
+    }
+}
+
+void blink_event(event_t event)
+{
+    switch (event)
+    {
+    case INITIALIZATION_COMPLETE:
+        // LED off
+        k_timer_stop(&blink_timer);
+        set_led_rgb(red_rgb_arr);
+        break;
+    case INITIALIZATION_FAILURE:
+        // LED off
+        k_timer_stop(&blink_timer);
+        set_led_rgb(red_rgb_arr);
+        break;
+    case BT_CONNECTION_FOUND:
+        // LED off
+        k_timer_stop(&blink_timer);
+        set_led_rgb(red_rgb_arr);
+        break;
+    case PERIODIC_TASK_SUCCESS:
+        // LED off
+        k_timer_stop(&blink_timer);
+        set_led_rgb(yellow_rgb_arr);
+        break;
+    case PERIODIC_TASK_FAILURE:
         // Blinking blue light
         k_timer_user_data_set(&blink_timer, (void *)green_rgb_arr);
         k_timer_start(&blink_timer, K_NO_WAIT, K_MSEC(LED_BLINK_INTERVAL / 2));

@@ -64,10 +64,11 @@ static const struct bt_le_adv_param adv_params_multi_whitelist = {
 #endif
 
 static adv_stop_cb_t advertising_stopped_cb = NULL; // Callback for when advertising is stopped for state handling
+static conn_closed_cb_t connection_closed_cb = NULL; // Callback for when connection is closed for state handling
 
 static struct bt_conn *default_conn = NULL; // Connection tracking variable
 
-int init_ble(adv_stop_cb_t cb)
+int init_ble(adv_stop_cb_t adv_stop_cb, conn_closed_cb_t conn_closed_cb)
 {
     int err;
     err = bt_enable(NULL);
@@ -81,7 +82,8 @@ int init_ble(adv_stop_cb_t cb)
     bt_conn_cb_register(&conn_callbacks);
 
     // Register advertising stopped callback
-    advertising_stopped_cb = cb;
+    advertising_stopped_cb = adv_stop_cb;
+    connection_closed_cb = conn_closed_cb;
 
     // Initialize work delayable queue for advertisement timeout handling
     k_work_init_delayable(&adv_stop_work, advertise_timeout);
@@ -121,6 +123,7 @@ void on_disconnect(struct bt_conn *conn, uint8_t reason)
         bt_conn_unref(default_conn);
         default_conn = NULL;
     }
+    connection_closed_cb();
 }
 
 void advertise_timeout(struct k_work *work)

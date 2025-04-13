@@ -9,9 +9,11 @@ typedef enum
 {
     NOT_SET,
     INITIALIZING,
-    STANDBY,
     MEASURING,
-    ADVERTISING
+    ADVERTISING,
+    CONNECTED,
+    DISCONNECTED,
+    STANDBY
 } state_t;
 
 /**
