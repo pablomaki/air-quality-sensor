@@ -89,7 +89,7 @@ int read_sht4x_data()
 
 
 #ifdef ENABLE_SGP40
-int read_sgp4x_data()
+int read_sgp40_data()
 {
     int err, err2;
     err = sensor_attr_set(sgp40_dev_p,

@@ -1,21 +1,42 @@
-#include <bas.h>
+#include <ble_services/bas.h>
 
 #include <zephyr/logging/log.h>
 #include <zephyr/bluetooth/gatt.h>
 
 LOG_MODULE_REGISTER(bas);
 
-static uint8_t battery_level = 0; // Battery level
+// Declaration and initialization of sensor reading values
+static uint8_t battery_level = 0;
 
-static bool batt_lvl_notif_enabled = false; // Track if notifications are enabled
+// Notification enabled tracking
+static bool batt_lvl_notif_enabled = false;
 
+// Handle for bas characteristics
 static struct bt_gatt_attr * batt_lvl_handle;
 
+/**
+ * @brief Battery level client characteristic configuration changed callback
+ * 
+ * @param attr 
+ * @param value 
+ */
 static void batt_lvl_ccc_cfg_changed(const struct bt_gatt_attr *attr, uint16_t value)
 {
 	batt_lvl_notif_enabled = (value == BT_GATT_CCC_NOTIFY);
 }
 
+/** @brief Battery level read attribute value helper.
+ *
+ *  @param conn Connection object.
+ *  @param attr Attribute to read.
+ *  @param buf Buffer to store the value.
+ *  @param buf_len Buffer length.
+ *  @param offset Start offset.
+ *  @param value Attribute value.
+ *  @param value_len Length of the attribute value.
+ *
+ *  @return number of bytes read in case of success or negative values in case of error.
+ */
 ssize_t read_batt_lvl(struct bt_conn *conn,
 								  const struct bt_gatt_attr *attr, void *buf,
 								  uint16_t len, uint16_t offset)
@@ -24,6 +45,7 @@ ssize_t read_batt_lvl(struct bt_conn *conn,
 	return bt_gatt_attr_read(conn, attr, buf, len, offset, sensor_value_ptr, sizeof(*sensor_value_ptr));
 }
 
+// Create service
 BT_GATT_SERVICE_DEFINE(bas,
 					   BT_GATT_PRIMARY_SERVICE(BT_UUID_BAS),
 					   BT_GATT_CHARACTERISTIC(BT_UUID_BAS_BATTERY_LEVEL, BT_GATT_CHRC_READ | BT_GATT_CHRC_NOTIFY, BT_GATT_PERM_READ, read_batt_lvl, NULL, &battery_level),

@@ -28,8 +28,15 @@ int init_event_handler(void);
 /**
  * @brief Handle event by blinking LED if ENABLE_EVENT_LED is defined
  * 
- * @param event 
+ * @param event Event received
  */
 void dispatch_event(event_t event);
+
+/**
+ * @brief Wake up from SYSTEM_OFF sleep
+ *
+ * @return int, 0 if ok, non-zero if an error occured
+ */
+int wake_up(void);
 
 #endif // EVENT_HANDLER_H

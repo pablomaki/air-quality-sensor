@@ -16,21 +16,21 @@ int init_sensors(void);
 int read_sht4x_data();
 
 /**
- * @brief Read SGP4X sensor data and save the VOC index to the variables
+ * @brief Read SGP40 sensor data and save the VOC index to the variables
  *
  * @return int, 0 if ok, non-zero if an error occured
  */
-int read_sgp4x_data();
+int read_sgp40_data();
 
 /**
- * @brief Read SHT4X sensor data and save the pressure to the variables
+ * @brief Read BMP280 sensor data and save the pressure to the variables
  *
  * @return int, 0 if ok, non-zero if an error occured
  */
 int read_bmp280_data();
 
 /**
- * @brief Read SHT4X sensor data and save the temperature, humidity and CO2 levels to the variables
+ * @brief Read SCD4X sensor data and save the temperature, humidity and CO2 levels to the variables
  *
  * @return int, 0 if ok, non-zero if an error occured
  */

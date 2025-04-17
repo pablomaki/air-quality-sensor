@@ -2,13 +2,14 @@
 #define LED_CONTROLLER_H
 
 #include <zephyr/kernel.h>
-#include <zephyr/drivers/gpio.h>
-
-#include <variables.h>
 
 #define LED_OFF 0
 #define LED_ON 1
 
+/**
+ * @brief Enum for RGB colors
+ * 
+ */
 typedef enum
 {
     LED_OFF_COLOR = 0,
@@ -22,27 +23,25 @@ typedef enum
 } led_color_t;
 
 /**
- * @brief Struct for containing led related information
- *
- */
-typedef struct {
-    led_color_t color;
-    int remaining_toggles;
-    bool is_on;
-    struct k_timer timer;
-} led_blink_ctx_t;
-
-/**
  * @brief Initialize all LED devices
  *
  * @return int, 0 if ok, non-zero if an error occured
  */
 int init_led_controller(void);
 
+/**
+ * @brief Blink specific LED color X times
+ * 
+ * @param color Color to blink
+ * @param count Count of times to blink
+ */
 void blink_led(led_color_t color, int count);
 
+/**
+ * @brief Set LED color
+ * 
+ * @param color Color to set LED to
+ */
 void set_led(led_color_t color);
-
-void blink_handler(struct k_timer *timer);
 
 #endif // LED_CONTROLLER_H

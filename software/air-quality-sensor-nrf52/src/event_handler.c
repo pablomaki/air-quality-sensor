@@ -1,6 +1,6 @@
 #include <event_handler.h>
 #include <configs.h>
-#include <led_controller.h>
+#include <drivers/led_controller.h>
 
 #include <zephyr/logging/log.h>
 

@@ -1,4 +1,4 @@
-#include <led_controller.h>
+#include <drivers/led_controller.h>
 #include <configs.h>
 
 #include <zephyr/logging/log.h>
@@ -10,12 +10,42 @@
 
 LOG_MODULE_REGISTER(led_controller);
 
+/**
+ * @brief Struct for containing led related information
+ *
+ */
+typedef struct {
+    led_color_t color;
+    int remaining_toggles;
+    bool is_on;
+    struct k_timer timer;
+} led_blink_ctx_t;
+
+static led_blink_ctx_t blink_ctx;
+
 // GPIO specs from devicetree
 static const struct gpio_dt_spec led_red_spec = GPIO_DT_SPEC_GET(LED_RED_NODE, gpios);
 static const struct gpio_dt_spec led_green_spec = GPIO_DT_SPEC_GET(LED_GREEN_NODE, gpios);
 static const struct gpio_dt_spec led_blue_spec = GPIO_DT_SPEC_GET(LED_BLUE_NODE, gpios);
 
-static led_blink_ctx_t blink_ctx;
+/**
+ * @brief Handles LED blinking
+ * 
+ * @param timer 
+ */
+static void blink_handler(struct k_timer *timer)
+{
+    if (blink_ctx.remaining_toggles <= 0) {
+        set_led(LED_OFF_COLOR);
+        k_timer_stop(&blink_ctx.timer);
+        return;
+    }
+
+    set_led((blink_ctx.is_on) ? LED_OFF_COLOR : blink_ctx.color);
+    blink_ctx.remaining_toggles--;
+
+    blink_ctx.is_on = !blink_ctx.is_on;
+}
 
 int init_led_controller(void)
 {
@@ -55,18 +85,4 @@ void set_led(led_color_t color)
     gpio_pin_set_dt(&led_red_spec, (color & LED_RED)   ? LED_ON : LED_OFF);
     gpio_pin_set_dt(&led_green_spec, (color & LED_GREEN) ? LED_ON : LED_OFF);
     gpio_pin_set_dt(&led_blue_spec, (color & LED_BLUE)  ? LED_ON : LED_OFF);
-}
-
-void blink_handler(struct k_timer *timer)
-{
-    if (blink_ctx.remaining_toggles <= 0) {
-        set_led(LED_OFF_COLOR);
-        k_timer_stop(&blink_ctx.timer);
-        return;
-    }
-
-    set_led((blink_ctx.is_on) ? LED_OFF_COLOR : blink_ctx.color);
-    blink_ctx.remaining_toggles--;
-
-    blink_ctx.is_on = !blink_ctx.is_on;
 }

@@ -8,5 +8,5 @@ project(air-quality-sensor-nrf52)
 # Add the header files
 include_directories(include)
 
-FILE(GLOB app_sources src/*.c)
+FILE(GLOB_RECURSE app_sources src/*.c)
 target_sources(app PRIVATE ${app_sources})

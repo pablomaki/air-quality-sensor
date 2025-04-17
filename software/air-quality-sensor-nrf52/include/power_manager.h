@@ -15,12 +15,4 @@ int init_power_manager(void);
  */
 int enter_low_power_mode(void);
 
-/**
- * @brief Wake up from SYSTEM_OFF sleep
- * 
- * @return int, 0 if ok, non-zero if an error occured
- */
-int wake_up(void);
-
-
 #endif // POWER_MANAGER_H

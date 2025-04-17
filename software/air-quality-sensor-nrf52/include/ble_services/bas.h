@@ -1,8 +1,6 @@
 #ifndef BAS_H
 #define BAS_H
 
-#include <stdint.h>
-
 /** @brief Read battery_level value.
  *
  * Read the characteristic value of the battery_level

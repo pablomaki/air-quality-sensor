@@ -15,6 +15,13 @@ typedef enum
 } state_t;
 
 /**
+ * @brief Initialize state handler
+ * 
+ * @return int, 0 if ok, non-zero if an error occured
+ */
+int init_state_handler(void);
+
+/**
  * @brief Set the state object
  *
  * @param new_state New state
@@ -27,7 +34,5 @@ void set_state(state_t new_state);
  * @return state_t, current state
  */
 state_t get_state(void);
-
-void display_state(void);
 
 #endif

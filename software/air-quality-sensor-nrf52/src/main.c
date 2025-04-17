@@ -1,7 +1,6 @@
+#include <air_quality_monitor.h>
 
 #include <zephyr/logging/log.h>
-
-#include <air_quality_monitor.h>
 
 LOG_MODULE_REGISTER(main);
 

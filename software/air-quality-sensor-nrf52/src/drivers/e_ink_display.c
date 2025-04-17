@@ -1,5 +1,4 @@
-#include <e_ink_display.h>
-#include <variables.h>
+#include <drivers/e_ink_display.h>
 
 int init_e_ink_display(void)
 {

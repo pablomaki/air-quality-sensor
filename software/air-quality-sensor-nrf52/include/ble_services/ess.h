@@ -1,8 +1,6 @@
 #ifndef ESS_H
 #define ESS_H
 
-#include <stdint.h>
-
 /** @brief Read temperature value.
  *
  * Read the characteristic value of the temperature

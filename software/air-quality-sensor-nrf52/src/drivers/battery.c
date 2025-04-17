@@ -1,7 +1,8 @@
-#include <battery.h>
+#include <drivers/battery.h>
 #include <variables.h>
 
-float battery_lvl = 100;
+// Placeholder
+static float battery_lvl = 100;
 
 int read_battery_level(void)
 {

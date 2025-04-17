@@ -1,10 +1,25 @@
 #include <state_handler.h>
-#include <led_controller.h>
+#include <drivers/led_controller.h>
+
 #include <zephyr/logging/log.h>
+
+LOG_MODULE_REGISTER(state_handler);
 
 static state_t state = STATE_NOT_SET; // Global bluetooth state variable
 
-LOG_MODULE_REGISTER(state_handler);
+int init_state_handler(void)
+{
+#ifdef ENABLE_STATE_LED
+    int err;
+    err = init_led_controller();
+    if (err)
+    {
+        LOG_ERR("LED setup failed (err %d)", err);
+        return err;
+    }
+#endif
+    return 0;
+}
 
 void set_state(state_t new_state)
 {
@@ -12,7 +27,6 @@ void set_state(state_t new_state)
 #ifdef ENABLE_STATE_LED
     display_state();
 #endif
-
 }
 
 state_t get_state(void)
@@ -20,7 +34,12 @@ state_t get_state(void)
     return state;
 }
 
-void display_state(void)
+#ifdef ENABLE_STATE_LED
+/**
+ * @brief Display the current state with LED
+ *
+ */
+static void display_state(void)
 {
     switch (state)
     {
@@ -49,3 +68,4 @@ void display_state(void)
     }
     return;
 }
+#endif

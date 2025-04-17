@@ -1,8 +1,8 @@
-#include <ess.h>
+#include <ble_services/ess.h>
 #include <configs.h>
 
-#include <zephyr/logging/log.h>
 #include <zephyr/bluetooth/gatt.h>
+#include <zephyr/logging/log.h>
 
 LOG_MODULE_REGISTER(ess);
 
@@ -20,7 +20,10 @@ static bool press_notif_enabled = false;
 static bool co2_conc_notif_enabled = false;
 static bool voc_idx_notif_enabled = false;
 
-// Handle for ess characteristics
+/**
+ * @brief Handle for ess characteristics
+ * 
+ */
 struct ess_handles
 {
     struct bt_gatt_attr *temp_handle;
@@ -29,33 +32,70 @@ struct ess_handles
     struct bt_gatt_attr *co2_conc_handle;
     struct bt_gatt_attr *voc_idx_handle;
 };
-
 static struct ess_handles ess_handle;
 
+#if defined(ENABLE_SCD4X) || defined(ENABLE_SHT4X)
+/**
+ * @brief Temperature client characteristic configuration changed callback
+ * 
+ * @param attr 
+ * @param value 
+ */
 static void temp_ccc_cfg_changed(const struct bt_gatt_attr *attr, uint16_t value)
 {
     temp_notif_enabled = (value == BT_GATT_CCC_NOTIFY);
 }
 
+/**
+ * @brief Humidity client characteristic configuration changed callback
+ * 
+ * @param attr 
+ * @param value 
+ */
 static void hum_ccc_cfg_changed(const struct bt_gatt_attr *attr, uint16_t value)
 {
     hum_notif_enabled = (value == BT_GATT_CCC_NOTIFY);
 }
+#endif
 
+#ifdef ENABLE_BMP280
+/**
+ * @brief Pressure client characteristic configuration changed callback
+ * 
+ * @param attr 
+ * @param value 
+ */
 static void press_ccc_cfg_changed(const struct bt_gatt_attr *attr, uint16_t value)
 {
     press_notif_enabled = (value == BT_GATT_CCC_NOTIFY);
 }
+#endif
 
+#ifdef ENABLE_SCD4X
+/**
+ * @brief CO2 concentration client characteristic configuration changed callback
+ * 
+ * @param attr 
+ * @param value 
+ */
 static void co2_conc_ccc_cfg_changed(const struct bt_gatt_attr *attr, uint16_t value)
 {
     co2_conc_notif_enabled = (value == BT_GATT_CCC_NOTIFY);
 }
+#endif
 
+#ifdef ENABLE_SGP40
+/**
+ * @brief VOC client characteristic configuration changed callback
+ * 
+ * @param attr 
+ * @param value 
+ */
 static void voc_idx_ccc_cfg_changed(const struct bt_gatt_attr *attr, uint16_t value)
 {
     voc_idx_notif_enabled = (value == BT_GATT_CCC_NOTIFY);
 }
+#endif
 
 /** @brief Generic Read Attribute value helper.
  *

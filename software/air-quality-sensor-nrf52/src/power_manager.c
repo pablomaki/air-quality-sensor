@@ -6,7 +6,6 @@
 #include <zephyr/pm/pm.h>
 #include <zephyr/pm/device.h>
 #include <zephyr/pm/policy.h>
-#include <zephyr/drivers/spi.h>
 #include <zephyr/sys/poweroff.h>
 
 LOG_MODULE_REGISTER(power_manager);
@@ -37,8 +36,15 @@ int enter_low_power_mode(void)
     }
 
 #ifdef ENABLE_SYSTEM_OFF
+    // Actual implementation missing, this is just a palceholder
     sys_poweroff();
     k_sleep(K_MSEC(1000));
+    err = wake_up();
+    if (err)
+    {
+        LOG_ERR("Wakeup failed (err, %d)", err);
+        return err;
+    }
 #endif
     return 0;
 }
@@ -53,6 +59,7 @@ int wake_up(void)
     if (err)
     {
         LOG_ERR("Failed to wake up I2C device (err, %d)", err);
+        return err;
     }
     return 0;
 }
