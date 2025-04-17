@@ -3,12 +3,24 @@
 
 #include <zephyr/bluetooth/bluetooth.h>
 
-
 /**
- * @brief Advertising stopped callback type
+ * @brief Enumeration for BLE state
  *
  */
-typedef void (*adv_stop_cb_t)(void);
+typedef enum
+{
+    BLE_STATE_NOT_SET,
+    BLE_IDLE,
+    BLE_ADVERTISING,
+    BLE_CONNECTED,
+    BLE_DISCONNECTED
+} ble_state_t;
+
+/**
+ * @brief BLE exit callback type
+ *
+ */
+typedef void (*ble_exit_cb_t)(bool);
 
 /**
  * @brief Enable BLE
@@ -16,7 +28,13 @@ typedef void (*adv_stop_cb_t)(void);
  * @param cb callback or when advertising is stopped
  * @return int Zero for success, non-zero otherwise.
  */
-int init_ble(adv_stop_cb_t cb);
+int init_ble(ble_exit_cb_t cb);
+
+
+void set_ble_state(ble_state_t new_state);
+
+
+ble_state_t get_ble_state(void);
 
 /**
  * @brief Callback for on connection
@@ -35,12 +53,7 @@ void on_connect(struct bt_conn *conn, uint8_t err);
  */
 void on_disconnect(struct bt_conn *conn, uint8_t reason);
 
-/**
- * @brief Advertising timeout, stop advertising
- *
- * @param work Address of work item.
- */
-void advertise_timeout(struct k_work *work);
+void ble_timeout(struct k_work *work);
 
 /**
  * @brief Update advertisement data
@@ -48,14 +61,6 @@ void advertise_timeout(struct k_work *work);
  * @return int Zero for success, non-zero otherwise.
  */
 int update_advertisement_data();
-
-/**
- * @brief Check if a functioning connection already exists
- * 
- * @return true if connected
- * @return false if not connected
- */
-bool ble_connection_exists(void);
 
 /**
  * @brief Start advertising data. Setup timeout to end data
@@ -70,5 +75,7 @@ int start_advertise(void);
  * 
  */
 void stop_advertise(void);
+
+void disconnect(void);
 
 #endif // BLUETOOTH_HANDLER_H

@@ -1,5 +1,4 @@
 #include <variables.h>
-#include <zephyr/types.h>
 
 static float battery_level = 0.0;						// battery level variable
 static float temperature = 0.0;							// temperature variable
@@ -7,38 +6,6 @@ static float humidity = 0.0;							// humidity variable
 static float pressure = 0.0;							// pressure variable
 static float co2_concentration = 0.0;					// CO2 concentration variable
 static float voc_index = 0.0;							// VOC index variable
-static state_t state = NOT_SET;							// Global bluetooth state variable
-
-/**
- * @brief Pointer to the bluetooth state change callback function
- *
- */
-static state_change_cb_t state_change_callback = NULL;
-
-void set_state(state_t new_state)
-{
-	if (state != new_state)
-	{
-		state = new_state;
-		if (state_change_callback)
-		{
-			state_change_callback(state);
-		}
-	}
-}
-
-state_t get_state(void)
-{
-	return state;
-}
-
-void register_state_callback(state_change_cb_t cb)
-{
-	state_change_callback = cb;
-
-	// Call function to get feedback immediately
-	state_change_callback(state);
-}
 
 void set_battery_level(float new_battery_level)
 {

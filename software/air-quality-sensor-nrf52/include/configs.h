@@ -8,18 +8,23 @@
 // #define ENABLE_CONN_FILTER_LIST // Use filter list for connections (not finished)
 
 // Data config
+#define FIRST_TASK_DELAY 10000 // milliseconds
 #define DATA_INTERVAL 20000 // milliseconds
-#define ADV_TIMEOUT 10000   // milliseconds
+#define BLE_TIMEOUT 10000   // milliseconds
 
 // LED config
-#define LED_BLINK_INTERVAL 200 // milliseconds
-#define ENABLE_DEBUG_LED       // Enable or disable debug LED
+#define LED_BLINK_INTERVAL 50 // milliseconds
+#define ENABLE_EVENT_LED       // Enable or disable event LED
+// #define ENABLE_STATE_LED     // Enable or disable LED for showing the current status
 
 // Sensors
 #define ENABLE_SHT4X
 // #define ENABLE_SGP40
 // #define ENABLE_SCD4X
 // #define ENABLE_BMP280
+
+// Screen
+// #define ENABLE_EPD //Enable or disable the screen
 
 // Value scaling and min max for warning
 #define TEMPERATURE_SCALE 100

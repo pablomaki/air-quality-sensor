@@ -18,10 +18,9 @@ int init_air_quality_monitor(void);
  */
 void periodic_task(struct k_work *work);
 
-/**
- * @brief Callback for when advertising is stopped, set standby state
- * 
- */
-void stop_advertising_cb(void);
+bool read_sensors(void);
+bool advertise_data(void);
+bool schedule_work_task(int64_t delay);
+void ble_task_callback(bool task_success);
 
 #endif // AIR_QUALITY_MONITOR_H

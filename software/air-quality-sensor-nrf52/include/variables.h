@@ -2,48 +2,6 @@
 #define VARIABLES_H
 
 /**
- * @brief Enumeration for states
- *
- */
-typedef enum
-{
-    NOT_SET,
-    INITIALIZING,
-    MEASURING,
-    ADVERTISING,
-    CONNECTED,
-    DISCONNECTED,
-    STANDBY
-} state_t;
-
-/**
- * @brief State change callback type
- *
- */
-typedef void (*state_change_cb_t)(state_t new_state);
-
-/**
- * @brief Set the state object
- *
- * @param new_state New state
- */
-void set_state(state_t new_state);
-
-/**
- * @brief Get the state object
- *
- * @return state_t, current state
- */
-state_t get_state(void);
-
-/**
- * @brief Register callback for state
- *
- * @param cb callback
- */
-void register_state_callback(state_change_cb_t cb);
-
-/**
  * @brief Set the battery level value
  *
  * @param new_battery_level new battery level in percent

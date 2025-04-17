@@ -18,8 +18,8 @@ static const struct bt_data adv_data[] = {
     BT_DATA_BYTES(BT_DATA_FLAGS, (BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR)),                                       // Options
     BT_DATA_BYTES(BT_DATA_UUID16_ALL, BT_UUID_16_ENCODE(BT_UUID_BAS_VAL), BT_UUID_16_ENCODE(BT_UUID_ESS_VAL))}; // Battery & Environmental sensing service
 
-// Work queue for handling advertisement timeout
-static struct k_work_delayable adv_stop_work;
+// Work queue for handling ble timeout
+static struct k_work_delayable stop_ble_work;
 
 /**
  * @brief Register connection callbacks
@@ -29,6 +29,10 @@ static struct bt_conn_cb conn_callbacks = {
     .connected = on_connect,
     .disconnected = on_disconnect,
 };
+
+static ble_state_t ble_state = BLE_STATE_NOT_SET;
+
+static struct bt_conn *current_conn;
 
 #ifdef ENABLE_CONN_FILTER_LIST
 /**
@@ -63,12 +67,9 @@ static const struct bt_le_adv_param adv_params_multi_whitelist = {
 };
 #endif
 
-static adv_stop_cb_t advertising_stopped_cb = NULL; // Callback for when advertising is stopped for state handling
-static conn_closed_cb_t connection_closed_cb = NULL; // Callback for when connection is closed for state handling
+static ble_exit_cb_t ble_exit_cb = NULL; // Callback for when connection is closed or timeout is triggered
 
-static struct bt_conn *default_conn = NULL; // Connection tracking variable
-
-int init_ble(adv_stop_cb_t adv_stop_cb, conn_closed_cb_t conn_closed_cb)
+int init_ble(ble_exit_cb_t cb)
 {
     int err;
     err = bt_enable(NULL);
@@ -82,11 +83,10 @@ int init_ble(adv_stop_cb_t adv_stop_cb, conn_closed_cb_t conn_closed_cb)
     bt_conn_cb_register(&conn_callbacks);
 
     // Register advertising stopped callback
-    advertising_stopped_cb = adv_stop_cb;
-    connection_closed_cb = conn_closed_cb;
+    ble_exit_cb = cb;
 
     // Initialize work delayable queue for advertisement timeout handling
-    k_work_init_delayable(&adv_stop_work, advertise_timeout);
+    k_work_init_delayable(&stop_ble_work, ble_timeout);
 
 #ifdef ENABLE_CONN_FILTER_LIST
     // Register connectable addresses if filter is used
@@ -94,7 +94,18 @@ int init_ble(adv_stop_cb_t adv_stop_cb, conn_closed_cb_t conn_closed_cb)
     bt_le_filter_accept_list_add(&phone_2_address);
     bt_le_filter_accept_list_add(&rpi_address);
 #endif
+    set_ble_state(BLE_IDLE);
     return 0;
+}
+
+void set_ble_state(ble_state_t new_state)
+{
+    ble_state = new_state;
+}
+
+ble_state_t get_ble_state(void)
+{
+    return ble_state;
 }
 
 void on_connect(struct bt_conn *conn, uint8_t err)
@@ -104,32 +115,50 @@ void on_connect(struct bt_conn *conn, uint8_t err)
         LOG_ERR("Connection failed (err %d)", err);
         return;
     }
-    default_conn = bt_conn_ref(conn);
+    current_conn = bt_conn_ref(conn);
     const bt_addr_le_t *addr = bt_conn_get_dst(conn);
     char addr_str[BT_ADDR_LE_STR_LEN];
     bt_addr_le_to_str(addr, addr_str, sizeof(addr_str));
 
     LOG_INF("Device connected (%s), stopping advertisement.", addr_str);
-
-    k_work_cancel_delayable(&adv_stop_work);
     stop_advertise();
+    set_ble_state(BLE_CONNECTED);
 }
 
 void on_disconnect(struct bt_conn *conn, uint8_t reason)
 {
     LOG_INF("Device disconnected.");
-    if (default_conn)
+    k_work_cancel_delayable(&stop_ble_work);
+    set_ble_state(BLE_DISCONNECTED);
+
+    if (current_conn)
     {
-        bt_conn_unref(default_conn);
-        default_conn = NULL;
+        bt_conn_unref(current_conn);
+        current_conn = NULL;
     }
-    connection_closed_cb();
+
+    // Report successfull BLE termination as the central device disconnected
+    bool ble_task_success = true;
+    ble_exit_cb(ble_task_success);
 }
 
-void advertise_timeout(struct k_work *work)
+void ble_timeout(struct k_work *work)
 {
-    LOG_INF("Advertising timeout reached, stopping advertising");
-    stop_advertise();
+    if (get_ble_state() == BLE_ADVERTISING)
+    {
+        LOG_INF("BLE timeout reached, stopping advertising.");
+        stop_advertise();
+    }
+    else if (get_ble_state() == BLE_CONNECTED)
+    {
+        LOG_INF("BLE timeout reached, disconnecting from connected device.");
+        disconnect();
+    }
+    set_ble_state(BLE_IDLE);
+
+        // Report unsuccessfull BLE termination as the central either did not connect at all or did not disconnect in time.
+        bool ble_task_success = false;
+    ble_exit_cb(ble_task_success);
 }
 
 int update_advertisement_data()
@@ -183,11 +212,6 @@ int update_advertisement_data()
     return ret;
 }
 
-bool ble_connection_exists(void)
-{
-    return default_conn ? true : false;
-}
-
 int start_advertise(void)
 {
     LOG_INF("Starting BLE advertisement");
@@ -203,9 +227,10 @@ int start_advertise(void)
         LOG_ERR("Failed to start data advertisement (err %d)", err);
         return err;
     }
+    set_ble_state(BLE_ADVERTISING);
 
     // Schedule timeout for stopping advertising
-    err = k_work_schedule(&adv_stop_work, K_MSEC(ADV_TIMEOUT));
+    err = k_work_schedule(&stop_ble_work, K_MSEC(BLE_TIMEOUT));
     if (err != 0 && err != 1)
     {
         LOG_ERR("Error scheduling a advertise timeout task (err %d)", err);
@@ -222,5 +247,15 @@ void stop_advertise(void)
     {
         LOG_ERR("Failed to stop data advertisement (err %d)", err);
     }
-    advertising_stopped_cb();
+}
+
+void disconnect(void)
+{
+    int err;
+    err = bt_conn_disconnect(current_conn, BT_HCI_ERR_REMOTE_USER_TERM_CONN);
+    if (err)
+    {
+        LOG_ERR("Failed to disconnect from device (err %d)", err);
+    }
+    set_ble_state(BLE_IDLE);
 }

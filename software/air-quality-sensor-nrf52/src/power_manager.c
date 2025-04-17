@@ -40,9 +40,6 @@ int enter_low_power_mode(void)
     sys_poweroff();
     k_sleep(K_MSEC(1000));
 #endif
-
-    wake_up();
-
     return 0;
 }
 
