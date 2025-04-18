@@ -19,7 +19,7 @@
 
 // Sensors
 #define ENABLE_SHT4X
-// #define ENABLE_SGP40
+#define ENABLE_SGP40
 // #define ENABLE_SCD4X
 // #define ENABLE_BMP390
 
@@ -45,6 +45,6 @@
 
 #define VOC_INDEX_SCALE 10
 #define VOC_INDEX_MIN 0
-#define VOC_INDEX_MAX 10000
+#define VOC_INDEX_MAX 500
 
 #endif

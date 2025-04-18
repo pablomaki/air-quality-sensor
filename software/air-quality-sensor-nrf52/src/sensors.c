@@ -2,6 +2,8 @@
 #include <configs.h>
 #include <variables.h>
 
+#include <sensirion_gas_index_algorithm.h>
+
 #include <zephyr/kernel.h>
 #include <zephyr/device.h>
 #include <zephyr/drivers/sensor.h>
@@ -18,22 +20,23 @@
 LOG_MODULE_REGISTER(sensors);
 
 #ifdef ENABLE_SHT4X
-static const struct device *sht4x_dev_p;
+static const struct device* sht4x_dev_p;
 static struct sensor_value temperature, humidity;
 #endif
 
 #ifdef ENABLE_SGP40
-static const struct device *sgp40_dev_p;
-static struct sensor_value voc_index;
+static const struct device* sgp40_dev_p;
+static struct sensor_value voc_raw, voc_index;
+static GasIndexAlgorithmParams voc_params;
 #endif
 
 #ifdef ENABLE_SCD4X
-static const struct device *scd4x_dev_p;
+static const struct device* scd4x_dev_p;
 static struct sensor_value co2_concentration;
 #endif
 
 #ifdef ENABLE_BMP390
-static const struct device *bmp390_dev_p;
+static const struct device* bmp390_dev_p;
 static struct sensor_value pressure;
 #endif
 
@@ -55,6 +58,7 @@ int init_sensors(void)
         LOG_ERR("Device sgp40 is not ready.");
         return -ENXIO;
     }
+    GasIndexAlgorithm_init_with_sampling_interval(&voc_params, GasIndexAlgorithm_ALGORITHM_TYPE_VOC, DATA_INTERVAL);
 #endif
 
 #ifdef ENABLE_SCD4X
@@ -122,12 +126,13 @@ int read_sgp40_data()
         return err;
     }
 
-    err = sensor_channel_get(sgp40_dev_p, SENSOR_CHAN_GAS_RES, &voc_index);
+    err = sensor_channel_get(sgp40_dev_p, SENSOR_CHAN_GAS_RES, &voc_raw);
     if (err)
     {
         LOG_ERR("Failed to get VOC idnex data (err %d)", err);
         return err;
     }
+    GasIndexAlgorithm_process(&voc_params, voc_raw.val1, &voc_index.val1);
 
     // Save values
     set_voc_index(sensor_value_to_float(&voc_index));

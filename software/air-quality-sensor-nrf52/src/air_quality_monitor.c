@@ -44,7 +44,7 @@ static bool read_sensors(void)
 #endif
 
 #ifdef ENABLE_SGP40
-    err = read_sgp4x_data();
+    err = read_sgp40_data();
     if (err)
     {
         LOG_ERR("Error reading sgp4x sensor data (err %d)", err);
@@ -126,7 +126,7 @@ static bool schedule_work_task(int64_t delay)
  *
  * @param work Address of work item.
  */
-static void periodic_task(struct k_work *work)
+static void periodic_task(struct k_work* work)
 {
     LOG_INF("Periodic task begin");
 
@@ -171,7 +171,7 @@ static void periodic_task(struct k_work *work)
     if (delay < 0)
     {
         LOG_ERR("Missed deadline, scheduling immediately!");
-        delay = 0; // Prevent negative delay
+        delay = 0;  // Prevent negative delay
     }
     success = schedule_work_task(delay);
     if (!success)
@@ -181,6 +181,22 @@ static void periodic_task(struct k_work *work)
     }
 
     LOG_INF("Task scheduled, waiting BLE communication to stop before idle.");
+}
+
+/**
+ * @brief Enter idle mode
+ *
+ */
+static void idle(void)
+{
+    set_state(IDLE);
+    int err;
+    err = enter_low_power_mode();
+    if (err)
+    {
+        LOG_ERR("Something in entering/exiting the low power mode failed (err %d)", err);
+        set_state(ERROR);
+    }
 }
 
 /**
@@ -200,14 +216,7 @@ static void ble_task_callback(bool task_success)
         LOG_INF("BLE data transfer unsuccesful, entering idle state.");
         dispatch_event(PERIODIC_TASK_WARNING);
     }
-    set_state(IDLE);
-    int err;
-    err = enter_low_power_mode();
-    if (err)
-    {
-        LOG_ERR("Something in entering/exiting the low power mode failed (err %d)", err);
-        set_state(ERROR);
-    }
+    idle();
 }
 
 int init_air_quality_monitor(void)
@@ -290,6 +299,6 @@ int init_air_quality_monitor(void)
     }
     LOG_INF("Periodic task initialized succesfully.");
     dispatch_event(INITIALIZATION_SUCCESS);
-    set_state(IDLE);
+    idle();
     return 0;
 }
