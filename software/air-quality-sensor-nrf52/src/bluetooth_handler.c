@@ -260,7 +260,7 @@ int update_advertisement_data()
         LOG_WRN("Battery level outside of the expected limits (err %d, value %d)", err, (uint8_t)get_battery_level());
     }
 
-#if defined(ENABLE_SHT4X) || defined(ENABLE_SCD4X)
+#ifdef ENABLE_SHT4X
     err = bt_ess_set_temperature(get_temperature());
     if (err)
     {
@@ -273,7 +273,7 @@ int update_advertisement_data()
     }
 #endif
 
-#ifdef ENABLE_BMP280
+#ifdef ENABLE_BMP390
     err = bt_ess_set_pressure(get_pressure());
     if (err)
     {

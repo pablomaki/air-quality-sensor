@@ -23,11 +23,11 @@ int read_sht4x_data();
 int read_sgp40_data();
 
 /**
- * @brief Read BMP280 sensor data and save the pressure to the variables
+ * @brief Read BMP390 sensor data and save the pressure to the variables
  *
  * @return int, 0 if ok, non-zero if an error occured
  */
-int read_bmp280_data();
+int read_bmp390_data();
 
 /**
  * @brief Read SCD4X sensor data and save the temperature, humidity and CO2 levels to the variables

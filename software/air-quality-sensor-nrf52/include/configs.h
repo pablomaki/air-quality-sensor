@@ -21,7 +21,7 @@
 #define ENABLE_SHT4X
 // #define ENABLE_SGP40
 // #define ENABLE_SCD4X
-// #define ENABLE_BMP280
+// #define ENABLE_BMP390
 
 // Screen
 // #define ENABLE_EPD //Enable or disable the screen

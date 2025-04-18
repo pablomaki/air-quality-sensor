@@ -34,7 +34,7 @@ struct ess_handles
 };
 static struct ess_handles ess_handle;
 
-#if defined(ENABLE_SCD4X) || defined(ENABLE_SHT4X)
+#ifdef ENABLE_SHT4X
 /**
  * @brief Temperature client characteristic configuration changed callback
  * 
@@ -58,7 +58,7 @@ static void hum_ccc_cfg_changed(const struct bt_gatt_attr *attr, uint16_t value)
 }
 #endif
 
-#ifdef ENABLE_BMP280
+#ifdef ENABLE_BMP390
 /**
  * @brief Pressure client characteristic configuration changed callback
  * 
@@ -119,14 +119,14 @@ static ssize_t read_data(struct bt_conn *conn,
 
 // Create service
 BT_GATT_SERVICE_DEFINE(ess, BT_GATT_PRIMARY_SERVICE(BT_UUID_ESS),
-#if defined(ENABLE_SCD4X) || defined(ENABLE_SHT4X)
+#ifdef ENABLE_SHT4X
                        BT_GATT_CHARACTERISTIC(BT_UUID_TEMPERATURE, BT_GATT_CHRC_READ | BT_GATT_CHRC_NOTIFY, BT_GATT_PERM_READ, read_data, NULL, &temperature),
                        BT_GATT_CCC(temp_ccc_cfg_changed, BT_GATT_PERM_READ | BT_GATT_PERM_WRITE),
                        BT_GATT_CHARACTERISTIC(BT_UUID_HUMIDITY, BT_GATT_CHRC_READ | BT_GATT_CHRC_NOTIFY, BT_GATT_PERM_READ, read_data, NULL, &humidity),
                        BT_GATT_CCC(hum_ccc_cfg_changed, BT_GATT_PERM_READ | BT_GATT_PERM_WRITE),
 #endif
 
-#ifdef ENABLE_BMP280
+#ifdef ENABLE_BMP390
                        BT_GATT_CHARACTERISTIC(BT_UUID_PRESSURE, BT_GATT_CHRC_READ | BT_GATT_CHRC_NOTIFY, BT_GATT_PERM_READ, read_data, NULL, &pressure),
                        BT_GATT_CCC(press_ccc_cfg_changed, BT_GATT_PERM_READ | BT_GATT_PERM_WRITE),
 #endif
@@ -249,12 +249,12 @@ int bt_ess_set_voc_index(float new_voc_index)
  */
 static int ess_init(void)
 {
-#if defined(ENABLE_SCD4X) || defined(ENABLE_SHT4X)
+#ifdef ENABLE_SHT4X
     ess_handle.temp_handle = bt_gatt_find_by_uuid(ess.attrs, 0, BT_UUID_TEMPERATURE);
     ess_handle.hum_handle = bt_gatt_find_by_uuid(ess.attrs, 0, BT_UUID_HUMIDITY);
 #endif
 
-#ifdef ENABLE_BMP280
+#ifdef ENABLE_BMP390
     ess_handle.press_handle  = bt_gatt_find_by_uuid(ess.attrs, 0, BT_UUID_PRESSURE);
 #endif
 

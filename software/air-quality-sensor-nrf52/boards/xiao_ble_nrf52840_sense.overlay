@@ -26,9 +26,9 @@
 	// 	reg = <0x59>;
 	// 	enable-selftest;
 	// };
-	// bmp280@77 {
+	// bmp390@77 {
 	// 	    status = "okay";
-	// 	    compatible = "bosch,bmp280";
+	// 	    compatible = "bosch,bmp390";
 	// 	    reg = <0x77>;
 	// };
 	// scd4x@62 {

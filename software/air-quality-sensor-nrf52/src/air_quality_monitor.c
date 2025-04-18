@@ -52,11 +52,11 @@ static bool read_sensors(void)
     }
 #endif
 
-#ifdef ENABLE_BMP280
-    err = read_bmp280_data();
+#ifdef ENABLE_BMP390
+    err = read_bmp390_data();
     if (err)
     {
-        LOG_ERR("Error reading bmp280 sensor data (err %d)", err);
+        LOG_ERR("Error reading bmp390 sensor data (err %d)", err);
         success = false;
     }
 #endif

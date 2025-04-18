@@ -17,12 +17,28 @@
 
 LOG_MODULE_REGISTER(sensors);
 
-const struct device *sht4x_dev_p, *sgp40_dev_p, *scd4x_dev_p, *bmp280_dev_p;
-static struct sensor_value temperature, humidity, pressure, voc_index, co2_concentration;
+#ifdef ENABLE_SHT4X
+static const struct device *sht4x_dev_p;
+static struct sensor_value temperature, humidity;
+#endif
+
+#ifdef ENABLE_SGP40
+static const struct device *sgp40_dev_p;
+static struct sensor_value voc_index;
+#endif
+
+#ifdef ENABLE_SCD4X
+static const struct device *scd4x_dev_p;
+static struct sensor_value co2_concentration;
+#endif
+
+#ifdef ENABLE_BMP390
+static const struct device *bmp390_dev_p;
+static struct sensor_value pressure;
+#endif
 
 int init_sensors(void)
 {
-
 #ifdef ENABLE_SHT4X
     sht4x_dev_p = DEVICE_DT_GET_ANY(sensirion_sht4x);
     if (!device_is_ready(sht4x_dev_p))
@@ -50,11 +66,11 @@ int init_sensors(void)
     }
 #endif
 
-#ifdef ENABLE_BMP280
-    bmp280_dev_p = DEVICE_DT_GET_ANY(bosch_bmp280);
-    if (!device_is_ready(bmp280_dev_p))
+#ifdef ENABLE_BMP390
+    bmp390_dev_p = DEVICE_DT_GET_ANY(bosch_bmp390);
+    if (!device_is_ready(bmp390_dev_p))
     {
-        LOG_ERR("Device bmp280 is not ready.");
+        LOG_ERR("Device bmp390 is not ready.");
         return -ENXIO;
     }
 #endif
@@ -87,19 +103,12 @@ int read_sht4x_data()
 }
 #endif
 
-
 #ifdef ENABLE_SGP40
 int read_sgp40_data()
 {
     int err, err2;
-    err = sensor_attr_set(sgp40_dev_p,
-                          SENSOR_CHAN_GAS_RES,
-                          SENSOR_ATTR_SGP40_TEMPERATURE,
-                          &temperature);
-    err2 = sensor_attr_set(sgp40_dev_p,
-                           SENSOR_CHAN_GAS_RES,
-                           SENSOR_ATTR_SGP40_HUMIDITY,
-                           &humidity);
+    err = sensor_attr_set(sgp40_dev_p, SENSOR_CHAN_GAS_RES, SENSOR_ATTR_SGP40_TEMPERATURE, &temperature);
+    err2 = sensor_attr_set(sgp40_dev_p, SENSOR_CHAN_GAS_RES, SENSOR_ATTR_SGP40_HUMIDITY, &humidity);
     if (err || err2)
     {
         LOG_ERR("Failed to set compensation temperature and ro humidity (err %d, %d)", err, err2);
@@ -126,18 +135,18 @@ int read_sgp40_data()
 }
 #endif
 
-#ifdef ENABLE_BMP280
-int read_bmp280_data()
+#ifdef ENABLE_BMP390
+int read_bmp390_data()
 {
     int err;
-    err = sensor_sample_fetch(bmp280_dev_p);
+    err = sensor_sample_fetch(bmp390_dev_p);
     if (err)
     {
-        LOG_ERR("Failed to fetch sample from BMP280 device (err %d)", err);
+        LOG_ERR("Failed to fetch sample from BMP390 device (err %d)", err);
         return err;
     }
 
-    err = sensor_channel_get(bmp280_dev_p, SENSOR_CHAN_PRESS, &pressure);
+    err = sensor_channel_get(bmp390_dev_p, SENSOR_CHAN_PRESS, &pressure);
     if (err)
     {
         LOG_ERR("Failed to get pressure data (err %d)", err);
