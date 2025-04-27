@@ -27,15 +27,17 @@
 		enable-selftest;
 	};
 	// bmp390@77 {
-	// 	    status = "okay";
-	// 	    compatible = "bosch,bmp390";
-	// 	    reg = <0x77>;
+	// 	status = "okay";
+	// 	compatible = "bosch,bmp390";
+	// 	reg = <0x77>;
 	// };
-	// scd4x@62 {
-	// 	    status = "okay";
-	// 	    compatible = "sensirion,scd4x";
-	// 	    reg = <0x62>;
-	// };
+	scd41@62 {
+		status = "okay";
+		compatible = "sensirion,scd41";
+		reg = <0x62>;
+		mode = <2>;
+		enable-selftest;
+	};
 };
 
 &qspi {

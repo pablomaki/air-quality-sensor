@@ -17,26 +17,34 @@
 #include <zephyr/drivers/sensor/sgp40.h>
 #endif
 
+#ifdef ENABLE_SCD4X
+#include <drivers/scd4x.h>
+#endif
+
 LOG_MODULE_REGISTER(sensors);
 
 #ifdef ENABLE_SHT4X
-static const struct device* sht4x_dev_p;
+static const struct device *sht4x_dev_p;
 static struct sensor_value temperature, humidity;
 #endif
 
 #ifdef ENABLE_SGP40
-static const struct device* sgp40_dev_p;
+static const struct device *sgp40_dev_p;
 static struct sensor_value voc_raw, voc_index;
 static GasIndexAlgorithmParams voc_params;
 #endif
 
 #ifdef ENABLE_SCD4X
-static const struct device* scd4x_dev_p;
-static struct sensor_value co2_concentration;
+static const struct device *scd4x_dev_p;
+static struct sensor_value co2_concentration, temperature_2, humidity_2;
+static struct sensor_value asc_initial_period = {(2 * 24 * 60 * 60) / (DATA_INTERVAL / 1000) / 12, 0};
+static struct sensor_value asc_standard_period = {(7 * 24 * 60 * 60) / (DATA_INTERVAL / 1000) / 12, 0};
+static struct sensor_value sensor_altitude = {ALTITUDE, 0};
+static struct sensor_value temperature_offset = {TEMPERATURE_OFFSET, 0};
 #endif
 
 #ifdef ENABLE_BMP390
-static const struct device* bmp390_dev_p;
+static const struct device *bmp390_dev_p;
 static struct sensor_value pressure;
 #endif
 
@@ -58,15 +66,25 @@ int init_sensors(void)
         LOG_ERR("Device sgp40 is not ready.");
         return -ENXIO;
     }
-    GasIndexAlgorithm_init_with_sampling_interval(&voc_params, GasIndexAlgorithm_ALGORITHM_TYPE_VOC, DATA_INTERVAL);
+    GasIndexAlgorithm_init_with_sampling_interval(&voc_params, GasIndexAlgorithm_ALGORITHM_TYPE_VOC, DATA_INTERVAL/1000);
 #endif
 
 #ifdef ENABLE_SCD4X
-    scd4x_dev_p = DEVICE_DT_GET_ANY(sensirion_scd4x);
+    scd4x_dev_p = DEVICE_DT_GET_ANY(sensirion_scd41);
     if (!device_is_ready(scd4x_dev_p))
     {
         LOG_ERR("Device scd4x is not ready.");
         return -ENXIO;
+    }
+    int err, err2, err3, err4;
+    err = sensor_attr_set(scd4x_dev_p, SENSOR_CHAN_CO2, SENSOR_ATTR_SCD4X_SELF_CALIB_INITIAL_PERIOD, &asc_initial_period);
+    err2 = sensor_attr_set(scd4x_dev_p, SENSOR_CHAN_CO2, SENSOR_ATTR_SCD4X_SELF_CALIB_STANDARD_PERIOD, &asc_standard_period);
+    err3 = sensor_attr_set(scd4x_dev_p, SENSOR_CHAN_CO2, SENSOR_ATTR_SCD4X_ALTITUDE, &sensor_altitude);
+    err4 = sensor_attr_set(scd4x_dev_p, SENSOR_CHAN_CO2, SENSOR_ATTR_SCD4X_TEMPERATURE_OFFSET, &temperature_offset);
+    if (err || err2 || err3 || err4)
+    {
+        LOG_ERR("Failed to set scd4x initial asc period, standard asc period or  (err %d, %d, %d %d)", err, err2, err3, err4);
+        return err;
     }
 #endif
 
@@ -103,6 +121,8 @@ int read_sht4x_data()
     // Save values
     set_temperature(sensor_value_to_float(&temperature));
     set_humidity(sensor_value_to_float(&humidity));
+    LOG_INF("SHT4X TEMPERATURE: %d.%d", temperature.val1, temperature.val2);
+    LOG_INF("SHT4X HUMIDITY: %d.%d", humidity.val1, humidity.val2);
     return 0;
 }
 #endif
@@ -115,7 +135,7 @@ int read_sgp40_data()
     err2 = sensor_attr_set(sgp40_dev_p, SENSOR_CHAN_GAS_RES, SENSOR_ATTR_SGP40_HUMIDITY, &humidity);
     if (err || err2)
     {
-        LOG_ERR("Failed to set compensation temperature and ro humidity (err %d, %d)", err, err2);
+        LOG_ERR("Failed to set compensation temperature and or humidity (err %d, %d)", err, err2);
         return err;
     }
 
@@ -136,6 +156,7 @@ int read_sgp40_data()
 
     // Save values
     set_voc_index(sensor_value_to_float(&voc_index));
+    LOG_INF("SGP40 VOC INDEX: %d.%d", voc_index.val1, voc_index.val2);
     return 0;
 }
 #endif
@@ -160,6 +181,7 @@ int read_bmp390_data()
 
     // Save values
     set_pressure(sensor_value_to_float(&pressure));
+    LOG_INF("BMP390 PRESSURE: %d.%d", pressure.val1, pressure.val2);
     return 0;
 }
 #endif
@@ -168,6 +190,16 @@ int read_bmp390_data()
 int read_scd4x_data()
 {
     int err, err2, err3;
+
+#ifdef ENABLE_BMP390
+    err = sensor_attr_set(scd4x_dev_p, SENSOR_CHAN_CO2, SENSOR_ATTR_SCD4X_AMBIENT_PRESSURE, &pressure);
+    if (err)
+    {
+        LOG_ERR("Failed to set pressure compensation (err %d)", err);
+        return err;
+    }
+#endif
+
     err = sensor_sample_fetch(scd4x_dev_p);
     if (err)
     {
@@ -175,19 +207,24 @@ int read_scd4x_data()
         return err;
     }
 
-    err = sensor_channel_get(scd4x_dev_p, SENSOR_CHAN_AMBIENT_TEMP, &temperature);
-    err2 = sensor_channel_get(scd4x_dev_p, SENSOR_CHAN_HUMIDITY, &humidity);
-    err3 = sensor_channel_get(scd4x_dev_p, SENSOR_CHAN_CO2, &co2_concentration);
+    err = sensor_channel_get(scd4x_dev_p, SENSOR_CHAN_CO2, &co2_concentration);
+    err2 = sensor_channel_get(scd4x_dev_p, SENSOR_CHAN_AMBIENT_TEMP, &temperature_2);
+    err3 = sensor_channel_get(scd4x_dev_p, SENSOR_CHAN_HUMIDITY, &humidity_2);
     if (err || err2 || err3)
     {
-        LOG_ERR("Failed to get temperature, humidity or CO2 concentration data (err %d, %d, %d)", err, err2, err3);
+        LOG_ERR("Failed to get CO2, temperature or humidity concentration data (err %d, %d, %d)", err, err2, err3);
         return err;
     }
 
     // Save values
-    set_temperature(sensor_value_to_float(&temperature));
-    set_humidity(sensor_value_to_float(&humidity));
     set_co2_concentration(sensor_value_to_float(&co2_concentration));
+#ifndef ENABLE_SHT4X
+    set_temperature(sensor_value_to_float(&temperature_2));
+    set_humidity(sensor_value_to_float(&humidity_2));
+#endif
+    LOG_INF("SCD4X CO2 CONCENTRATION: %d.%d", co2_concentration.val1, co2_concentration.val2);
+    LOG_INF("SCD4X TEMPERATURE: %d.%d", temperature_2.val1, temperature_2.val2);
+    LOG_INF("SCD4X HUMIDITY: %d.%d", humidity_2.val1, humidity_2.val2);
     return 0;
 }
 #endif

@@ -1,0 +1,26 @@
+# dts/bindings/sensor/sensirion,scd4x.yaml
+description: Sensirion SCD4x CO₂ sensor
+
+compatible: "sensirion,scd41"
+
+include: [sensor-device.yaml, i2c-device.yaml]
+
+properties:
+  mode:
+    type: int
+    required: true
+    description: |
+      - 0: Normal periodic measurement. Default interval of 5sec
+      - 1: Low power periodic measurement. Interval of 30sec
+      - 2: Singleshot measurement for low power usage.
+      - 3: Singleshot measurement with power cycling (only beneficial with intervals of greater than 380sec).
+    enum:
+      - 0
+      - 1
+      - 2 
+      - 3
+  enable-selftest:
+    type: boolean
+    description: |
+      Enabling this will run a selftest when the driver initializes.
+      The selftest takes ~10s.
