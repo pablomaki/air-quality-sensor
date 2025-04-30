@@ -13,7 +13,29 @@
 
 LOG_MODULE_REGISTER(air_quality_monitor);
 
+#define SCHEDULE_SUCCESS 0
+#define SCHEDULE_ALREADY_QUEUED 1
+
 static struct k_work_delayable periodic_work;
+
+/**
+ * @brief Read data from a sensor and check for errors
+ * 
+ * @param sensor_func Pointer to the function that reads the sensor data
+ * @param sensor_name Name of the sensor for logging
+ * @return true if reading was successful
+ * @return false if there was an error
+ */
+static bool check_sensor_reading(int (*sensor_func)(void), const char *sensor_name)
+{
+    int err = sensor_func();
+    if (err)
+    {
+        LOG_ERR("Error reading %s sensor data (err %d)", sensor_name, err);
+        return false;
+    }
+    return true;
+}
 
 /**
  * @brief Read data from each sensor
@@ -24,51 +46,25 @@ static struct k_work_delayable periodic_work;
 static bool read_sensors(void)
 {
     bool success = true;
-    int err;
-    // Get battery level
-    err = read_battery_level();
-    if (err)
-    {
-        LOG_ERR("Error reading battery level (err %d)", err);
-        success = false;
-    }
 
-    // Get data from sensor(s)
+    success &= check_sensor_reading(read_battery_level, "battery");
+
 #ifdef ENABLE_SHT4X
-    err = read_sht4x_data();
-    if (err)
-    {
-        LOG_ERR("Error reading sht4x sensor data (err %d)", err);
-        success = false;
-    }
+    success &= check_sensor_reading(read_sht4x_data, "sht4x");
 #endif
 
 #ifdef ENABLE_SGP40
-    err = read_sgp40_data();
-    if (err)
-    {
-        LOG_ERR("Error reading sgp4x sensor data (err %d)", err);
-        success = false;
-    }
+    success &= check_sensor_reading(read_sgp40_data, "sgp40");
 #endif
 
 #ifdef ENABLE_BMP390
-    err = read_bmp390_data();
-    if (err)
-    {
-        LOG_ERR("Error reading bmp390 sensor data (err %d)", err);
-        success = false;
-    }
+    success &= check_sensor_reading(read_bmp390_data, "bmp390");
 #endif
 
 #ifdef ENABLE_SCD4X
-    err = read_scd4x_data();
-    if (err)
-    {
-        LOG_ERR("Error reading scd4x sensor data (err %d)", err);
-        success = false;
-    }
+    success &= check_sensor_reading(read_scd4x_data, "scd4x");
 #endif
+
     return success;
 }
 
@@ -78,7 +74,7 @@ static bool read_sensors(void)
  * @return true if updating and advertisement start succeed
  * @return false if any of the above fail
  */
-bool advertise_data(void)
+static bool advertise_data(void)
 {
     bool success = true;
     int err;
@@ -110,15 +106,13 @@ bool advertise_data(void)
  */
 static bool schedule_work_task(int64_t delay)
 {
-    int err;
-    bool success = true;
-    err = k_work_schedule(&periodic_work, K_MSEC(delay));
-    if (err != 0 && err != 1)
+    int err = k_work_schedule(&periodic_work, K_MSEC(delay));
+    if (err != SCHEDULE_SUCCESS && err != SCHEDULE_ALREADY_QUEUED)
     {
         LOG_ERR("Error scheduling a task (err %d)", err);
-        success = false;
+        return false;
     }
-    return success;
+    return true;
 }
 
 /**
