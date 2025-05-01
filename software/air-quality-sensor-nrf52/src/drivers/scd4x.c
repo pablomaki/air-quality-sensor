@@ -188,6 +188,7 @@ static int scd4x_attr_set(const struct device *dev,
         return -EINVAL;
     }
 
+    uint16_t ticks;
     switch ((sensor_attribute_scd4x)attr)
     {
     case SENSOR_ATTR_SCD4X_TEMPERATURE_OFFSET:
@@ -195,30 +196,17 @@ static int scd4x_attr_set(const struct device *dev,
         {
             return -EINVAL;
         }
-
-        uint16_t t_ticks = (float)(val->val1 + (val->val2 / 1000000.0)) * 0xFFFF / 175;
-        rc = scd4x_write_reg(dev, SCD4X_CMD_SET_TEMPERATURE_OFFSET, &t_ticks, 1);
-        if (rc < 0)
-        {
-            LOG_ERR("Failed to set temperature offset.");
-            return rc;
-        }
-        k_sleep(K_MSEC(SCD4X_DEFAULT_WAIT_MS));
+        ticks = (float)(val->val1 + (val->val2 / 1000000.0)) * 0xFFFF / 175;
+        rc = scd4x_write_reg(dev, SCD4X_CMD_SET_TEMPERATURE_OFFSET, &ticks, 1);
         break;
+
     case SENSOR_ATTR_SCD4X_ALTITUDE:
         if (val->val1 < SCD4X_COMP_MIN_ALT || val->val1 > SCD4X_COMP_MAX_ALT)
         {
             return -EINVAL;
         }
-
-        uint16_t alt_ticks = val->val1;
-        rc = scd4x_write_reg(dev, SCD4X_CMD_SET_SENSOR_ALTITUDE, &alt_ticks, 1);
-        if (rc < 0)
-        {
-            LOG_ERR("Failed to set sensor altitude.");
-            return rc;
-        }
-        k_sleep(K_MSEC(SCD4X_DEFAULT_WAIT_MS));
+        ticks = val->val1;
+        rc = scd4x_write_reg(dev, SCD4X_CMD_SET_SENSOR_ALTITUDE, &ticks, 1);
         break;
 
     case SENSOR_ATTR_SCD4X_AMBIENT_PRESSURE:
@@ -226,15 +214,8 @@ static int scd4x_attr_set(const struct device *dev,
         {
             return -EINVAL;
         }
-
-        uint16_t ap_ticks = val->val1 / 100.0;
-        rc = scd4x_write_reg(dev, SCD4X_CMD_SET_AMBIENT_PRESSURE, &ap_ticks, 1);
-        if (rc < 0)
-        {
-            LOG_ERR("Failed to set ambient pressure.");
-            return rc;
-        }
-        k_sleep(K_MSEC(SCD4X_DEFAULT_WAIT_MS));
+        ticks = (val->val1 * 1000 + val->val2) / 100.0;
+        rc = scd4x_write_reg(dev, SCD4X_CMD_SET_AMBIENT_PRESSURE, &ticks, 1);
         break;
 
     case SENSOR_ATTR_SCD4X_AUTOMATIC_CALIB_ENABLE:
@@ -243,14 +224,8 @@ static int scd4x_attr_set(const struct device *dev,
             return -EINVAL;
         }
 
-        uint16_t acs_enable_ticks = val->val1;
-        rc = scd4x_write_reg(dev, SCD4X_CMD_SET_AUTOMATIC_SELF_CALIBRATION_ENABLED, &acs_enable_ticks, 1);
-        if (rc < 0)
-        {
-            LOG_ERR("Failed to set automatic calib enable.");
-            return rc;
-        }
-        k_sleep(K_MSEC(SCD4X_DEFAULT_WAIT_MS));
+        ticks = val->val1;
+        rc = scd4x_write_reg(dev, SCD4X_CMD_SET_AUTOMATIC_SELF_CALIBRATION_ENABLED, &ticks, 1);
         break;
 
     case SENSOR_ATTR_SCD4X_SELF_CALIB_INITIAL_PERIOD:
@@ -264,14 +239,8 @@ static int scd4x_attr_set(const struct device *dev,
             return -ENOTSUP;
         }
 
-        uint16_t asc_ip_ticks = val->val1;
-        rc = scd4x_write_reg(dev, SCD4X_CMD_SET_AUTOMATIC_SELF_CALIBRATION_INITIAL_PERIOD, &asc_ip_ticks, 1);
-        if (rc < 0)
-        {
-            LOG_ERR("Failed to set self calib initial period.");
-            return rc;
-        }
-        k_sleep(K_MSEC(SCD4X_DEFAULT_WAIT_MS));
+        ticks = val->val1;
+        rc = scd4x_write_reg(dev, SCD4X_CMD_SET_AUTOMATIC_SELF_CALIBRATION_INITIAL_PERIOD, &ticks, 1);
         break;
 
     case SENSOR_ATTR_SCD4X_SELF_CALIB_STANDARD_PERIOD:
@@ -285,19 +254,20 @@ static int scd4x_attr_set(const struct device *dev,
             return -ENOTSUP;
         }
 
-        uint16_t asc_sp_ticks = val->val1;
-        rc = scd4x_write_reg(dev, SCD4X_CMD_SET_AUTOMATIC_SELF_CALIBRATION_STANDARD_PERIOD, &asc_sp_ticks, 1);
-        if (rc < 0)
-        {
-            LOG_ERR("Failed to set self calib standard period.");
-            return rc;
-        }
-        k_sleep(K_MSEC(SCD4X_DEFAULT_WAIT_MS));
+        ticks = val->val1;
+        rc = scd4x_write_reg(dev, SCD4X_CMD_SET_AUTOMATIC_SELF_CALIBRATION_STANDARD_PERIOD, &ticks, 1);
         break;
 
     default:
         return -ENOTSUP;
     }
+
+    if (rc < 0)
+    {
+        LOG_ERR("Failed to set attribute.");
+        return rc;
+    }
+    k_sleep(K_MSEC(SCD4X_DEFAULT_WAIT_MS));
 
     if (idle_mode)
     {
@@ -317,6 +287,8 @@ static int scd4x_data_ready(const struct device *dev, bool *is_data_ready)
     uint8_t rx_buf[3];
     int rc;
 
+    *is_data_ready = false;
+
     rc = scd4x_write_reg(dev, SCD4X_CMD_GET_DATA_READY_STATUS, NULL, 0);
     if (rc < 0)
     {
@@ -333,7 +305,6 @@ static int scd4x_data_ready(const struct device *dev, bool *is_data_ready)
     }
 
     uint16_t word = sys_get_be16(rx_buf);
-    /* Least significant 11 bits = 0 --> data not ready */
     if ((word & 0x07FF) > 0)
     {
         *is_data_ready = true;
@@ -366,7 +337,7 @@ static int scd4x_sample_fetch(const struct device *dev, enum sensor_channel chan
     }
     else
     {
-        bool is_data_ready = false;
+        bool is_data_ready;
         rc = scd4x_data_ready(dev, &is_data_ready);
         if (rc < 0)
         {
@@ -376,7 +347,7 @@ static int scd4x_sample_fetch(const struct device *dev, enum sensor_channel chan
         if (!is_data_ready)
         {
             LOG_WRN("Data not ready yet.");
-            return 0;
+            return -EIO;
         }
     }
 
@@ -667,10 +638,10 @@ static const struct sensor_driver_api scd4x_api = {
         .bus = I2C_DT_SPEC_INST_GET(inst),                               \
         .model = scd4x_model,                                            \
         .mode = DT_INST_ENUM_IDX_OR(inst, mode, SCD4X_MODE_NORMAL),      \
-        .selftest = DT_INST_PROP(inst, enable_selftest),                    \
+        .selftest = DT_INST_PROP(inst, enable_selftest),                 \
     };                                                                   \
                                                                          \
-    PM_DEVICE_DT_INST_DEFINE(inst, scd4x_pm_action);                        \
+    PM_DEVICE_DT_INST_DEFINE(inst, scd4x_pm_action);                     \
                                                                          \
     SENSOR_DEVICE_DT_INST_DEFINE(inst,                                   \
                                  scd4x_init,                             \

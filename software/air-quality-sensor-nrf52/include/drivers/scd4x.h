@@ -62,11 +62,15 @@
 #define SCD4X_COMP_MAX_ALT 3000	 // meters
 #define SCD4X_OFFSET_TEMP_MIN 0	 // meters
 #define SCD4X_OFFSET_TEMP_MAX 20 // meters
-#define SCD4X_COMP_MIN_AP 70000	 // pascals
-#define SCD4X_COMP_MAX_AP 120000 // pascals
+#define SCD4X_COMP_MIN_AP 70	 // kilopascals
+#define SCD4X_COMP_MAX_AP 120	 // kilopascals
 #define SCD4X_COMP_DEFAULT_ALT 0
 #define SCD4X_COMP_DEFAULT_AP 101300
 
+/**
+ * @brief SCD4X mode of operation.
+ *
+ */
 typedef enum
 {
 	SCD4X_MODE_NORMAL,
@@ -75,12 +79,20 @@ typedef enum
 	SCD4X_MODE_POWER_CYCLED_SINGLE_SHOT,
 } scd4x_mode_t;
 
+/**
+ * @brief SCD4X model.
+ *
+ */
 typedef enum
 {
 	SCD4X_MODEL_SCD40,
 	SCD4X_MODEL_SCD41,
 } scd4x_model_t;
 
+/**
+ * @brief SCD4X configuration structure.
+ *
+ */
 typedef struct
 {
 	struct i2c_dt_spec bus;
@@ -89,6 +101,10 @@ typedef struct
 	bool selftest;
 } scd4x_config_t;
 
+/**
+ * @brief SCD4X data structure.
+ *
+ */
 typedef struct
 {
 	uint16_t co2_sample;
