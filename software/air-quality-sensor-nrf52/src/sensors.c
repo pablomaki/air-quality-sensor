@@ -45,7 +45,7 @@ static struct sensor_value temperature_offset = {TEMPERATURE_OFFSET, 0};
 
 #ifdef ENABLE_BMP390
 static const struct device *bmp390_dev_p;
-static struct sensor_value pressure;
+static struct sensor_value pressure, temperature_3;
 #endif
 
 int init_sensors(void)
@@ -173,6 +173,7 @@ int read_bmp390_data()
     }
 
     err = sensor_channel_get(bmp390_dev_p, SENSOR_CHAN_PRESS, &pressure);
+    err = sensor_channel_get(bmp390_dev_p, SENSOR_CHAN_AMBIENT_TEMP, &temperature_3);
     if (err)
     {
         LOG_ERR("Failed to get pressure data (err %d)", err);
@@ -182,6 +183,7 @@ int read_bmp390_data()
     // Save values
     set_pressure(sensor_value_to_float(&pressure));
     LOG_INF("BMP390 PRESSURE: %d.%d", pressure.val1, pressure.val2);
+    LOG_INF("BMP390 TEMPERATURE: %d.%d", temperature_3.val1, temperature_3.val2);
     return 0;
 }
 #endif
