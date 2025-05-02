@@ -8,7 +8,7 @@
 
 /**
  * @brief Enum for RGB colors
- * 
+ *
  */
 typedef enum
 {
@@ -31,7 +31,7 @@ int init_led_controller(void);
 
 /**
  * @brief Blink specific LED color X times
- * 
+ *
  * @param color Color to blink
  * @param count Count of times to blink
  */
@@ -39,7 +39,7 @@ void blink_led(led_color_t color, int count);
 
 /**
  * @brief Set LED color
- * 
+ *
  * @param color Color to set LED to
  */
 void set_led(led_color_t color);

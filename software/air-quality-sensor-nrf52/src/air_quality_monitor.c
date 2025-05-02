@@ -20,7 +20,7 @@ static struct k_work_delayable periodic_work;
 
 /**
  * @brief Read data from a sensor and check for errors
- * 
+ *
  * @param sensor_func Pointer to the function that reads the sensor data
  * @param sensor_name Name of the sensor for logging
  * @return true if reading was successful
@@ -120,7 +120,7 @@ static bool schedule_work_task(int64_t delay)
  *
  * @param work Address of work item.
  */
-static void periodic_task(struct k_work* work)
+static void periodic_task(struct k_work *work)
 {
     LOG_INF("Periodic task begin");
 
@@ -165,7 +165,7 @@ static void periodic_task(struct k_work* work)
     if (delay < 0)
     {
         LOG_ERR("Missed deadline, scheduling immediately!");
-        delay = 0;  // Prevent negative delay
+        delay = 0; // Prevent negative delay
     }
     success = schedule_work_task(delay);
     if (!success)

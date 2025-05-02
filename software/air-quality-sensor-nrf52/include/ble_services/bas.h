@@ -19,6 +19,4 @@ float bt_bas_get_battery_level(void);
  */
 int bt_bas_set_battery_level(float new_battery_level);
 
-
-
 #endif // BAS_H

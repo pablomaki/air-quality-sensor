@@ -12,13 +12,13 @@ static uint8_t battery_level = 0;
 static bool batt_lvl_notif_enabled = false;
 
 // Handle for bas characteristics
-static struct bt_gatt_attr * batt_lvl_handle;
+static struct bt_gatt_attr *batt_lvl_handle;
 
 /**
  * @brief Battery level client characteristic configuration changed callback
- * 
- * @param attr 
- * @param value 
+ *
+ * @param attr
+ * @param value
  */
 static void batt_lvl_ccc_cfg_changed(const struct bt_gatt_attr *attr, uint16_t value)
 {
@@ -38,8 +38,8 @@ static void batt_lvl_ccc_cfg_changed(const struct bt_gatt_attr *attr, uint16_t v
  *  @return number of bytes read in case of success or negative values in case of error.
  */
 ssize_t read_batt_lvl(struct bt_conn *conn,
-								  const struct bt_gatt_attr *attr, void *buf,
-								  uint16_t len, uint16_t offset)
+					  const struct bt_gatt_attr *attr, void *buf,
+					  uint16_t len, uint16_t offset)
 {
 	const uint8_t *sensor_value_ptr = (const uint8_t *)attr->user_data;
 	return bt_gatt_attr_read(conn, attr, buf, len, offset, sensor_value_ptr, sizeof(*sensor_value_ptr));
@@ -73,12 +73,12 @@ int bt_bas_set_battery_level(float new_battery_level)
 
 /**
  * @brief Initialize handles for characteristics
- * 
- * @return int 
+ *
+ * @return int
  */
 static int bas_init(void)
 {
-    batt_lvl_handle = bt_gatt_find_by_uuid(bas.attrs, 0, BT_UUID_BAS_BATTERY_LEVEL);
+	batt_lvl_handle = bt_gatt_find_by_uuid(bas.attrs, 0, BT_UUID_BAS_BATTERY_LEVEL);
 	return 0;
 }
 

@@ -76,7 +76,7 @@ int bt_ess_set_pressure(float new_pressure);
  * Update the characteristic value of the CO2 concentration
  *
  *  @param new_co2_concentration The new CO2 concentration in ppm.
- 
+
  *  @return Zero in case of success and error code in case of error.
  */
 int bt_ess_set_co2_concentration(float new_co2_concentration);
@@ -90,7 +90,5 @@ int bt_ess_set_co2_concentration(float new_co2_concentration);
  *  @return Zero in case of success and error code in case of error.
  */
 int bt_ess_set_voc_index(float new_voc_index);
-
-
 
 #endif // ESS_H

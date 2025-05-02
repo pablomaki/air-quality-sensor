@@ -1,11 +1,11 @@
 #include <variables.h>
 
-static float battery_level = 0.0;						// battery level variable
-static float temperature = 0.0;							// temperature variable
-static float humidity = 0.0;							// humidity variable
-static float pressure = 0.0;							// pressure variable
-static float co2_concentration = 0.0;					// CO2 concentration variable
-static float voc_index = 0.0;							// VOC index variable
+static float battery_level = 0.0;	  // battery level variable
+static float temperature = 0.0;		  // temperature variable
+static float humidity = 0.0;		  // humidity variable
+static float pressure = 0.0;		  // pressure variable
+static float co2_concentration = 0.0; // CO2 concentration variable
+static float voc_index = 0.0;		  // VOC index variable
 
 void set_battery_level(float new_battery_level)
 {

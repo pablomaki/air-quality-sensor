@@ -16,7 +16,7 @@ typedef enum
 
 /**
  * @brief Initialize state handler
- * 
+ *
  * @return int, 0 if ok, non-zero if an error occured
  */
 int init_state_handler(void);

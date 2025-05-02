@@ -28,10 +28,10 @@ typedef enum
  *
  */
 static const struct bt_data adv_data[] = {
-    BT_DATA_BYTES(BT_DATA_FLAGS, (BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR)),  // Options
+    BT_DATA_BYTES(BT_DATA_FLAGS, (BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR)), // Options
     BT_DATA_BYTES(BT_DATA_UUID16_ALL,
                   BT_UUID_16_ENCODE(BT_UUID_BAS_VAL),
-                  BT_UUID_16_ENCODE(BT_UUID_ESS_VAL))};  // Battery & Environmental sensing service
+                  BT_UUID_16_ENCODE(BT_UUID_ESS_VAL))}; // Battery & Environmental sensing service
 
 /**
  * @brief Work queue for handling ble timeout
@@ -49,7 +49,7 @@ static ble_state_t ble_state = BLE_STATE_NOT_SET;
  * @brief Stores the current connection information
  *
  */
-static struct bt_conn* current_conn;
+static struct bt_conn *current_conn;
 
 /**
  * @brief Callback for when connection is closed or timeout is triggered
@@ -84,7 +84,7 @@ static ble_state_t get_ble_state(void)
  *  @param conn Connection object.
  *  @param reason BT_HCI_ERR_* reason for the disconnection.
  */
-static void on_disconnect(struct bt_conn* conn, uint8_t reason)
+static void on_disconnect(struct bt_conn *conn, uint8_t reason)
 {
     LOG_INF("Device disconnected.");
     k_work_cancel_delayable(&stop_ble_work);
@@ -120,7 +120,7 @@ void stop_advertise(void)
  *  @param conn New connection object.
  *  @param err HCI error. Zero for success, non-zero otherwise.
  */
-static void on_connect(struct bt_conn* conn, uint8_t err)
+static void on_connect(struct bt_conn *conn, uint8_t err)
 {
     if (err)
     {
@@ -128,7 +128,7 @@ static void on_connect(struct bt_conn* conn, uint8_t err)
         return;
     }
     current_conn = bt_conn_ref(conn);
-    const bt_addr_le_t* addr = bt_conn_get_dst(conn);
+    const bt_addr_le_t *addr = bt_conn_get_dst(conn);
     char addr_str[BT_ADDR_LE_STR_LEN];
     bt_addr_le_to_str(addr, addr_str, sizeof(addr_str));
 
@@ -159,7 +159,7 @@ void disconnect(void)
  *
  * @param work Work item
  */
-static void ble_timeout(struct k_work* work)
+static void ble_timeout(struct k_work *work)
 {
     if (get_ble_state() == BLE_ADVERTISING)
     {
@@ -211,7 +211,7 @@ static const struct bt_le_adv_param adv_params_multi_whitelist = {
         BT_LE_ADV_OPT_CONNECTABLE | BT_LE_ADV_OPT_FILTER_CONN | BT_LE_ADV_OPT_USE_IDENTITY | BT_LE_ADV_OPT_ONE_TIME,
     .interval_min = BT_GAP_ADV_FAST_INT_MIN_2,
     .interval_max = BT_GAP_ADV_FAST_INT_MAX_2,
-    .peer = NULL,  // NULL means use acceptlist (multiple allowed)
+    .peer = NULL, // NULL means use acceptlist (multiple allowed)
 };
 #endif
 

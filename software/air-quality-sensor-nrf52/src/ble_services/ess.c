@@ -22,7 +22,7 @@ static bool voc_idx_notif_enabled = false;
 
 /**
  * @brief Handle for ess characteristics
- * 
+ *
  */
 struct ess_handles
 {
@@ -37,9 +37,9 @@ static struct ess_handles ess_handle;
 #ifdef ENABLE_SHT4X
 /**
  * @brief Temperature client characteristic configuration changed callback
- * 
- * @param attr 
- * @param value 
+ *
+ * @param attr
+ * @param value
  */
 static void temp_ccc_cfg_changed(const struct bt_gatt_attr *attr, uint16_t value)
 {
@@ -48,9 +48,9 @@ static void temp_ccc_cfg_changed(const struct bt_gatt_attr *attr, uint16_t value
 
 /**
  * @brief Humidity client characteristic configuration changed callback
- * 
- * @param attr 
- * @param value 
+ *
+ * @param attr
+ * @param value
  */
 static void hum_ccc_cfg_changed(const struct bt_gatt_attr *attr, uint16_t value)
 {
@@ -61,9 +61,9 @@ static void hum_ccc_cfg_changed(const struct bt_gatt_attr *attr, uint16_t value)
 #ifdef ENABLE_BMP390
 /**
  * @brief Pressure client characteristic configuration changed callback
- * 
- * @param attr 
- * @param value 
+ *
+ * @param attr
+ * @param value
  */
 static void press_ccc_cfg_changed(const struct bt_gatt_attr *attr, uint16_t value)
 {
@@ -74,9 +74,9 @@ static void press_ccc_cfg_changed(const struct bt_gatt_attr *attr, uint16_t valu
 #ifdef ENABLE_SCD4X
 /**
  * @brief CO2 concentration client characteristic configuration changed callback
- * 
- * @param attr 
- * @param value 
+ *
+ * @param attr
+ * @param value
  */
 static void co2_conc_ccc_cfg_changed(const struct bt_gatt_attr *attr, uint16_t value)
 {
@@ -87,9 +87,9 @@ static void co2_conc_ccc_cfg_changed(const struct bt_gatt_attr *attr, uint16_t v
 #ifdef ENABLE_SGP40
 /**
  * @brief VOC client characteristic configuration changed callback
- * 
- * @param attr 
- * @param value 
+ *
+ * @param attr
+ * @param value
  */
 static void voc_idx_ccc_cfg_changed(const struct bt_gatt_attr *attr, uint16_t value)
 {
@@ -244,8 +244,8 @@ int bt_ess_set_voc_index(float new_voc_index)
 
 /**
  * @brief Initialize handles for characteristics
- * 
- * @return int 
+ *
+ * @return int
  */
 static int ess_init(void)
 {
@@ -255,7 +255,7 @@ static int ess_init(void)
 #endif
 
 #ifdef ENABLE_BMP390
-    ess_handle.press_handle  = bt_gatt_find_by_uuid(ess.attrs, 0, BT_UUID_PRESSURE);
+    ess_handle.press_handle = bt_gatt_find_by_uuid(ess.attrs, 0, BT_UUID_PRESSURE);
 #endif
 
 #ifdef ENABLE_SCD4X
@@ -265,7 +265,7 @@ static int ess_init(void)
 #ifdef ENABLE_SGP40
     ess_handle.voc_idx_handle = bt_gatt_find_by_uuid(ess.attrs, 0, BT_UUID_GATT_VOCCONC);
 #endif
-	return 0;
+    return 0;
 }
 
 SYS_INIT(ess_init, APPLICATION, CONFIG_APPLICATION_INIT_PRIORITY);

@@ -24,7 +24,7 @@
 #define ENABLE_BMP390
 
 // Environment
-#define ALTITUDE 10 // meters
+#define ALTITUDE 10          // meters
 #define TEMPERATURE_OFFSET 0 // meters
 
 // Screen
