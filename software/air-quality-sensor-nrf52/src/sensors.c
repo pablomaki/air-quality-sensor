@@ -121,8 +121,8 @@ int read_sht4x_data()
     // Save values
     set_temperature(sensor_value_to_float(&temperature));
     set_humidity(sensor_value_to_float(&humidity));
-    LOG_INF("SHT4X TEMPERATURE: %d.%d", temperature.val1, temperature.val2);
-    LOG_INF("SHT4X HUMIDITY: %d.%d", humidity.val1, humidity.val2);
+    LOG_INF("SHT4X temperature: %d.%d °C", temperature.val1, temperature.val2);
+    LOG_INF("SHT4X humidity: %d.%d \%RH", humidity.val1, humidity.val2);
     return 0;
 }
 #endif
@@ -156,7 +156,7 @@ int read_sgp40_data()
 
     // Save values
     set_voc_index(sensor_value_to_float(&voc_index));
-    LOG_INF("SGP40 VOC INDEX: %d.%d", voc_index.val1, voc_index.val2);
+    LOG_INF("SGP40 VOC index (0 - 500): %d.%d", voc_index.val1, voc_index.val2);
     return 0;
 }
 #endif
@@ -182,8 +182,8 @@ int read_bmp390_data()
 
     // Save values
     set_pressure(sensor_value_to_float(&pressure));
-    LOG_INF("BMP390 PRESSURE: %d.%d", pressure.val1 / 100, (pressure.val1 % 100) + pressure.val2 / 100);
-    LOG_INF("BMP390 TEMPERATURE: %d.%d", temperature_3.val1, temperature_3.val2);
+    LOG_INF("BMP390 pressure: %d.%d hPa", pressure.val1 / 100, (pressure.val1 % 100) + pressure.val2 / 100);
+    LOG_INF("BMP390 temperature: %d.%d °C", temperature_3.val1, temperature_3.val2);
     return 0;
 }
 #endif
@@ -224,9 +224,9 @@ int read_scd4x_data()
     set_temperature(sensor_value_to_float(&temperature_2));
     set_humidity(sensor_value_to_float(&humidity_2));
 #endif
-    LOG_INF("SCD4X CO2 CONCENTRATION: %d.%d", co2_concentration.val1, co2_concentration.val2);
-    LOG_INF("SCD4X TEMPERATURE: %d.%d", temperature_2.val1, temperature_2.val2);
-    LOG_INF("SCD4X HUMIDITY: %d.%d", humidity_2.val1, humidity_2.val2);
+    LOG_INF("SCD4X CO2 concentration: %d.%d ppm", co2_concentration.val1, co2_concentration.val2);
+    LOG_INF("SCD4X temperature: %d.%d °C", temperature_2.val1, temperature_2.val2);
+    LOG_INF("SCD4X humidity: %d.%d \%RH", humidity_2.val1, humidity_2.val2);
     return 0;
 }
 #endif
