@@ -58,14 +58,14 @@
 /*
  * Value range of compensation data parameters
  */
-#define SCD4X_COMP_MIN_ALT 0	 // meters
-#define SCD4X_COMP_MAX_ALT 3000	 // meters
-#define SCD4X_OFFSET_TEMP_MIN 0	 // meters
-#define SCD4X_OFFSET_TEMP_MAX 20 // meters
-#define SCD4X_COMP_MIN_AP 70	 // kilopascals
-#define SCD4X_COMP_MAX_AP 120	 // kilopascals
-#define SCD4X_COMP_DEFAULT_ALT 0
-#define SCD4X_COMP_DEFAULT_AP 101300
+#define SCD4X_COMP_MIN_ALT 0		 // meters
+#define SCD4X_COMP_MAX_ALT 3000		 // meters
+#define SCD4X_OFFSET_TEMP_MIN 0		 // meters
+#define SCD4X_OFFSET_TEMP_MAX 20	 // meters
+#define SCD4X_COMP_MIN_AP 70000		 // pascals
+#define SCD4X_COMP_MAX_AP 120000	 // pascals
+#define SCD4X_COMP_DEFAULT_ALT 0	 // meters
+#define SCD4X_COMP_DEFAULT_AP 101300 // pascals
 
 /**
  * @brief SCD4X mode of operation.

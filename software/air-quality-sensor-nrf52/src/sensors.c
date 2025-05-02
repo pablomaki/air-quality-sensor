@@ -66,7 +66,7 @@ int init_sensors(void)
         LOG_ERR("Device sgp40 is not ready.");
         return -ENXIO;
     }
-    GasIndexAlgorithm_init_with_sampling_interval(&voc_params, GasIndexAlgorithm_ALGORITHM_TYPE_VOC, DATA_INTERVAL/1000);
+    GasIndexAlgorithm_init_with_sampling_interval(&voc_params, GasIndexAlgorithm_ALGORITHM_TYPE_VOC, DATA_INTERVAL / 1000);
 #endif
 
 #ifdef ENABLE_SCD4X
@@ -182,7 +182,7 @@ int read_bmp390_data()
 
     // Save values
     set_pressure(sensor_value_to_float(&pressure));
-    LOG_INF("BMP390 PRESSURE: %d.%d", pressure.val1, pressure.val2);
+    LOG_INF("BMP390 PRESSURE: %d.%d", pressure.val1 / 100, (pressure.val1 % 100) + pressure.val2 / 100);
     LOG_INF("BMP390 TEMPERATURE: %d.%d", temperature_3.val1, temperature_3.val2);
     return 0;
 }

@@ -203,11 +203,9 @@ static int bmp390_press_channel_get(const struct device *dev, struct sensor_valu
 
     uint64_t tmp = bmp390_compensate_press(dev);
 
-    /* tmp is in hundredths of Pa. Convert to kPa as specified in sensor
-     * interface.
-     */
-    val->val1 = tmp / 100000;
-    val->val2 = (tmp % 100000) * 10;
+    // tmp is in hundredths of Pa. Convert to Pa
+    val->val1 = tmp / 100;
+    val->val2 = (tmp % 100);
 
     return 0;
 }

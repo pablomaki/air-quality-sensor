@@ -214,7 +214,7 @@ static int scd4x_attr_set(const struct device *dev,
         {
             return -EINVAL;
         }
-        ticks = (val->val1 * 1000 + val->val2) / 100.0;
+        ticks = (float)val->val1 / 100.0;
         rc = scd4x_write_reg(dev, SCD4X_CMD_SET_AMBIENT_PRESSURE, &ticks, 1);
         break;
 
