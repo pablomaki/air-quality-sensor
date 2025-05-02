@@ -37,8 +37,8 @@ static GasIndexAlgorithmParams voc_params;
 #ifdef ENABLE_SCD4X
 static const struct device *scd4x_dev_p;
 static struct sensor_value co2_concentration, temperature_2, humidity_2;
-static struct sensor_value asc_initial_period = {(2 * 24 * 60 * 60) / (DATA_INTERVAL / 1000) / 12, 0};
-static struct sensor_value asc_standard_period = {(7 * 24 * 60 * 60) / (DATA_INTERVAL / 1000) / 12, 0};
+static struct sensor_value asc_initial_period = {(2 * 24 * 60 * 60) / (MEASUREMENT_INTERVAL / 1000) / 12, 0};
+static struct sensor_value asc_standard_period = {(7 * 24 * 60 * 60) / (MEASUREMENT_INTERVAL / 1000) / 12, 0};
 static struct sensor_value sensor_altitude = {ALTITUDE, 0};
 static struct sensor_value temperature_offset = {TEMPERATURE_OFFSET, 0};
 #endif
@@ -66,7 +66,7 @@ int init_sensors(void)
         LOG_ERR("Device sgp40 is not ready.");
         return -ENXIO;
     }
-    GasIndexAlgorithm_init_with_sampling_interval(&voc_params, GasIndexAlgorithm_ALGORITHM_TYPE_VOC, DATA_INTERVAL / 1000);
+    GasIndexAlgorithm_init_with_sampling_interval(&voc_params, GasIndexAlgorithm_ALGORITHM_TYPE_VOC, MEASUREMENT_INTERVAL / 1000);
 #endif
 
 #ifdef ENABLE_SCD4X
@@ -100,7 +100,7 @@ int init_sensors(void)
 }
 
 #ifdef ENABLE_SHT4X
-int read_sht4x_data()
+int read_sht4x_data(uint8_t index)
 {
     int err, err2;
     err = sensor_sample_fetch(sht4x_dev_p);
@@ -119,8 +119,8 @@ int read_sht4x_data()
     }
 
     // Save values
-    set_temperature(sensor_value_to_float(&temperature));
-    set_humidity(sensor_value_to_float(&humidity));
+    set_temperature(sensor_value_to_float(&temperature), index);
+    set_humidity(sensor_value_to_float(&humidity), index);
     LOG_INF("SHT4X temperature: %d.%d °C", temperature.val1, temperature.val2);
     LOG_INF("SHT4X humidity: %d.%d \%RH", humidity.val1, humidity.val2);
     return 0;
@@ -128,7 +128,7 @@ int read_sht4x_data()
 #endif
 
 #ifdef ENABLE_SGP40
-int read_sgp40_data()
+int read_sgp40_data(uint8_t index)
 {
     int err, err2;
     err = sensor_attr_set(sgp40_dev_p, SENSOR_CHAN_GAS_RES, SENSOR_ATTR_SGP40_TEMPERATURE, &temperature);
@@ -155,14 +155,14 @@ int read_sgp40_data()
     GasIndexAlgorithm_process(&voc_params, voc_raw.val1, &voc_index.val1);
 
     // Save values
-    set_voc_index(sensor_value_to_float(&voc_index));
+    set_voc_index(sensor_value_to_float(&voc_index), index);
     LOG_INF("SGP40 VOC index (0 - 500): %d.%d", voc_index.val1, voc_index.val2);
     return 0;
 }
 #endif
 
 #ifdef ENABLE_BMP390
-int read_bmp390_data()
+int read_bmp390_data(uint8_t index)
 {
     int err;
     err = sensor_sample_fetch(bmp390_dev_p);
@@ -181,7 +181,7 @@ int read_bmp390_data()
     }
 
     // Save values
-    set_pressure(sensor_value_to_float(&pressure));
+    set_pressure(sensor_value_to_float(&pressure), index);
     LOG_INF("BMP390 pressure: %d.%d hPa", pressure.val1 / 100, (pressure.val1 % 100) + pressure.val2 / 100);
     LOG_INF("BMP390 temperature: %d.%d °C", temperature_3.val1, temperature_3.val2);
     return 0;
@@ -189,7 +189,7 @@ int read_bmp390_data()
 #endif
 
 #ifdef ENABLE_SCD4X
-int read_scd4x_data()
+int read_scd4x_data(uint8_t index)
 {
     int err, err2, err3;
 
@@ -219,10 +219,10 @@ int read_scd4x_data()
     }
 
     // Save values
-    set_co2_concentration(sensor_value_to_float(&co2_concentration));
+    set_co2_concentration(sensor_value_to_float(&co2_concentration), index);
 #ifndef ENABLE_SHT4X
-    set_temperature(sensor_value_to_float(&temperature_2));
-    set_humidity(sensor_value_to_float(&humidity_2));
+    set_temperature(sensor_value_to_float(&temperature_2), index);
+    set_humidity(sensor_value_to_float(&humidity_2, index));
 #endif
     LOG_INF("SCD4X CO2 concentration: %d.%d ppm", co2_concentration.val1, co2_concentration.val2);
     LOG_INF("SCD4X temperature: %d.%d °C", temperature_2.val1, temperature_2.val2);

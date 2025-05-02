@@ -8,9 +8,11 @@
 // #define ENABLE_CONN_FILTER_LIST // Use filter list for connections (not finished)
 
 // Data config
-#define FIRST_TASK_DELAY 10000 // milliseconds
-#define DATA_INTERVAL 60000    // milliseconds
-#define BLE_TIMEOUT 10000      // milliseconds
+#define FIRST_TASK_DELAY 1000                                                   // milliseconds
+#define ADVERTISEMENT_INTERVAL 60000                                            // milliseconds
+#define BLE_TIMEOUT 10000                                                       // milliseconds
+#define MEASUREMENTS_PER_INTERVAL 3                                             // Number of measurements per interval
+#define MEASUREMENT_INTERVAL ADVERTISEMENT_INTERVAL / MEASUREMENTS_PER_INTERVAL // milliseconds
 
 // LED config
 #define LED_BLINK_INTERVAL 50 // milliseconds

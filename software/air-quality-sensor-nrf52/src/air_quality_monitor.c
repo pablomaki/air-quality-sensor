@@ -26,9 +26,9 @@ static struct k_work_delayable periodic_work;
  * @return true if reading was successful
  * @return false if there was an error
  */
-static bool check_sensor_reading(int (*sensor_func)(void), const char *sensor_name)
+static bool check_sensor_reading(int (*sensor_func)(uint8_t), const char *sensor_name, uint8_t measurement_counter)
 {
-    int err = sensor_func();
+    int err = sensor_func(measurement_counter);
     if (err)
     {
         LOG_ERR("Error reading %s sensor data (err %d)", sensor_name, err);
@@ -40,29 +40,30 @@ static bool check_sensor_reading(int (*sensor_func)(void), const char *sensor_na
 /**
  * @brief Read data from each sensor
  *
+ * @param measurement_counter Counter for the number of measurements
  * @return true if all sensors return ok after reading
  * @return false if one or more sensors return with an error
  */
-static bool read_sensors(void)
+static bool read_sensors(uint8_t measurement_counter)
 {
     bool success = true;
 
-    success &= check_sensor_reading(read_battery_level, "battery");
+    success &= check_sensor_reading(read_battery_level, "battery", measurement_counter);
 
 #ifdef ENABLE_SHT4X
-    success &= check_sensor_reading(read_sht4x_data, "sht4x");
+    success &= check_sensor_reading(read_sht4x_data, "sht4x", measurement_counter);
 #endif
 
 #ifdef ENABLE_SGP40
-    success &= check_sensor_reading(read_sgp40_data, "sgp40");
+    success &= check_sensor_reading(read_sgp40_data, "sgp40", measurement_counter);
 #endif
 
 #ifdef ENABLE_BMP390
-    success &= check_sensor_reading(read_bmp390_data, "bmp390");
+    success &= check_sensor_reading(read_bmp390_data, "bmp390", measurement_counter);
 #endif
 
 #ifdef ENABLE_SCD4X
-    success &= check_sensor_reading(read_scd4x_data, "scd4x");
+    success &= check_sensor_reading(read_scd4x_data, "scd4x", measurement_counter);
 #endif
 
     return success;
@@ -116,12 +117,46 @@ static bool schedule_work_task(int64_t delay)
 }
 
 /**
+ * @brief Enter idle mode
+ *
+ */
+static void idle(void)
+{
+    set_state(IDLE);
+    int err;
+    err = enter_low_power_mode();
+    if (err)
+    {
+        LOG_ERR("Something in entering/exiting the low power mode failed (err %d)", err);
+        set_state(ERROR);
+    }
+}
+
+/**
+ * @brief Calculate the delay for the next task
+ *
+ * @param start_time_ms Start time of the task
+ * @return int64_t Delay in milliseconds
+ */
+static int64_t calculate_task_delay(int64_t start_time_ms)
+{
+    int64_t delay = MEASUREMENT_INTERVAL - (k_uptime_get() - start_time_ms);
+    if (delay < 0)
+    {
+        LOG_ERR("Missed deadline, scheduling immediately!");
+        delay = 0; // Prevent negative delay
+    }
+    return delay;
+}
+
+/**
  * @brief Periodic task that takes care of reading sensor data and advertising it over BLE
  *
  * @param work Address of work item.
  */
 static void periodic_task(struct k_work *work)
 {
+    static uint8_t measurement_counter = 0;
     LOG_INF("Periodic task begin");
 
     // Wake up from the sleep (turn on all necessary peripherals)
@@ -134,10 +169,27 @@ static void periodic_task(struct k_work *work)
     bool success;
 
     LOG_INF("Read sensors");
-    success = read_sensors();
+    success = read_sensors(measurement_counter);
     if (!success)
     {
         dispatch_event(PERIODIC_TASK_WARNING);
+    }
+    measurement_counter++;
+    LOG_INF("Periodic measurement %d/%d done.", measurement_counter, MEASUREMENTS_PER_INTERVAL);
+
+    if (measurement_counter < MEASUREMENTS_PER_INTERVAL)
+    {
+        LOG_INF("Periodic task done, scheduling a new task");
+        int64_t delay = calculate_task_delay(start_time_ms);
+        success = schedule_work_task(delay);
+        if (!success)
+        {
+            dispatch_event(PERIODIC_TASK_ERROR);
+            set_state(ERROR);
+        }
+        LOG_INF("Task scheduled, entering idle state.");
+        idle();
+        return;
     }
 
 #ifdef ENABLE_EPD
@@ -159,14 +211,7 @@ static void periodic_task(struct k_work *work)
     }
 
     LOG_INF("Periodic task done, scheduling a new task");
-
-    // Calculate required interval for sleeping to  execute periodic task once per WAKEUP_INTERVAL_MS
-    int64_t delay = DATA_INTERVAL - (k_uptime_get() - start_time_ms);
-    if (delay < 0)
-    {
-        LOG_ERR("Missed deadline, scheduling immediately!");
-        delay = 0; // Prevent negative delay
-    }
+    int64_t delay = calculate_task_delay(start_time_ms);
     success = schedule_work_task(delay);
     if (!success)
     {
@@ -175,22 +220,7 @@ static void periodic_task(struct k_work *work)
     }
 
     LOG_INF("Task scheduled, waiting BLE communication to stop before idle.");
-}
-
-/**
- * @brief Enter idle mode
- *
- */
-static void idle(void)
-{
-    set_state(IDLE);
-    int err;
-    err = enter_low_power_mode();
-    if (err)
-    {
-        LOG_ERR("Something in entering/exiting the low power mode failed (err %d)", err);
-        set_state(ERROR);
-    }
+    measurement_counter = 0; // Reset the measurement counter
 }
 
 /**
