@@ -4,7 +4,7 @@
 #include <power_manager.h>
 #include <configs.h>
 #include <sensors.h>
-#include <drivers/battery.h>
+#include <drivers/battery_monitor.h>
 #include <variables.h>
 #include <event_handler.h>
 #include <state_handler.h>
@@ -47,8 +47,6 @@ static bool check_sensor_reading(int (*sensor_func)(uint8_t), const char *sensor
 static bool read_sensors(uint8_t measurement_counter)
 {
     bool success = true;
-
-    success &= check_sensor_reading(read_battery_level, "battery", measurement_counter);
 
 #ifdef ENABLE_SHT4X
     success &= check_sensor_reading(read_sht4x_data, "sht4x", measurement_counter);
@@ -168,6 +166,13 @@ static void periodic_task(struct k_work *work)
 
     bool success;
 
+    LOG_INF("Read battery level");
+    success = check_sensor_reading(read_battery_level, "battery", measurement_counter);
+    if (!success)
+    {
+        dispatch_event(PERIODIC_TASK_WARNING);
+    }
+
     LOG_INF("Read sensors");
     success = read_sensors(measurement_counter);
     if (!success)
@@ -188,6 +193,7 @@ static void periodic_task(struct k_work *work)
             set_state(ERROR);
         }
         LOG_INF("Task scheduled, entering idle state.");
+        dispatch_event(PERIODIC_TASK_SUCCESS);
         idle();
         return;
     }
@@ -310,6 +316,18 @@ int init_air_quality_monitor(void)
         return err;
     }
     LOG_INF("Sensors initialized succesfully.");
+
+    // Initialize battery monitor
+    LOG_INF("Initializing the battery monitor...");
+    err = init_battery_monitor();
+    if (err)
+    {
+        LOG_ERR("Error while initializing the battery monitor (err %d)", err);
+        dispatch_event(INITIALIZATION_ERROR);
+        set_state(ERROR);
+        return err;
+    }
+    LOG_INF("Battery monitor initialized succesfully.");
 
     // Initialize periodic task and time the first task in 10 seconds
     LOG_INF("Initializing the periodic task for measuring and advertising data...");

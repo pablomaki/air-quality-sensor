@@ -1,0 +1,22 @@
+description: binding for Seeed XIAO nRF52 battery monitor
+
+compatible: "seeed,xiao-nrf52-bm"
+
+properties:
+  enable-charging-gpios:
+    type: phandle-array
+    required: true
+    description: |
+      GPIO for enabling charging
+
+  read-gpios:
+    type: phandle-array
+    required: true
+    description: |
+      GPIO for reading the battery voltage
+
+  charge-current-select-gpios:
+    type: phandle-array
+    required: true
+    description: |
+      GPIO for selecting the charging speed (high = 100mA, low = 50mA)

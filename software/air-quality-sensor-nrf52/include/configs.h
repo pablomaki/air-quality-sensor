@@ -32,6 +32,16 @@
 // Screen
 // #define ENABLE_EPD //Enable or disable the screen
 
+// Battery monitor
+#define BATTERY_TYPE_SAMSUNG_Q30 // Used battery type currently supported choices: BATTERY_TYPE_SAMSUNG_Q30
+#define BM_ADC_ID 0
+#define USE_FAST_CHARGING 1 // 0 for slow (50 mA) charging, 1 for fast (100 mA) charging
+#define ADC_SAMPLES_TOTAL 10
+#define ADC_SAMPLE_INTERVAL_US 500
+#define BM_ADC_RESOLUTION 12
+#define VOLTAGE_DIVIDER_R1 1031 // 1Mohm
+#define VOLTAGE_DIVIDER_R2 510  // 510kohm
+
 // Value scaling and min max for warning
 #define TEMPERATURE_SCALE 100
 #define TEMPERATURE_MIN -100

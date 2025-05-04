@@ -11,6 +11,15 @@
 // For more help, browse the DeviceTree documentation at https: //docs.zephyrproject.org/latest/guides/dts/index.html
 // You can also visit the nRF DeviceTree extension documentation at https: //docs.nordicsemi.com/bundle/nrf-connect-vscode/page/guides/ncs_configure_app.html#devicetree-support-in-the-extension
 
+/ {
+	xiao_nrf52_bm: xiao_nrf52_bm{
+		compatible = "seeed,xiao-nrf52-bm";
+		enable-charging-gpios = <&gpio0 17 GPIO_ACTIVE_LOW>;
+		read-gpios = <&gpio0 14 GPIO_ACTIVE_LOW>;
+		charge-current-select-gpios = <&gpio0 13 GPIO_ACTIVE_LOW>;
+	};
+};
+
 &i2c1 {
 	status = "okay";
 	clock-frequency = <I2C_BITRATE_FAST>;
@@ -24,7 +33,7 @@
 		status = "okay";
 		compatible = "sensirion,sgp40";
 		reg = <0x59>;
-		enable-selftest;
+		// enable-selftest;
 	};
 	bmp390@77 {
 		status = "okay";
@@ -38,12 +47,12 @@
 		enable-pressure;
 		enable-temp;
 	};
-	scd41@62 {
+	scd412@62 {
 		status = "okay";
 		compatible = "sensirion,scd41";
 		reg = <0x62>;
 		mode = <2>;
-		enable-selftest;
+		// enable-selftest;
 	};
 };
 
@@ -57,7 +66,7 @@
 };
 
 &adc {
-	status = "disabled";
+	status = "okay";
 };
 
 &uart0 {
@@ -66,6 +75,10 @@
 
 &pwm0 {
 	status = "disabled";
+};
+
+&gpio0 {
+	status = "okay";
 };
 
 
