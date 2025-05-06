@@ -1,13 +1,13 @@
 #include <air_quality_monitor.h>
-#include <bluetooth_handler.h>
-#include <drivers/e_ink_display.h>
-#include <power_manager.h>
+#include <components/bluetooth_handler.h>
+#include <components/e_ink_display.h>
+#include <components/power_manager.h>
 #include <configs.h>
-#include <sensors.h>
-#include <drivers/battery_monitor.h>
-#include <variables.h>
-#include <event_handler.h>
-#include <state_handler.h>
+#include <components/sensors.h>
+#include <components/battery_monitor.h>
+#include <utils/variables.h>
+#include <components/event_handler.h>
+#include <components/state_handler.h>
 
 #include <zephyr/logging/log.h>
 

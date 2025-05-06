@@ -1,4 +1,4 @@
-#include <event_handler.h>
+#include <components/event_handler.h>
 #include <configs.h>
 #include <drivers/led_controller.h>
 

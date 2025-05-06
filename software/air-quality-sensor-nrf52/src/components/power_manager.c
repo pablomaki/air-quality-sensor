@@ -1,4 +1,4 @@
-#include <power_manager.h>
+#include <components/power_manager.h>
 #include <configs.h>
 
 #include <zephyr/logging/log.h>

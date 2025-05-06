@@ -1,6 +1,6 @@
-#include <bluetooth_handler.h>
+#include <components/bluetooth_handler.h>
 #include <configs.h>
-#include <variables.h>
+#include <utils/variables.h>
 #include <ble_services/ess.h>
 #include <ble_services/bas.h>
 

@@ -1,6 +1,6 @@
-#include <sensors.h>
+#include <components/sensors.h>
 #include <configs.h>
-#include <variables.h>
+#include <utils/variables.h>
 
 #include <sensirion_gas_index_algorithm.h>
 
