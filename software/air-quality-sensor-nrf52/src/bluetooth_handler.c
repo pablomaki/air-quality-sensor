@@ -252,48 +252,46 @@ int update_advertisement_data()
 
     int err;
     int ret = 0;
-    err = bt_bas_set_battery_level(get_battery_level());
+    err = bt_bas_set_battery_level(get_mean(BATTERY_LEVEL));
     if (err)
     {
-        LOG_WRN("Battery level outside of the expected limits (err %d, value %d)", err, (uint8_t)get_battery_level());
+        LOG_WRN("Battery level outside of the expected limits (err %d, value %d)", err, (uint16_t)(BATTERY_LEVEL));
     }
 
 #ifdef ENABLE_SHT4X
-    err = bt_ess_set_temperature(get_temperature());
+    err = bt_ess_set_temperature(get_mean(TEMPERATURE));
     if (err)
     {
-        LOG_WRN("Temperature outside of the expected limits (err %d, value %d)", err, (uint8_t)get_temperature());
+        LOG_WRN("Temperature outside of the expected limits (err %d, value %d)", err, (uint16_t)get_mean(TEMPERATURE));
     }
-    err = bt_ess_set_humidity(get_humidity());
+    err = bt_ess_set_humidity(get_mean(HUMIDITY));
     if (err)
     {
-        LOG_WRN("Humidity outside of the expected limits (err %d, value %d)", err, (uint8_t)get_humidity());
+        LOG_WRN("Humidity outside of the expected limits (err %d, value %d)", err, (uint16_t)get_mean(HUMIDITY));
     }
 #endif
 
 #ifdef ENABLE_BMP390
-    err = bt_ess_set_pressure(get_pressure());
+    err = bt_ess_set_pressure(get_mean(PRESSURE));
     if (err)
     {
-        LOG_WRN("Pressure outside of the expected limits (err %d, value %d)", err, (uint8_t)get_pressure());
+        LOG_WRN("Pressure outside of the expected limits (err %d, value %d)", err, (uint16_t)get_mean(PRESSURE));
     }
 #endif
 
 #ifdef ENABLE_SCD4X
-    err = bt_ess_set_co2_concentration(get_co2_concentration());
+    err = bt_ess_set_co2_concentration(get_mean(CO2_CONCENTRATION));
     if (err)
     {
-        LOG_WRN("CO2 concentration outside of the expected limits (err %d, value %d)",
-                err,
-                (uint8_t)get_co2_concentration());
+        LOG_WRN("CO2 concentration outside of the expected limits (err %d, value %d)", err, (uint16_t)get_mean(CO2_CONCENTRATION));
     }
 #endif
 
 #ifdef ENABLE_SGP40
-    err = bt_ess_set_voc_index(get_voc_index());
+    err = bt_ess_set_voc_index(get_mean(VOC_INDEX));
     if (err)
     {
-        LOG_WRN("VOC index outside of the expected limits (err %d, value %d)", err, (uint8_t)get_voc_index());
+        LOG_WRN("VOC index outside of the expected limits (err %d, value %d)", err, (uint16_t)get_mean(VOC_INDEX));
     }
 #endif
     return ret;

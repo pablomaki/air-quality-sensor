@@ -285,7 +285,7 @@ int read_battery_level(uint8_t index)
 		return rc;
 	}
 
-	set_battery_level(battery.percentage, index);
+	set_value(BATTERY_LEVEL, battery.percentage);
 	LOG_INF("Battery charge: %d %%", (uint8_t)battery.percentage);
 	LOG_INF("Battery voltage: %d mV", battery.voltage);
 	return 0;

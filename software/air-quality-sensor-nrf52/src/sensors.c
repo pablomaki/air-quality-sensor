@@ -96,6 +96,15 @@ int init_sensors(void)
         return -ENXIO;
     }
 #endif
+
+    // Initialize the buffers for the sensor values
+    err = init_buffers(MEASUREMENTS_PER_INTERVAL);
+    if (err)
+    {
+        LOG_ERR("Failed to initialize sensor value buffers (err %d)", err);
+        return -ENXIO;
+    }
+
     return 0;
 }
 
@@ -119,8 +128,8 @@ int read_sht4x_data(uint8_t index)
     }
 
     // Save values
-    set_temperature(sensor_value_to_float(&temperature), index);
-    set_humidity(sensor_value_to_float(&humidity), index);
+    set_value(TEMPERATURE, sensor_value_to_float(&temperature));
+    set_value(HUMIDITY, sensor_value_to_float(&humidity));
     LOG_INF("SHT4X temperature: %d.%d °C", temperature.val1, temperature.val2);
     LOG_INF("SHT4X humidity: %d.%d %%RH", humidity.val1, humidity.val2);
     return 0;
@@ -155,7 +164,7 @@ int read_sgp40_data(uint8_t index)
     GasIndexAlgorithm_process(&voc_params, voc_raw.val1, &voc_index.val1);
 
     // Save values
-    set_voc_index(sensor_value_to_float(&voc_index), index);
+    set_value(VOC_INDEX, sensor_value_to_float(&voc_index));
     LOG_INF("SGP40 VOC index (0 - 500): %d.%d", voc_index.val1, voc_index.val2);
     return 0;
 }
@@ -181,7 +190,7 @@ int read_bmp390_data(uint8_t index)
     }
 
     // Save values
-    set_pressure(sensor_value_to_float(&pressure), index);
+    set_value(PRESSURE, sensor_value_to_float(&pressure));
     LOG_INF("BMP390 pressure: %d.%d hPa", pressure.val1 / 100, (pressure.val1 % 100) + pressure.val2 / 100);
     LOG_INF("BMP390 temperature: %d.%d °C", temperature_3.val1, temperature_3.val2);
     return 0;
@@ -219,10 +228,10 @@ int read_scd4x_data(uint8_t index)
     }
 
     // Save values
-    set_co2_concentration(sensor_value_to_float(&co2_concentration), index);
+    set_value(CO2_CONCENTRATION, sensor_value_to_float(&co2_concentration));
 #ifndef ENABLE_SHT4X
-    set_temperature(sensor_value_to_float(&temperature_2), index);
-    set_humidity(sensor_value_to_float(&humidity_2, index));
+    set_value(TEMPERATURE, sensor_value_to_float(&temperature_2));
+    set_value(HUMIDITY, sensor_value_to_float(&humidity_2));
 #endif
     LOG_INF("SCD4X CO2 concentration: %d.%d ppm", co2_concentration.val1, co2_concentration.val2);
     LOG_INF("SCD4X temperature: %d.%d °C", temperature_2.val1, temperature_2.val2);

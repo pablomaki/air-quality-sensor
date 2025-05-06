@@ -2,95 +2,46 @@
 #define VARIABLES_H
 
 #include <stdint.h>
+#include <stddef.h>
+
+typedef enum
+{
+    BATTERY_LEVEL,
+    TEMPERATURE,
+    HUMIDITY,
+    PRESSURE,
+    CO2_CONCENTRATION,
+    VOC_INDEX,
+    NUM_VARIABLES // Total number of variables
+} variable_t;
 
 /**
- * @brief Set the battery level value
+ * @brief Initialize all buffers
  *
- * @param new_battery_level new battery level in percent
- * @param index index of the measurement
+ * @param size Size of each buffer
+ * @return 0 on success, -1 on failure
  */
-void set_battery_level(float new_battery_level, uint8_t index);
+int init_buffers(size_t size);
 
 /**
- * @brief Get the battery level value
- *
- * @return float, current battery level in percent
+ * @brief Free all buffers
  */
-float get_battery_level(void);
+void free_buffers(void);
 
 /**
- * @brief Set the temperature value
+ * @brief Set a value in the buffer
  *
- * @param new_temperature new temperature in Celcius
- * @param index index of the measurement
+ * @param variable The variable to set (e.g., TEMPERATURE)
+ * @param value The value to set
  */
-void set_temperature(float new_temperature, uint8_t index);
+void set_value(variable_t variable, float value);
 
 /**
- * @brief Get the temperature value
+ * @brief Get the mean value of a buffer
  *
- * @return float, current temperature in Celcius
+ * @param variable The variable to get (e.g., TEMPERATURE)
+ * @return The mean value of the buffer
  */
-float get_temperature(void);
-
-/**
- * @brief Set the humidity value
- *
- * @param new_humidity new humidity in RH%
- * @param index index of the measurement
- */
-void set_humidity(float new_humidity, uint8_t index);
-
-/**
- * @brief Get the humidity value
- *
- * @return float, current humidity in RH%
- */
-float get_humidity(void);
-
-/**
- * @brief Set the pressure value
- *
- * @param new_pressure new pressure in Pascal
- * @param index index of the measurement
- */
-void set_pressure(float new_pressure, uint8_t index);
-
-/**
- * @brief Get the pressure value
- *
- * @return float, current pressure in Pascal
- */
-float get_pressure(void);
-
-/**
- * @brief Set the CO2 concentration value
- *
- * @param new_co2_concentration new CO2 concentration in ppm
- * @param index index of the measurement
- */
-void set_co2_concentration(float new_co2_concentration, uint8_t index);
-
-/**
- * @brief Get the CO2 concentration value
- *
- * @return float, current CO2 concentration in ppm
- */
-float get_co2_concentration(void);
-
-/**
- * @brief Set the VOC index value
- *
- * @param new_voc_index new VOC index
- * @param index index of the measurement
- */
-void set_voc_index(float new_voc_index, uint8_t index);
-
-/**
- * @brief Get the VOC index value
- *
- * @return float, current VOC index
- */
-float get_voc_index(void);
+float get_mean(variable_t variable);
 
 #endif // VARIABLES_H

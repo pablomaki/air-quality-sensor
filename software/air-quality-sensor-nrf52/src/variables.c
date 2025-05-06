@@ -1,85 +1,55 @@
 #include <variables.h>
-#include <configs.h>
+#include <utils/variable_buffer.h>
 
-static float battery_level[MEASUREMENTS_PER_INTERVAL] = {0.0};
-static float temperature[MEASUREMENTS_PER_INTERVAL] = {0.0};
-static float humidity[MEASUREMENTS_PER_INTERVAL] = {0.0};
-static float pressure[MEASUREMENTS_PER_INTERVAL] = {0.0};
-static float co2_concentration[MEASUREMENTS_PER_INTERVAL] = {0.0};
-static float voc_index[MEASUREMENTS_PER_INTERVAL] = {0.0};
+#include <stdlib.h>
 
-/**
- * @brief Get the mean object
- *
- * @param arr Array of floats
- * @return float Mean of the array
- */
-static float get_mean(float *arr)
+static variable_buffer_t buffers[NUM_VARIABLES];
+
+int init_buffers(size_t size)
 {
-	float sum = 0.0f;
-	for (int i = 0; i < MEASUREMENTS_PER_INTERVAL; i++)
+	for (int i = 0; i < NUM_VARIABLES; i++)
 	{
-		sum += arr[i];
+		buffers[i].data = (float *)malloc(size * sizeof(float));
+		if (!buffers[i].data)
+		{
+			// Free already allocated buffers on failure
+			for (int j = 0; j < i; j++)
+			{
+				free(buffers[j].data);
+			}
+			return -1;
+		}
+		buffers[i].size = size;
+		buffers[i].index = 0;
 	}
-	return sum / MEASUREMENTS_PER_INTERVAL;
+	return 0;
 }
 
-void set_battery_level(float new_battery_level, uint8_t index)
+void free_buffers(void)
 {
-	battery_level[index] = new_battery_level;
+	for (int i = 0; i < NUM_VARIABLES; i++)
+	{
+		free(buffers[i].data);
+		buffers[i].data = NULL;
+		buffers[i].size = 0;
+		buffers[i].index = 0;
+	}
 }
 
-float get_battery_level(void)
+void set_value(variable_t variable, float value)
 {
-	return get_mean(battery_level);
+	variable_buffer_t *buffer = &buffers[variable];
+	buffer->data[buffer->index] = value;
+	buffer->index = (buffer->index + 1) % buffer->size; // Circular buffer
 }
 
-void set_temperature(float new_temperature, uint8_t index)
+float get_mean(variable_t variable)
 {
-	temperature[index] = new_temperature;
-}
-
-float get_temperature(void)
-{
-	return get_mean(temperature);
-}
-
-void set_humidity(float new_humidity, uint8_t index)
-{
-	humidity[index] = new_humidity;
-}
-
-float get_humidity(void)
-{
-	return get_mean(humidity);
-}
-
-void set_pressure(float new_pressure, uint8_t index)
-{
-	pressure[index] = new_pressure;
-}
-
-float get_pressure(void)
-{
-	return get_mean(pressure);
-}
-
-void set_co2_concentration(float new_co2_concentration, uint8_t index)
-{
-	co2_concentration[index] = new_co2_concentration;
-}
-
-float get_co2_concentration(void)
-{
-	return get_mean(co2_concentration);
-}
-
-void set_voc_index(float new_voc_index, uint8_t index)
-{
-	voc_index[index] = new_voc_index;
-}
-
-float get_voc_index(void)
-{
-	return get_mean(voc_index);
+	variable_buffer_t *buffer = &buffers[variable];
+	float sum = 0.0f;
+	for (size_t i = 0; i < buffer->size; i++)
+	{
+		sum += buffer->data[i];
+	}
+	return sum / buffer->size;
 }
