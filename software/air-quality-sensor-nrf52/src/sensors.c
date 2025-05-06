@@ -122,7 +122,7 @@ int read_sht4x_data(uint8_t index)
     set_temperature(sensor_value_to_float(&temperature), index);
     set_humidity(sensor_value_to_float(&humidity), index);
     LOG_INF("SHT4X temperature: %d.%d °C", temperature.val1, temperature.val2);
-    LOG_INF("SHT4X humidity: %d.%d \%RH", humidity.val1, humidity.val2);
+    LOG_INF("SHT4X humidity: %d.%d %%RH", humidity.val1, humidity.val2);
     return 0;
 }
 #endif
@@ -226,7 +226,7 @@ int read_scd4x_data(uint8_t index)
 #endif
     LOG_INF("SCD4X CO2 concentration: %d.%d ppm", co2_concentration.val1, co2_concentration.val2);
     LOG_INF("SCD4X temperature: %d.%d °C", temperature_2.val1, temperature_2.val2);
-    LOG_INF("SCD4X humidity: %d.%d \%RH", humidity_2.val1, humidity_2.val2);
+    LOG_INF("SCD4X humidity: %d.%d %%RH", humidity_2.val1, humidity_2.val2);
     return 0;
 }
 #endif
