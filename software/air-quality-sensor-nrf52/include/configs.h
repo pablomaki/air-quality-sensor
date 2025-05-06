@@ -33,6 +33,7 @@
 // #define ENABLE_EPD //Enable or disable the screen
 
 // Battery monitor
+#define ENABLE_BATTERY_MONITOR
 #define BATTERY_TYPE_SAMSUNG_Q30 // Used battery type currently supported choices: BATTERY_TYPE_SAMSUNG_Q30
 #define BM_ADC_ID 0
 #define USE_FAST_CHARGING 1 // 0 for slow (50 mA) charging, 1 for fast (100 mA) charging

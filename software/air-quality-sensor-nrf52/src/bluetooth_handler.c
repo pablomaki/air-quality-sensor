@@ -30,7 +30,9 @@ typedef enum
 static const struct bt_data adv_data[] = {
     BT_DATA_BYTES(BT_DATA_FLAGS, (BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR)), // Options
     BT_DATA_BYTES(BT_DATA_UUID16_ALL,
+#ifdef ENABLE_BATTERY_MONITOR
                   BT_UUID_16_ENCODE(BT_UUID_BAS_VAL),
+#endif
                   BT_UUID_16_ENCODE(BT_UUID_ESS_VAL))}; // Battery & Environmental sensing service
 
 /**

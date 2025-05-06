@@ -166,12 +166,14 @@ static void periodic_task(struct k_work *work)
 
     bool success;
 
+#ifdef ENABLE_BATTERY_MONITOR
     LOG_INF("Read battery level");
     success = check_sensor_reading(read_battery_level, "battery", measurement_counter);
     if (!success)
     {
         dispatch_event(PERIODIC_TASK_WARNING);
     }
+#endif
 
     LOG_INF("Read sensors");
     success = read_sensors(measurement_counter);
@@ -317,6 +319,7 @@ int init_air_quality_monitor(void)
     }
     LOG_INF("Sensors initialized succesfully.");
 
+#ifdef ENABLE_BATTERY_MONITOR
     // Initialize battery monitor
     LOG_INF("Initializing the battery monitor...");
     err = init_battery_monitor();
@@ -328,6 +331,7 @@ int init_air_quality_monitor(void)
         return err;
     }
     LOG_INF("Battery monitor initialized succesfully.");
+#endif
 
     // Initialize periodic task and time the first task in 10 seconds
     LOG_INF("Initializing the periodic task for measuring and advertising data...");
