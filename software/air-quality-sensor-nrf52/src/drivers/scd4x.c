@@ -214,7 +214,7 @@ static int scd4x_attr_set(const struct device *dev,
         {
             return -EINVAL;
         }
-        ticks = (float)val->val1 / 100.0;
+        ticks = (uint16_t)((float)val->val1 / 100.0f + 0.5f); // round to nearest
         rc = scd4x_write_reg(dev, SCD4X_CMD_SET_AMBIENT_PRESSURE, &ticks, 1);
         break;
 
