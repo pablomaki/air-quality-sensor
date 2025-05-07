@@ -1,33 +1,18 @@
-.. _hello_world:
-
-Hello World
+Air Quality Monitor NRF52840
 ###########
 
 Overview
 ********
 
-A simple sample that can be used with any :ref:`supported board <boards>` and
-prints "Hello World" to the console.
+Software designed to run on the Seeed XIAO NRF52840 board utilizing the Nordic Semiconductor nRF52840 microcontroller.
+
+Configuration options can be found in [config.h](./include/config.h).
 
 Building and Running
 ********************
 
-This application can be built and executed on QEMU as follows:
+To build the project, you will need to have the following tools installed:
+- [Visual Studio Code](https://code.visualstudio.com/download)
+- [nRF Connect for Visual Studio Code](https://docs.nordicsemi.com/bundle/nrf-connect-vscode/page/get_started/install.html)
 
-.. zephyr-app-commands::
-   :zephyr-app: samples/hello_world
-   :host-os: unix
-   :board: qemu_x86
-   :goals: run
-   :compact:
-
-To build for another board, change "qemu_x86" above to that board's name.
-
-Sample Output
-=============
-
-.. code-block:: console
-
-    Hello World! x86
-
-Exit QEMU by pressing :kbd:`CTRL+A` :kbd:`x`.
+The project was built on nRF connect SDK and Toolchain version 2.7. The only modification that needed to be done, was changing SGP40 drivers defined SGP40_TEST_WAIT_MS from 250 to 320.
