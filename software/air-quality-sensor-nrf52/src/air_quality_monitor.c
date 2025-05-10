@@ -1,6 +1,6 @@
 #include <air_quality_monitor.h>
 #include <components/bluetooth_handler.h>
-#include <components/e_ink_display.h>
+#include <components/e_paper_display.h>
 #include <components/power_manager.h>
 #include <configs.h>
 #include <components/sensors.h>
@@ -203,10 +203,10 @@ static void periodic_task(struct k_work *work)
 #ifdef ENABLE_EPD
     LOG_INF("Update displayed values.");
     int err;
-    err = update_e_ink_display();
+    err = update_e_paper_display();
     if (err)
     {
-        LOG_ERR("Error updating E-ink display (err %d)", err);
+        LOG_ERR("Error updating E-paper display (err %d)", err);
         dispatch_event(PERIODIC_TASK_WARNING);
     }
 #endif
@@ -282,17 +282,17 @@ int init_air_quality_monitor(void)
     LOG_INF("Event handler initialized succesfully.");
 
 #ifdef ENABLE_EPD
-    // Initialize E-ink display
-    LOG_INF("Initializing E-ink display...");
-    err = init_e_ink_display();
+    // Initialize E-paper display
+    LOG_INF("Initializing E-paper display...");
+    err = init_e_paper_display();
     if (err)
     {
-        LOG_ERR("Error while initializing E-ink display (err %d)", err);
+        LOG_ERR("Error while initializing E-paper display (err %d)", err);
         dispatch_event(INITIALIZATION_ERROR);
         set_state(ERROR);
         return err;
     }
-    LOG_INF("E-ink display initialized succesfully.");
+    LOG_INF("E-paper display initialized succesfully.");
 #endif
 
     // Initialize bluetooth

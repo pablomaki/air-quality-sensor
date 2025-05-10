@@ -30,7 +30,7 @@
 #define TEMPERATURE_OFFSET 0 // meters
 
 // Screen
-// #define ENABLE_EPD //Enable or disable the screen
+#define ENABLE_EPD // Enable or disable the screen
 
 // Battery monitor
 #define ENABLE_BATTERY_MONITOR     // Enable or disable battery monitor

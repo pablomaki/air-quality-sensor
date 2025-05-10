@@ -61,6 +61,22 @@
 	pinctrl-1 = <&qspi_default>;
 };
 
+&spi2 {
+	status = "okay";
+	cs-gpios = <&gpio0 29 GPIO_ACTIVE_LOW>;
+	ssd1680: ssd1680@0 {
+		compatible = "solomon,ssd1680";
+		reg = <0>;
+		spi-max-frequency = <4000000>;
+		dc-gpios = <&gpio0 28 GPIO_ACTIVE_LOW>;
+		reset-gpios = <&gpio0 3 GPIO_ACTIVE_LOW>;
+		busy-gpios = <&gpio0 2 GPIO_ACTIVE_HIGH>;
+		width = <250>;
+		height = <128>;
+		status = "okay";
+	};
+};
+
 &spi3 {
 	status = "disabled";
 };
