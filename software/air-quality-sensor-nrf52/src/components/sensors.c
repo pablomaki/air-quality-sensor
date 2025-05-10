@@ -9,32 +9,23 @@
 #include <zephyr/drivers/sensor.h>
 #include <zephyr/logging/log.h>
 
-#ifdef ENABLE_SHT4X
-#include <zephyr/drivers/sensor/sht4x.h>
-#endif
-
-#ifdef ENABLE_SGP40
-#include <zephyr/drivers/sensor/sgp40.h>
-#endif
-
-#ifdef ENABLE_SCD4X
-#include <drivers/scd4x.h>
-#endif
-
 LOG_MODULE_REGISTER(sensors);
 
 #ifdef ENABLE_SHT4X
+#include <zephyr/drivers/sensor/sht4x.h>
 static const struct device *sht4x_dev_p;
 static struct sensor_value temperature, humidity;
 #endif
 
 #ifdef ENABLE_SGP40
+#include <zephyr/drivers/sensor/sgp40.h>
 static const struct device *sgp40_dev_p;
 static struct sensor_value voc_raw, voc_index;
 static GasIndexAlgorithmParams voc_params;
 #endif
 
 #ifdef ENABLE_SCD4X
+#include <drivers/scd4x.h>
 static const struct device *scd4x_dev_p;
 static struct sensor_value co2_concentration, temperature_2, humidity_2;
 static struct sensor_value asc_initial_period = {(2 * 24 * 60 * 60) / (MEASUREMENT_INTERVAL / 1000) / 12, 0};
@@ -44,6 +35,7 @@ static struct sensor_value temperature_offset = {TEMPERATURE_OFFSET, 0};
 #endif
 
 #ifdef ENABLE_BMP390
+#include <drivers/bmp390.h>
 static const struct device *bmp390_dev_p;
 static struct sensor_value pressure, temperature_3;
 #endif
