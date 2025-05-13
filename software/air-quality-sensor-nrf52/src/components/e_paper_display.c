@@ -9,7 +9,7 @@
 LOG_MODULE_REGISTER(e_paper_display);
 
 #define EPD_WIDTH 250
-#define EPD_HEIGHT 128
+#define EPD_HEIGHT 136
 #define EPD_BUF_SIZE (EPD_WIDTH * EPD_HEIGHT / 8)
 struct display_buffer_descriptor desc = {
     .buf_size = EPD_BUF_SIZE,
@@ -19,9 +19,7 @@ struct display_buffer_descriptor desc = {
 };
 static bool white = true;
 static uint8_t screen_buffer[EPD_BUF_SIZE];
-
-// const struct device *const epd_dev_p = DEVICE_DT_GET_ANY(weact_zjy1222);
-static const struct device *epd_dev = DEVICE_DT_GET(DT_NODELABEL(ssd1680));
+static const struct device *epd_dev = DEVICE_DT_GET(DT_ALIAS(ssd1680));
 
 int init_e_paper_display(void)
 {
@@ -37,10 +35,17 @@ int init_e_paper_display(void)
 
 int update_e_paper_display(void)
 {
+    int err;
+
     // Fill with 0xFF for white, 0x00 for black
     memset(screen_buffer, 0xF0, sizeof(screen_buffer));
 
-    display_write(epd_dev, 0, 0, &desc, screen_buffer);
+    err = display_write(epd_dev, 0, 0, &desc, screen_buffer);
+    if (err)
+    {
+        LOG_ERR("Failed to write to display (err %d)", err);
+        return err;
+    }
     // display_blanking_on(epd_dev);
     white = !white;
     return 0;
