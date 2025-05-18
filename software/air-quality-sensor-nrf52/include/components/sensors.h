@@ -42,4 +42,18 @@ int read_bmp390_data(uint8_t index);
  */
 int read_scd4x_data(uint8_t index);
 
+/**
+ * @brief Suspend the sensors
+ *
+ * @return int, 0 if ok, non-zero if an error occured
+ */
+int suspend_sensors(void);
+
+/**
+ * @brief Activate the sensors
+ *
+ * @return int, 0 if ok, non-zero if an error occured
+ */
+int activate_sensors(void);
+
 #endif // SENSORS_H

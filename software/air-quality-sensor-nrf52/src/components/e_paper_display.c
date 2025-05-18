@@ -3,6 +3,8 @@
 #include <zephyr/kernel.h>
 #include <zephyr/device.h>
 #include <zephyr/drivers/display.h>
+#include <zephyr/pm/pm.h>
+#include <zephyr/pm/device.h>
 #include <stdint.h>
 #include <zephyr/logging/log.h>
 
@@ -19,23 +21,68 @@ struct display_buffer_descriptor desc = {
 };
 static bool white = true;
 static uint8_t screen_buffer[EPD_BUF_SIZE];
-static const struct device *epd_dev = DEVICE_DT_GET(DT_ALIAS(ssd1680));
+static const struct device *epd_dev;
+
+/**
+ * @brief Suspend e-paper display
+ *
+ * @return int, 0 if ok, non-zero if an error occured
+ */
+static int suspend_epd(void)
+{
+    int err;
+    err = pm_device_action_run(epd_dev, PM_DEVICE_ACTION_SUSPEND);
+    if (err)
+    {
+        LOG_ERR("Failed to suspend EPD device (err, %d)", err);
+    }
+    return 0;
+}
+
+/**
+ * @brief Activate e-paper display
+ *
+ * @return int, 0 if ok, non-zero if an error occured
+ */
+static int activate_epd(void)
+{
+    int err;
+    err = pm_device_action_run(epd_dev, PM_DEVICE_ACTION_RESUME);
+    if (err)
+    {
+        LOG_ERR("Failed to activate EPD device (err, %d)", err);
+    }
+    return 0;
+}
 
 int init_e_paper_display(void)
 {
+    epd_dev = DEVICE_DT_GET(DT_ALIAS(ssd1680));
     if (!device_is_ready(epd_dev))
     {
         LOG_ERR("Display device not ready");
         return -ENXIO;
     }
     display_blanking_off(epd_dev);
-
+    int err = suspend_epd();
+    if (err)
+    {
+        LOG_ERR("Failed to suspend EPD device (err, %d)", err);
+        return err;
+    }
     return 0;
 }
 
 int update_e_paper_display(void)
 {
     int err;
+
+    err = activate_epd();
+    if (err)
+    {
+        LOG_ERR("Failed to activate EPD device (err, %d)", err);
+        return err;
+    }
 
     // Fill with 0xFF for white, 0x00 for black
     memset(screen_buffer, 0xF0, sizeof(screen_buffer));
@@ -48,5 +95,12 @@ int update_e_paper_display(void)
     }
     // display_blanking_on(epd_dev);
     white = !white;
+
+    err = suspend_epd();
+    if (err)
+    {
+        LOG_ERR("Failed to suspend EPD device (err, %d)", err);
+        return err;
+    }
     return 0;
 }

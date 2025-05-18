@@ -8,6 +8,8 @@
 #include <zephyr/device.h>
 #include <zephyr/drivers/sensor.h>
 #include <zephyr/logging/log.h>
+#include <zephyr/pm/pm.h>
+#include <zephyr/pm/device.h>
 
 LOG_MODULE_REGISTER(sensors);
 
@@ -42,6 +44,8 @@ static struct sensor_value pressure, temperature_3;
 
 int init_sensors(void)
 {
+    int err;
+
 #ifdef ENABLE_SHT4X
     sht4x_dev_p = DEVICE_DT_GET_ANY(sensirion_sht4x);
     if (!device_is_ready(sht4x_dev_p))
@@ -68,7 +72,7 @@ int init_sensors(void)
         LOG_ERR("Device scd4x is not ready.");
         return -ENXIO;
     }
-    int err, err2, err3, err4;
+    int err2, err3, err4;
     err = sensor_attr_set(scd4x_dev_p, SENSOR_CHAN_CO2, SENSOR_ATTR_SCD4X_SELF_CALIB_INITIAL_PERIOD, &asc_initial_period);
     err2 = sensor_attr_set(scd4x_dev_p, SENSOR_CHAN_CO2, SENSOR_ATTR_SCD4X_SELF_CALIB_STANDARD_PERIOD, &asc_standard_period);
     err3 = sensor_attr_set(scd4x_dev_p, SENSOR_CHAN_CO2, SENSOR_ATTR_SCD4X_ALTITUDE, &sensor_altitude);
@@ -231,3 +235,57 @@ int read_scd4x_data(uint8_t index)
     return 0;
 }
 #endif
+
+int suspend_sensors(void)
+{
+    int err;
+#ifdef ENABLE_SGP40
+    err = pm_device_action_run(sgp40_dev_p, PM_DEVICE_ACTION_SUSPEND);
+    if (err)
+    {
+        LOG_ERR("Failed to suspend SGP40 device (err, %d)", err);
+    }
+#endif
+#ifdef ENABLE_BMP390
+    err = pm_device_action_run(bmp390_dev_p, PM_DEVICE_ACTION_SUSPEND);
+    if (err)
+    {
+        LOG_ERR("Failed to suspend BMP390 device (err, %d)", err);
+    }
+#endif
+#ifdef ENABLE_SCD4X
+    err = pm_device_action_run(scd4x_dev_p, PM_DEVICE_ACTION_SUSPEND);
+    if (err)
+    {
+        LOG_ERR("Failed to suspend SCD4X device (err, %d)", err);
+    }
+#endif
+    return 0;
+}
+
+int activate_sensors(void)
+{
+    int err;
+#ifdef ENABLE_SGP40
+    err = pm_device_action_run(sgp40_dev_p, PM_DEVICE_ACTION_RESUME);
+    if (err)
+    {
+        LOG_ERR("Failed to activate SGP40 device (err, %d)", err);
+    }
+#endif
+#ifdef ENABLE_BMP390
+    err = pm_device_action_run(bmp390_dev_p, PM_DEVICE_ACTION_RESUME);
+    if (err)
+    {
+        LOG_ERR("Failed to activate BMP390 device (err, %d)", err);
+    }
+#endif
+#ifdef ENABLE_SCD4X
+    err = pm_device_action_run(scd4x_dev_p, PM_DEVICE_ACTION_RESUME);
+    if (err)
+    {
+        LOG_ERR("Failed to activate SCD4X device (err, %d)", err);
+    }
+#endif
+    return 0;
+}

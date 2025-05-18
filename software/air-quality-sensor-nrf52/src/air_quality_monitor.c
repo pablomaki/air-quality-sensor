@@ -47,6 +47,14 @@ static bool check_sensor_reading(int (*sensor_func)(uint8_t), const char *sensor
 static bool read_sensors(uint8_t measurement_counter)
 {
     bool success = true;
+    int err;
+
+    err = activate_sensors();
+    if (err)
+    {
+        LOG_ERR("Failed to wake up sensors (err, %d)", err);
+        return false;
+    }
 
 #ifdef ENABLE_SHT4X
     success &= check_sensor_reading(read_sht4x_data, "sht4x", measurement_counter);
@@ -64,6 +72,12 @@ static bool read_sensors(uint8_t measurement_counter)
     success &= check_sensor_reading(read_scd4x_data, "scd4x", measurement_counter);
 #endif
 
+    err = suspend_sensors();
+    if (err)
+    {
+        LOG_ERR("Failed to suspend sensors (err, %d)", err);
+        return false;
+    }
     return success;
 }
 
