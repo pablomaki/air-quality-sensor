@@ -1,5 +1,5 @@
-#ifndef STATE_HANDLER_H
-#define STATE_HANDLER_H
+#ifndef STATE_MANAGER_H
+#define STATE_MANAGER_H
 
 /**
  * @brief Enumeration for states
@@ -30,4 +30,4 @@ void set_state(state_t new_state);
  */
 state_t get_state(void);
 
-#endif
+#endif // STATE_MANAGER_H

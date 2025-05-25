@@ -1,11 +1,11 @@
-#include <components/state_handler.h>
+#include <components/state_manager.h>
 #include <components/flash_manager.h>
 #include <components/sensors.h>
 #include <components/e_paper_display.h>
 
 #include <zephyr/logging/log.h>
 
-LOG_MODULE_REGISTER(state_handler);
+LOG_MODULE_REGISTER(state_manager);
 
 typedef int (*action_fn_t)(void);
 

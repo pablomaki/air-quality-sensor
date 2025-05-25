@@ -20,7 +20,6 @@ The project was built on nRF connect SDK and Toolchain version 2.7. The only mod
 
 TODO
 ********************
-* Actually use the state handler
 * Unify error handling
 * Fix possible bug in event handler giving both warning and ok
 * Add BLE events to event handler

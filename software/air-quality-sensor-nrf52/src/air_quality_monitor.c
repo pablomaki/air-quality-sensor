@@ -6,7 +6,7 @@
 #include <components/battery_monitor.h>
 #include <utils/variables.h>
 #include <components/event_handler.h>
-#include <components/state_handler.h>
+#include <components/state_manager.h>
 
 #include <zephyr/logging/log.h>
 
