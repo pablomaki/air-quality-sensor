@@ -60,6 +60,12 @@ static struct bt_conn *current_conn;
 static ble_exit_cb_t ble_exit_cb = NULL;
 
 /**
+ * @brief Callback for when connection is closed or timeout is triggered
+ *
+ */
+static ble_connect_cb_t ble_connect_cb = NULL;
+
+/**
  * @brief Set the ble state
  *
  * @param new_state new ble state
@@ -136,6 +142,7 @@ static void on_connect(struct bt_conn *conn, uint8_t err)
 
     LOG_INF("Device connected (%s), stopping advertisement.", addr_str);
     stop_advertise();
+    ble_connect_cb();
     set_ble_state(BLE_CONNECTED);
 }
 
@@ -217,7 +224,7 @@ static const struct bt_le_adv_param adv_params_multi_whitelist = {
 };
 #endif
 
-int init_ble(ble_exit_cb_t cb)
+int init_ble(ble_exit_cb_t exit_cb, ble_connect_cb_t conn_cb)
 {
     int err;
     err = bt_enable(NULL);
@@ -230,8 +237,9 @@ int init_ble(ble_exit_cb_t cb)
     // Register bluetooth callbacks for connection and disconnection
     bt_conn_cb_register(&conn_callbacks);
 
-    // Register advertising stopped callback
-    ble_exit_cb = cb;
+    // Register advertising stopped and connection formed callbacks
+    ble_exit_cb = exit_cb;
+    ble_connect_cb = conn_cb;
 
     // Initialize work delayable queue for advertisement timeout handling
     k_work_init_delayable(&stop_ble_work, ble_timeout);

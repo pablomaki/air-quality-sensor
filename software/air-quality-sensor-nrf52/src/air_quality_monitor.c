@@ -183,7 +183,7 @@ static void periodic_task(struct k_work *work)
 }
 
 /**
- * @brief Callback when BLE is done (data relayed or timeout)
+ * @brief Callback for when BLE is done (data relayed or timeout)
  *
  * @param task_success True if BLE task terminated succesfully, false timeout.
  */
@@ -202,6 +202,16 @@ static void ble_task_callback(bool task_success)
 
     // Enter idle state
     set_state(IDLE);
+}
+
+/**
+ * @brief Callback for when BLE conneciton is established
+ *
+ */
+static void ble_connected_callback(void)
+{
+    LOG_INF("BLE connection established.");
+    dispatch_event(BLE_CONNECTION_SUCCESS);
 }
 
 int init_air_quality_monitor(void)
@@ -239,7 +249,7 @@ int init_air_quality_monitor(void)
 
     // Initialize bluetooth
     LOG_INF("Initializing BLE...");
-    err = init_ble(ble_task_callback);
+    err = init_ble(ble_task_callback, ble_connected_callback);
     if (err)
     {
         LOG_ERR("Error while initializing BLE (err %d)", err);

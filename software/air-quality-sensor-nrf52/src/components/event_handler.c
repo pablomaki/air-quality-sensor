@@ -37,6 +37,10 @@ void dispatch_event(event_t event)
         // LED off
         blink_led(LED_GREEN, 1);
         break;
+    case BLE_CONNECTION_SUCCESS:
+        // LED off
+        blink_led(LED_BLUE, 1);
+        break;
     case PERIODIC_TASK_WARNING:
         // Blinking blue light
         blink_led(LED_YELLOW, 1);

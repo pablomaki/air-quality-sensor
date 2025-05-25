@@ -10,12 +10,19 @@
 typedef void (*ble_exit_cb_t)(bool);
 
 /**
+ * @brief BLE connect callback type
+ *
+ */
+typedef void (*ble_connect_cb_t)(void);
+
+/**
  * @brief Enable BLE
  *
- * @param cb callback or when advertising is stopped
+ * @param exit_cb callback or when advertising is stopped
+ * @param connect_cb callback or when connections is established
  * @return int Zero for success, non-zero otherwise.
  */
-int init_ble(ble_exit_cb_t cb);
+int init_ble(ble_exit_cb_t exit_cb, ble_connect_cb_t connect_cb);
 
 /**
  * @brief Update advertisement data

@@ -22,6 +22,5 @@ TODO
 ********************
 * Unify error handling
 * Fix possible bug in event handler giving both warning and ok
-* Add BLE events to event handler
 * Look in to reducing the amount of config variables in configs.h
 * Implement EPD output
