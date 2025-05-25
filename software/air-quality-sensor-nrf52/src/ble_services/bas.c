@@ -8,22 +8,8 @@ LOG_MODULE_REGISTER(bas);
 // Declaration and initialization of sensor reading values
 static uint8_t battery_level = 0;
 
-// Notification enabled tracking
-static bool batt_lvl_notif_enabled = false;
-
 // Handle for bas characteristics
 static struct bt_gatt_attr *batt_lvl_handle;
-
-/**
- * @brief Battery level client characteristic configuration changed callback
- *
- * @param attr
- * @param value
- */
-static void batt_lvl_ccc_cfg_changed(const struct bt_gatt_attr *attr, uint16_t value)
-{
-	batt_lvl_notif_enabled = (value == BT_GATT_CCC_NOTIFY);
-}
 
 /** @brief Battery level read attribute value helper.
  *
@@ -48,8 +34,7 @@ ssize_t read_batt_lvl(struct bt_conn *conn,
 // Create service
 BT_GATT_SERVICE_DEFINE(bas,
 					   BT_GATT_PRIMARY_SERVICE(BT_UUID_BAS),
-					   BT_GATT_CHARACTERISTIC(BT_UUID_BAS_BATTERY_LEVEL, BT_GATT_CHRC_READ | BT_GATT_CHRC_NOTIFY, BT_GATT_PERM_READ, read_batt_lvl, NULL, &battery_level),
-					   BT_GATT_CCC(batt_lvl_ccc_cfg_changed, BT_GATT_PERM_READ | BT_GATT_PERM_WRITE), );
+					   BT_GATT_CHARACTERISTIC(BT_UUID_BAS_BATTERY_LEVEL, BT_GATT_CHRC_READ | BT_GATT_CHRC_NOTIFY, BT_GATT_PERM_READ, read_batt_lvl, NULL, &battery_level), );
 
 float bt_bas_get_battery_level(void)
 {
@@ -64,11 +49,7 @@ int bt_bas_set_battery_level(float new_battery_level)
 		ret = -EINVAL;
 	}
 	battery_level = (uint8_t)new_battery_level;
-	if (batt_lvl_notif_enabled)
-	{
-		ret = bt_gatt_notify(NULL, &bas.attrs[1], &battery_level, sizeof(battery_level));
-	}
-	return ret == -ENOTCONN ? 0 : ret;
+	return ret;
 }
 
 /**

@@ -23,7 +23,7 @@ int init_flash_manager(void)
 int activate_flash(void)
 {
     LOG_INF("Activating flash");
-    int err = 0;
+    int err;
     err = pm_device_action_run(qspi_dev, PM_DEVICE_ACTION_RESUME);
     if (err)
     {
@@ -35,7 +35,7 @@ int activate_flash(void)
 int suspend_flash(void)
 {
     LOG_INF("Suspending flash");
-    int err = 0;
+    int err;
     err = pm_device_action_run(qspi_dev, PM_DEVICE_ACTION_SUSPEND);
     if (err)
     {

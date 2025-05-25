@@ -52,7 +52,7 @@ int update_e_paper_display(void)
 int activate_epd(void)
 {
     LOG_INF("Activating EPD");
-    int err = 0;
+    int err;
     err = pm_device_action_run(epd_dev, PM_DEVICE_ACTION_RESUME);
     if (err)
     {
@@ -64,7 +64,7 @@ int activate_epd(void)
 int suspend_epd(void)
 {
     LOG_INF("Suspending EPD");
-    int err = 0;
+    int err;
     err = pm_device_action_run(epd_dev, PM_DEVICE_ACTION_SUSPEND);
     if (err)
     {

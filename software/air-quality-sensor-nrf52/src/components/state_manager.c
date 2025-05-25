@@ -117,6 +117,7 @@ static int enter_state(state_t state)
         err = execute(error_actions.on_enter);
         break;
     default:
+        err = -EINVAL;
         break;
     }
     return err;
@@ -153,6 +154,7 @@ static int exit_state(state_t state)
         err = execute(error_actions.on_exit);
         break;
     default:
+        err = -EINVAL;
         break;
     }
     return err;
