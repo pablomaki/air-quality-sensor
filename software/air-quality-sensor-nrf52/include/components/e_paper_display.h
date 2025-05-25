@@ -17,4 +17,18 @@ int init_e_paper_display(void);
  */
 int update_e_paper_display(void);
 
+/**
+ * @brief Suspend e-paper display
+ *
+ * @return int, 0 if ok, non-zero if an error occured
+ */
+int suspend_epd(void);
+
+/**
+ * @brief Activate e-paper display
+ *
+ * @return int, 0 if ok, non-zero if an error occured
+ */
+int activate_epd(void);
+
 #endif // E_PAPER_DISPLAY_H

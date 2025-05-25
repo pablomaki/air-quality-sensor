@@ -1,7 +1,6 @@
 #include <air_quality_monitor.h>
 #include <components/bluetooth_handler.h>
 #include <components/e_paper_display.h>
-#include <components/power_manager.h>
 #include <configs.h>
 #include <components/sensors.h>
 #include <components/battery_monitor.h>
@@ -19,129 +18,47 @@ LOG_MODULE_REGISTER(air_quality_monitor);
 static struct k_work_delayable periodic_work;
 
 /**
- * @brief Read data from a sensor and check for errors
- *
- * @param sensor_func Pointer to the function that reads the sensor data
- * @param sensor_name Name of the sensor for logging
- * @return true if reading was successful
- * @return false if there was an error
- */
-static bool check_sensor_reading(int (*sensor_func)(uint8_t), const char *sensor_name, uint8_t measurement_counter)
-{
-    int err = sensor_func(measurement_counter);
-    if (err)
-    {
-        LOG_ERR("Error reading %s sensor data (err %d)", sensor_name, err);
-        return false;
-    }
-    return true;
-}
-
-/**
- * @brief Read data from each sensor
- *
- * @param measurement_counter Counter for the number of measurements
- * @return true if all sensors return ok after reading
- * @return false if one or more sensors return with an error
- */
-static bool read_sensors(uint8_t measurement_counter)
-{
-    bool success = true;
-    int err;
-
-    err = activate_sensors();
-    if (err)
-    {
-        LOG_ERR("Failed to wake up sensors (err, %d)", err);
-        return false;
-    }
-
-#ifdef ENABLE_SHT4X
-    success &= check_sensor_reading(read_sht4x_data, "sht4x", measurement_counter);
-#endif
-
-#ifdef ENABLE_SGP40
-    success &= check_sensor_reading(read_sgp40_data, "sgp40", measurement_counter);
-#endif
-
-#ifdef ENABLE_BMP390
-    success &= check_sensor_reading(read_bmp390_data, "bmp390", measurement_counter);
-#endif
-
-#ifdef ENABLE_SCD4X
-    success &= check_sensor_reading(read_scd4x_data, "scd4x", measurement_counter);
-#endif
-
-    err = suspend_sensors();
-    if (err)
-    {
-        LOG_ERR("Failed to suspend sensors (err, %d)", err);
-        return false;
-    }
-    return success;
-}
-
-/**
  * @brief Update data to BLE service and start data advertisement
  *
- * @return true if updating and advertisement start succeed
- * @return false if any of the above fail
+ * @return int, 0 if ok, non-zero if an error occured
  */
-static bool advertise_data(void)
+static int advertise_data(void)
 {
-    bool success = true;
-    int err;
+    int err, ret = 0;
     // Update and advertise data
     LOG_INF("Update advertised data.");
     err = update_advertisement_data();
     if (err)
     {
-        LOG_ERR("Error updating advertisement data (err %d)", err);
-        success = false;
+        LOG_WRN("Error updating advertisement data (err %d)", err);
+        ret = -1;
     }
 
     LOG_INF("Begin advertising for connection.");
     err = start_advertise();
     if (err)
     {
-        LOG_ERR("Error advertising data (err %d)", err);
-        success = false;
+        LOG_WRN("Error advertising data (err %d)", err);
+        ret = -1;
     }
-    return success;
+    return ret;
 }
 
 /**
  * @brief Schedule the next work task
  *
  * @param delay Delay for launching the task
- * @return true Scheduling succeeds
- * @return false Problem with scheduling
+ * @return int, 0 if ok, non-zero if an error occured
  */
-static bool schedule_work_task(int64_t delay)
+static int schedule_work_task(int64_t delay)
 {
     int err = k_work_schedule(&periodic_work, K_MSEC(delay));
     if (err != SCHEDULE_SUCCESS && err != SCHEDULE_ALREADY_QUEUED)
     {
         LOG_ERR("Error scheduling a task (err %d)", err);
-        return false;
+        return -1;
     }
-    return true;
-}
-
-/**
- * @brief Enter idle mode
- *
- */
-static void idle(void)
-{
-    set_state(IDLE);
-    int err;
-    err = enter_low_power_mode();
-    if (err)
-    {
-        LOG_ERR("Something in entering/exiting the low power mode failed (err %d)", err);
-        set_state(ERROR);
-    }
+    return 0;
 }
 
 /**
@@ -169,54 +86,72 @@ static int64_t calculate_task_delay(int64_t start_time_ms)
 static void periodic_task(struct k_work *work)
 {
     static uint8_t measurement_counter = 0;
-    LOG_INF("Periodic task begin");
+    bool success = true;
+    int err;
 
-    // Wake up from the sleep (turn on all necessary peripherals)
-    wake_up();
-    set_state(ACTIVE);
+    LOG_INF("Periodic task begin");
 
     // Log time for calculating correct time to sleep
     int64_t start_time_ms = k_uptime_get();
 
-    bool success;
+    // Set state to measuring
+    set_state(MEASURING);
 
 #ifdef ENABLE_BATTERY_MONITOR
     LOG_INF("Read battery level");
-    success = check_sensor_reading(read_battery_level, "battery", measurement_counter);
-    if (!success)
+    err = read_battery_level();
+    if (err)
     {
+        LOG_WRN("Failed to read battery percentage err (%d)", err);
+        success = false;
         dispatch_event(PERIODIC_TASK_WARNING);
     }
 #endif
 
     LOG_INF("Read sensors");
-    success = read_sensors(measurement_counter);
-    if (!success)
+    err = read_sensors();
+    if (err)
     {
+        LOG_WRN("Failed to read sensor data err (%d)", err);
+        success = false;
         dispatch_event(PERIODIC_TASK_WARNING);
     }
+
+    // Increment measurement counter and print progress in log
     measurement_counter++;
     LOG_INF("Periodic measurement %d/%d done.", measurement_counter, MEASUREMENTS_PER_INTERVAL);
 
+    // Stop the periodic task in short in case of not enough measurements made yet
     if (measurement_counter < MEASUREMENTS_PER_INTERVAL)
     {
         LOG_INF("Periodic task done, scheduling a new task");
         int64_t delay = calculate_task_delay(start_time_ms);
-        success = schedule_work_task(delay);
-        if (!success)
+        err = schedule_work_task(delay);
+        if (err)
         {
             dispatch_event(PERIODIC_TASK_ERROR);
             set_state(ERROR);
         }
         LOG_INF("Task scheduled, entering idle state.");
-        dispatch_event(PERIODIC_TASK_SUCCESS);
-        idle();
+        if (success)
+        {
+            dispatch_event(PERIODIC_TASK_SUCCESS);
+        }
+
+        // Enter idle state
+        set_state(IDLE);
         return;
     }
 
+    // Reset measurement counter
+    measurement_counter = 0;
+
 #ifdef ENABLE_EPD
+
+    // Set state to displaying
+    set_state(UPDATING);
+
     LOG_INF("Update displayed values.");
-    int err;
     err = update_e_paper_display();
     if (err)
     {
@@ -225,24 +160,26 @@ static void periodic_task(struct k_work *work)
     }
 #endif
 
+    // Set state to advertising
+    set_state(ADVERTISING);
+
     LOG_INF("Advertise data");
-    success = advertise_data();
-    if (!success)
+    err = advertise_data();
+    if (err)
     {
         dispatch_event(PERIODIC_TASK_WARNING);
     }
 
     LOG_INF("Periodic task done, scheduling a new task");
     int64_t delay = calculate_task_delay(start_time_ms);
-    success = schedule_work_task(delay);
-    if (!success)
+    err = schedule_work_task(delay);
+    if (err)
     {
         dispatch_event(PERIODIC_TASK_ERROR);
         set_state(ERROR);
     }
 
     LOG_INF("Task scheduled, waiting BLE communication to stop before idle.");
-    measurement_counter = 0; // Reset the measurement counter
 }
 
 /**
@@ -262,26 +199,17 @@ static void ble_task_callback(bool task_success)
         LOG_INF("BLE data transfer unsuccesful, entering idle state.");
         dispatch_event(PERIODIC_TASK_WARNING);
     }
-    idle();
+
+    // Enter idle state
+    set_state(IDLE);
 }
 
 int init_air_quality_monitor(void)
 {
     int err;
-    bool success = true;
-    set_state(INITIALIZING);
 
-    // Initialize LED controller
-    LOG_INF("Initializing power manager...");
-    err = init_power_manager();
-    if (err)
-    {
-        LOG_ERR("Error while initializing power manager (err %d)", err);
-        dispatch_event(INITIALIZATION_ERROR);
-        set_state(ERROR);
-        return err;
-    }
-    LOG_INF("power manager initialized succesfully.");
+    // Set state correctly
+    set_state(INITIALIZING);
 
     // Initialize LED controller
     LOG_INF("Initializing event handler...");
@@ -348,17 +276,20 @@ int init_air_quality_monitor(void)
 #endif
 
     // Initialize periodic task and time the first task in 10 seconds
-    LOG_INF("Initializing the periodic task for measuring and advertising data...");
+    LOG_INF("Setting up the periodic task for measuring and advertising data...");
     k_work_init_delayable(&periodic_work, periodic_task);
-    success = schedule_work_task(FIRST_TASK_DELAY);
-    if (!success)
+    err = schedule_work_task(FIRST_TASK_DELAY);
+    if (err)
     {
         dispatch_event(INITIALIZATION_ERROR);
         set_state(ERROR);
-        return -1;
+        return err;
     }
     LOG_INF("Periodic task initialized succesfully.");
     dispatch_event(INITIALIZATION_SUCCESS);
-    idle();
+
+    // Enter idle state
+    set_state(IDLE);
+
     return 0;
 }

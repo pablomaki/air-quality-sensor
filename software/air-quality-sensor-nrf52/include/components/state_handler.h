@@ -9,17 +9,12 @@ typedef enum
 {
     STATE_NOT_SET,
     INITIALIZING,
-    ACTIVE,
+    MEASURING,
+    UPDATING,
+    ADVERTISING,
     IDLE,
     ERROR
 } state_t;
-
-/**
- * @brief Initialize state handler
- *
- * @return int, 0 if ok, non-zero if an error occured
- */
-int init_state_handler(void);
 
 /**
  * @brief Set the state object

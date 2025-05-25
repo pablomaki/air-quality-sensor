@@ -19,41 +19,8 @@ struct display_buffer_descriptor desc = {
     .height = EPD_HEIGHT,
     .pitch = EPD_WIDTH,
 };
-static bool white = true;
 static uint8_t screen_buffer[EPD_BUF_SIZE];
 static const struct device *epd_dev;
-
-/**
- * @brief Suspend e-paper display
- *
- * @return int, 0 if ok, non-zero if an error occured
- */
-static int suspend_epd(void)
-{
-    int err;
-    err = pm_device_action_run(epd_dev, PM_DEVICE_ACTION_SUSPEND);
-    if (err)
-    {
-        LOG_ERR("Failed to suspend EPD device (err, %d)", err);
-    }
-    return 0;
-}
-
-/**
- * @brief Activate e-paper display
- *
- * @return int, 0 if ok, non-zero if an error occured
- */
-static int activate_epd(void)
-{
-    int err;
-    err = pm_device_action_run(epd_dev, PM_DEVICE_ACTION_RESUME);
-    if (err)
-    {
-        LOG_ERR("Failed to activate EPD device (err, %d)", err);
-    }
-    return 0;
-}
 
 int init_e_paper_display(void)
 {
@@ -64,26 +31,12 @@ int init_e_paper_display(void)
         return -ENXIO;
     }
     display_blanking_off(epd_dev);
-    int err = suspend_epd();
-    if (err)
-    {
-        LOG_ERR("Failed to suspend EPD device (err, %d)", err);
-        return err;
-    }
     return 0;
 }
 
 int update_e_paper_display(void)
 {
     int err;
-
-    err = activate_epd();
-    if (err)
-    {
-        LOG_ERR("Failed to activate EPD device (err, %d)", err);
-        return err;
-    }
-
     // Fill with 0xFF for white, 0x00 for black
     memset(screen_buffer, 0xF0, sizeof(screen_buffer));
 
@@ -93,14 +46,29 @@ int update_e_paper_display(void)
         LOG_ERR("Failed to write to display (err %d)", err);
         return err;
     }
-    // display_blanking_on(epd_dev);
-    white = !white;
+    return 0;
+}
 
-    err = suspend_epd();
+int activate_epd(void)
+{
+    LOG_INF("Activating EPD");
+    int err = 0;
+    err = pm_device_action_run(epd_dev, PM_DEVICE_ACTION_RESUME);
+    if (err)
+    {
+        LOG_ERR("Failed to activate EPD device (err, %d)", err);
+    }
+    return err;
+}
+
+int suspend_epd(void)
+{
+    LOG_INF("Suspending EPD");
+    int err = 0;
+    err = pm_device_action_run(epd_dev, PM_DEVICE_ACTION_SUSPEND);
     if (err)
     {
         LOG_ERR("Failed to suspend EPD device (err, %d)", err);
-        return err;
     }
-    return 0;
+    return err;
 }

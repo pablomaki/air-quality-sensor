@@ -276,7 +276,7 @@ int init_battery_monitor()
 	return 0;
 }
 
-int read_battery_level(uint8_t index)
+int read_battery_level()
 {
 	int rc = battery_get_charge_lvl();
 	if (rc)

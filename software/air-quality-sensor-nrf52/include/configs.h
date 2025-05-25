@@ -17,7 +17,6 @@
 // LED config
 #define LED_BLINK_INTERVAL 50 // milliseconds
 #define ENABLE_EVENT_LED      // Enable or disable event LED
-// #define ENABLE_STATE_LED     // Enable or disable LED for showing the current status
 
 // Sensors
 #define ENABLE_SHT4X  // Enable or disable SHT4X sensor

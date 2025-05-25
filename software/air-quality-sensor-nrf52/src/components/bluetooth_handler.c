@@ -250,12 +250,12 @@ int update_advertisement_data()
 {
     LOG_INF("Updating advertisement data");
 
-    int err;
-    int ret = 0;
+    int err, ret = 0;
     err = bt_bas_set_battery_level(get_mean(BATTERY_LEVEL));
     if (err)
     {
         LOG_WRN("Battery level outside of the expected limits (err %d, value %d)", err, (uint16_t)(BATTERY_LEVEL));
+        ret = -EIO;
     }
 
 #ifdef ENABLE_SHT4X
@@ -263,11 +263,13 @@ int update_advertisement_data()
     if (err)
     {
         LOG_WRN("Temperature outside of the expected limits (err %d, value %d)", err, (uint16_t)get_mean(TEMPERATURE));
+        ret = -EIO;
     }
     err = bt_ess_set_humidity(get_mean(HUMIDITY));
     if (err)
     {
         LOG_WRN("Humidity outside of the expected limits (err %d, value %d)", err, (uint16_t)get_mean(HUMIDITY));
+        ret = -EIO;
     }
 #endif
 
@@ -276,6 +278,7 @@ int update_advertisement_data()
     if (err)
     {
         LOG_WRN("Pressure outside of the expected limits (err %d, value %d)", err, (uint16_t)get_mean(PRESSURE));
+        ret = -EIO;
     }
 #endif
 
@@ -284,6 +287,7 @@ int update_advertisement_data()
     if (err)
     {
         LOG_WRN("CO2 concentration outside of the expected limits (err %d, value %d)", err, (uint16_t)get_mean(CO2_CONCENTRATION));
+        ret = -EIO;
     }
 #endif
 
@@ -292,6 +296,7 @@ int update_advertisement_data()
     if (err)
     {
         LOG_WRN("VOC index outside of the expected limits (err %d, value %d)", err, (uint16_t)get_mean(VOC_INDEX));
+        ret = -EIO;
     }
 #endif
     return ret;

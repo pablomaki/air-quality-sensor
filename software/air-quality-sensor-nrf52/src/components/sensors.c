@@ -105,7 +105,12 @@ int init_sensors(void)
 }
 
 #ifdef ENABLE_SHT4X
-int read_sht4x_data(uint8_t index)
+/**
+ * @brief Read SHT4X sensor data and save the temperature and humidity to the variables
+ *
+ * @return int, 0 if ok, non-zero if an error occured
+ */
+static int read_sht4x_data()
 {
     int err, err2;
     err = sensor_sample_fetch(sht4x_dev_p);
@@ -133,7 +138,12 @@ int read_sht4x_data(uint8_t index)
 #endif
 
 #ifdef ENABLE_SGP40
-int read_sgp40_data(uint8_t index)
+/**
+ * @brief Read SGP40 sensor data and save the VOC index to the variables
+ *
+ * @return int, 0 if ok, non-zero if an error occured
+ */
+static int read_sgp40_data()
 {
     int err, err2;
     err = sensor_attr_set(sgp40_dev_p, SENSOR_CHAN_GAS_RES, SENSOR_ATTR_SGP40_TEMPERATURE, &temperature);
@@ -167,7 +177,12 @@ int read_sgp40_data(uint8_t index)
 #endif
 
 #ifdef ENABLE_BMP390
-int read_bmp390_data(uint8_t index)
+/**
+ * @brief Read BMP390 sensor data and save the pressure to the variables
+ *
+ * @return int, 0 if ok, non-zero if an error occured
+ */
+static int read_bmp390_data()
 {
     int err;
     err = sensor_sample_fetch(bmp390_dev_p);
@@ -194,7 +209,12 @@ int read_bmp390_data(uint8_t index)
 #endif
 
 #ifdef ENABLE_SCD4X
-int read_scd4x_data(uint8_t index)
+/**
+ * @brief Read SCD4X sensor data and save the temperature, humidity and CO2 levels to the variables
+ *
+ * @return int, 0 if ok, non-zero if an error occured
+ */
+static int read_scd4x_data()
 {
     int err, err2, err3;
 
@@ -236,41 +256,59 @@ int read_scd4x_data(uint8_t index)
 }
 #endif
 
-int suspend_sensors(void)
+int read_sensors(void)
 {
     int err;
+    int success = true;
+
+#ifdef ENABLE_SHT4X
+    err = read_sht4x_data();
+    if (err)
+    {
+        LOG_ERR("Failed to read SHT4X data (err, %d)", err);
+        success = false;
+    }
+#endif
+
 #ifdef ENABLE_SGP40
-    err = pm_device_action_run(sgp40_dev_p, PM_DEVICE_ACTION_SUSPEND);
+    err = read_sgp40_data();
     if (err)
     {
-        LOG_ERR("Failed to suspend SGP40 device (err, %d)", err);
+        LOG_ERR("Failed to read SGP40 data (err, %d)", err);
+        success = false;
     }
 #endif
+
 #ifdef ENABLE_BMP390
-    err = pm_device_action_run(bmp390_dev_p, PM_DEVICE_ACTION_SUSPEND);
+    err = read_bmp390_data();
     if (err)
     {
-        LOG_ERR("Failed to suspend BMP390 device (err, %d)", err);
+        LOG_ERR("Failed to read BMP390 data (err, %d)", err);
+        success = false;
     }
 #endif
+
 #ifdef ENABLE_SCD4X
-    err = pm_device_action_run(scd4x_dev_p, PM_DEVICE_ACTION_SUSPEND);
+    err = read_scd4x_data();
     if (err)
     {
-        LOG_ERR("Failed to suspend SCD4X device (err, %d)", err);
+        LOG_ERR("Failed to read SCD4X data (err, %d)", err);
+        success = false;
     }
 #endif
-    return 0;
+    return success ? 0 : -ENXIO;
 }
 
 int activate_sensors(void)
 {
-    int err;
+    LOG_INF("Activating sensors");
+    int err, ret = 0;
 #ifdef ENABLE_SGP40
     err = pm_device_action_run(sgp40_dev_p, PM_DEVICE_ACTION_RESUME);
     if (err)
     {
         LOG_ERR("Failed to activate SGP40 device (err, %d)", err);
+        ret = err;
     }
 #endif
 #ifdef ENABLE_BMP390
@@ -278,6 +316,7 @@ int activate_sensors(void)
     if (err)
     {
         LOG_ERR("Failed to activate BMP390 device (err, %d)", err);
+        ret = err;
     }
 #endif
 #ifdef ENABLE_SCD4X
@@ -285,7 +324,39 @@ int activate_sensors(void)
     if (err)
     {
         LOG_ERR("Failed to activate SCD4X device (err, %d)", err);
+        ret = err;
     }
 #endif
-    return 0;
+    return ret;
+}
+
+int suspend_sensors(void)
+{
+    LOG_INF("Suspending sensors");
+    int err, ret = 0;
+#ifdef ENABLE_SGP40
+    err = pm_device_action_run(sgp40_dev_p, PM_DEVICE_ACTION_SUSPEND);
+    if (err)
+    {
+        LOG_ERR("Failed to suspend SGP40 device (err, %d)", err);
+        ret = err;
+    }
+#endif
+#ifdef ENABLE_BMP390
+    err = pm_device_action_run(bmp390_dev_p, PM_DEVICE_ACTION_SUSPEND);
+    if (err)
+    {
+        LOG_ERR("Failed to suspend BMP390 device (err, %d)", err);
+        ret = err;
+    }
+#endif
+#ifdef ENABLE_SCD4X
+    err = pm_device_action_run(scd4x_dev_p, PM_DEVICE_ACTION_SUSPEND);
+    if (err)
+    {
+        LOG_ERR("Failed to suspend SCD4X device (err, %d)", err);
+        ret = err;
+    }
+#endif
+    return ret;
 }
