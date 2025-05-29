@@ -159,6 +159,9 @@
 		ssd1680 = &ssd16xx;
 		spi-flash0 = &p25q16h;
 	};
+	chosen {
+		zephyr_display = &ssd16xx; // or your display node label
+	};
 };
 
 &spi3 {

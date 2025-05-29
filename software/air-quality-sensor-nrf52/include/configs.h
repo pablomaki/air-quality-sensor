@@ -9,9 +9,9 @@
 
 // Data config
 #define FIRST_TASK_DELAY 1000                                                   // milliseconds
-#define ADVERTISEMENT_INTERVAL 60000                                            // milliseconds
+#define ADVERTISEMENT_INTERVAL 20000                                            // milliseconds
 #define BLE_TIMEOUT 10000                                                       // milliseconds
-#define MEASUREMENTS_PER_INTERVAL 3                                             // Number of measurements per interval
+#define MEASUREMENTS_PER_INTERVAL 1                                             // Number of measurements per interval
 #define MEASUREMENT_INTERVAL ADVERTISEMENT_INTERVAL / MEASUREMENTS_PER_INTERVAL // milliseconds
 
 // LED config

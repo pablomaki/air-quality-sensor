@@ -200,7 +200,7 @@ void set_state(state_t new_state)
     current_state = new_state;
 }
 
-state_t get_state(void)
+state_t get_system_state(void)
 {
     return current_state;
 }

@@ -28,6 +28,6 @@ void set_state(state_t new_state);
  *
  * @return state_t, current state
  */
-state_t get_state(void);
+state_t get_system_state(void);
 
 #endif // STATE_MANAGER_H
