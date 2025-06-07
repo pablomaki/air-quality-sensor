@@ -23,4 +23,3 @@ TODO
 * Unify error handling
 * Fix possible bug in event handler giving both warning and ok
 * Look in to reducing the amount of config variables in configs.h
-* Fix problem with SGP not measuring values after idle mode

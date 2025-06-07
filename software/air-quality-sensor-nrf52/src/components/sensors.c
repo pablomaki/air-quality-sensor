@@ -171,7 +171,25 @@ static int read_sgp40_data()
 
     // Save values
     set_value(VOC_INDEX, sensor_value_to_float(&voc_index));
+    LOG_INF("SGP40 VOC raw: %d.%d", voc_raw.val1, voc_raw.val2);
     LOG_INF("SGP40 VOC index (0 - 500): %d.%d", voc_index.val1, voc_index.val2);
+    return 0;
+}
+
+/**
+ * @brief Warm up the SGP40 sensor by doing a mock measurement without using the result
+ *
+ * @return int, 0 if ok, non-zero if an error occured
+ */
+static int warm_up_sgp40()
+{
+    int err;
+    err = sensor_sample_fetch(sgp40_dev_p);
+    if (err)
+    {
+        LOG_ERR("Failed to fetch sample from SGP40 device (err %d)", err);
+        return err;
+    }
     return 0;
 }
 #endif
@@ -270,15 +288,6 @@ int read_sensors(void)
     }
 #endif
 
-#ifdef ENABLE_SGP40
-    err = read_sgp40_data();
-    if (err)
-    {
-        LOG_ERR("Failed to read SGP40 data (err, %d)", err);
-        success = false;
-    }
-#endif
-
 #ifdef ENABLE_BMP390
     err = read_bmp390_data();
     if (err)
@@ -296,6 +305,15 @@ int read_sensors(void)
         success = false;
     }
 #endif
+
+#ifdef ENABLE_SGP40
+    err = read_sgp40_data();
+    if (err)
+    {
+        LOG_ERR("Failed to read SGP40 data (err, %d)", err);
+        success = false;
+    }
+#endif
     return success ? 0 : -ENXIO;
 }
 
@@ -308,6 +326,12 @@ int activate_sensors(void)
     if (err)
     {
         LOG_ERR("Failed to activate SGP40 device (err, %d)", err);
+        ret = err;
+    }
+    err = warm_up_sgp40();
+    if (err)
+    {
+        LOG_ERR("Failed to do a warmup measurement on the SGP40 (err, %d)", err);
         ret = err;
     }
 #endif
