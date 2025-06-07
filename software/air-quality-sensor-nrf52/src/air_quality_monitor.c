@@ -121,6 +121,20 @@ static void periodic_task(struct k_work *work)
     measurement_counter++;
     LOG_INF("Periodic measurement %d/%d done.", measurement_counter, MEASUREMENTS_PER_INTERVAL);
 
+#ifdef ENABLE_EPD
+
+    // Set state to displaying
+    set_state(UPDATING);
+
+    LOG_INF("Update displayed values.");
+    err = update_e_paper_display();
+    if (err)
+    {
+        LOG_ERR("Error updating E-paper display (err %d)", err);
+        dispatch_event(PERIODIC_TASK_WARNING);
+    }
+#endif
+
     // Stop the periodic task in short in case of not enough measurements made yet
     if (measurement_counter < MEASUREMENTS_PER_INTERVAL)
     {
@@ -145,20 +159,6 @@ static void periodic_task(struct k_work *work)
 
     // Reset measurement counter
     measurement_counter = 0;
-
-#ifdef ENABLE_EPD
-
-    // Set state to displaying
-    set_state(UPDATING);
-
-    LOG_INF("Update displayed values.");
-    err = update_e_paper_display();
-    if (err)
-    {
-        LOG_ERR("Error updating E-paper display (err %d)", err);
-        dispatch_event(PERIODIC_TASK_WARNING);
-    }
-#endif
 
     // Set state to advertising
     set_state(ADVERTISING);
