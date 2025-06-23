@@ -2,8 +2,8 @@ This project includes third-party software components listed below. Each compone
 
 ---
 
-Component: [Name of the Library or Algorithm]
-Origin: [URL to the original repository or source]
+Component: Sensirion Gas Index Algorithm
+Origin: https://github.com/Sensirion/gas-index-algorithm
 License: BSD 3-Clause License
 
 Copyright (c) [Year], [Original Author or Organization]
