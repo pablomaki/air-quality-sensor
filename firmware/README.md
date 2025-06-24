@@ -31,15 +31,6 @@ To build the project, ensure you have the following tools installed:
 3. Configure the build environment using the nRF Connect extension (v2.9 SDK and toolkit).
 4. Build the firmware by selecting the appropriate build target for the Seeed XIAO NRF52840 board.
 
-## TODO
-
-- Unify error handling across the firmware.
-- Fix a potential bug in the event handler that may trigger both warning and OK states simultaneously.
-- Investigate reducing the number of configuration variables in `configs.h` to simplify customization.
-- Migrate configurations to Kconfig for better management.
-- Add warmup time for SGP40 for more reliable performance.
-- Look in to outputting air quality label (e.g., "Good", "Moderate", "Poor") instead of VOC index. 
-
 ## Additional Resources
 
 - [Nordic Semiconductor Documentation](https://infocenter.nordicsemi.com/)
