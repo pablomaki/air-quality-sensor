@@ -33,6 +33,10 @@ static ssize_t read_data(struct bt_conn *conn,
     return bt_gatt_attr_read(conn, attr, buf, len, offset, sensor_value_ptr, sizeof(*sensor_value_ptr));
 }
 
+// Custom VOC index UUID
+#define BT_UUID_VOC_INDEX_VAL BT_UUID_128_ENCODE(0x8caa4e2a, 0x31ef, 0x4e50, 0xa19d, 0xbdfd38918119)
+#define BT_UUID_VOC_INDEX BT_UUID_DECLARE_128(BT_UUID_VOC_INDEX_VAL)
+
 // Create service
 BT_GATT_SERVICE_DEFINE(ess, BT_GATT_PRIMARY_SERVICE(BT_UUID_ESS),
 #ifdef ENABLE_SHT4X
@@ -49,7 +53,7 @@ BT_GATT_SERVICE_DEFINE(ess, BT_GATT_PRIMARY_SERVICE(BT_UUID_ESS),
 #endif
 
 #ifdef ENABLE_SGP40
-                       BT_GATT_CHARACTERISTIC(BT_UUID_GATT_VOCCONC, BT_GATT_CHRC_READ | BT_GATT_CHRC_NOTIFY, BT_GATT_PERM_READ, read_data, NULL, &voc_index),
+                       BT_GATT_CHARACTERISTIC(BT_UUID_VOC_INDEX, BT_GATT_CHRC_READ | BT_GATT_CHRC_NOTIFY, BT_GATT_PERM_READ, read_data, NULL, &voc_index),
 #endif
 );
 

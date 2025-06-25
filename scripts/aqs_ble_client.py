@@ -14,38 +14,60 @@ PORT = int(os.getenv("PORT", "1883"))
 USERNAME = os.getenv("USERNAME", "admin")
 PASSWORD = os.getenv("PASSWORD", "1234")
 
+# Characteristic specific optional functions for processing data
+def air_quality_from_voc_index(voc_index):
+    """Convert VOC index to air quality level."""
+    if voc_index >= 0 and voc_index < 80:
+        return "EXCELLENT"
+    if voc_index >= 80 and voc_index < 120:
+        return "GOOD"
+    if voc_index >= 120 and voc_index < 200:
+        return "FAIR"
+    if voc_index >= 200 and voc_index < 300:
+        return "INFERIOR"
+    if voc_index >= 300 and voc_index <= 500:
+        return "POOR"
+    else:
+        return "UNKNOWN"
+
 # BLE settings
 TARGET_ADDRESS = os.getenv("SENSOR_ADDRESS", "FF:33:0F:C1:C7:BF")
 CHARACTERISTICS = {
-    "Battery level": {
+    "battery_level": {
         "uuid": "00002a19-0000-1000-8000-00805f9b34fb",
         "scale": 1,
         "value": 0.0,
+        "action": None,
     },
-    "Pressure": {
+    "pressure": {
         "uuid": "00002a6d-0000-1000-8000-00805f9b34fb",
         "scale": 0.01,
         "value": 0.0,
+        "action": None,
     },
-    "VOC index": {
-        "uuid": "00002be7-0000-1000-8000-00805f9b34fb",
+    "voc_air_quality": {
+        "uuid": "8caa4e2a-31ef-4e50-a19d-bdfd38918119",
         "scale": 0.1,
         "value": 0.0,
+        "action": air_quality_from_voc_index,
     },
     "Temperature": {
         "uuid": "00002a6e-0000-1000-8000-00805f9b34fb",
         "scale": 0.01,
         "value": 0.0,
+        "action": None,
     },
-    "CO2 concentration": {
+    "CO2 Concentration": {
         "uuid": "00002b8c-0000-1000-8000-00805f9b34fb",
         "scale": 0.1,
         "value": 0.0,
+        "action": None,
     },
     "Humidity": {
         "uuid": "00002a6f-0000-1000-8000-00805f9b34fb",
         "scale": 0.01,
         "value": 0.0,
+        "action": None,
     }
 }
 
@@ -75,7 +97,11 @@ async def connect_and_read():
                     raw_value = await client.read_gatt_char(char["uuid"])
                     int_value = int.from_bytes(raw_value, byteorder='little')
                     scaled_value = int_value * char["scale"]
-                    char["value"] = scaled_value 
+                    if char["action"]:
+                        processed_value = char["action"](scaled_value)
+                        char["value"] = processed_value
+                    else:
+                        char["value"] = scaled_value 
                 except Exception as e:
                     print(f"Error reading {name}: {e}")
     except BleakError as e:
@@ -92,7 +118,7 @@ async def publish_mqtt_data(mqtt_client):
 
         for name, char in CHARACTERISTICS.items():
             val = char["value"]
-            topic = f"{SENSOR_NAME}/{name.replace(' ', '_').lower()}"
+            topic = f"{SENSOR_NAME}/{name}"
             print(f"Value for {name}: {val:.1f}, publishing to {topic}")
             mqtt_client.publish(topic, char["value"])
 

@@ -1,5 +1,6 @@
 #include <components/e_paper_display.h>
 #include <utils/variables.h>
+#include <utils/air_quality_mapper.h>
 #include <utils/lv_font_montserrat_64.h>
 
 #include <zephyr/kernel.h>
@@ -91,9 +92,9 @@ int init_e_paper_display(void)
     lv_obj_set_style_text_font(co2_tag2_label, &lv_font_montserrat_10, 0);
     lv_obj_set_style_text_font(co2_val_label, &lv_font_montserrat_48, 0);
     lv_obj_align(co2_tag1_label, LV_ALIGN_BOTTOM_RIGHT, 0, -115);
-    lv_obj_align(co2_tag2_label, LV_ALIGN_BOTTOM_RIGHT, -98, -114);
-    lv_obj_align(co2_val_label, LV_ALIGN_BOTTOM_RIGHT, 0, -72);
-    snprintf(label_buffer, sizeof(label_buffer), "CO  conc. (ppm)");
+    lv_obj_align(co2_tag2_label, LV_ALIGN_BOTTOM_RIGHT, -50, -114);
+    lv_obj_align(co2_val_label, LV_ALIGN_BOTTOM_RIGHT, 0, -68);
+    snprintf(label_buffer, sizeof(label_buffer), "CO  (ppm)");
     lv_label_set_text(co2_tag1_label, label_buffer);
     snprintf(label_buffer, sizeof(label_buffer), "2");
     lv_label_set_text(co2_tag2_label, label_buffer);
@@ -102,16 +103,16 @@ int init_e_paper_display(void)
     voc_val_label = lv_label_create(lv_scr_act());
     voc_tag_label = lv_label_create(lv_scr_act());
     lv_obj_set_style_text_font(voc_tag_label, &lv_font_montserrat_16, 0);
-    lv_obj_set_style_text_font(voc_val_label, &lv_font_montserrat_48, 0);
-    lv_obj_align(voc_tag_label, LV_ALIGN_BOTTOM_RIGHT, 0, -62);
-    lv_obj_align(voc_val_label, LV_ALIGN_BOTTOM_RIGHT, 0, -19);
-    snprintf(label_buffer, sizeof(label_buffer), "VOC index");
+    lv_obj_set_style_text_font(voc_val_label, &lv_font_montserrat_28, 0);
+    lv_obj_align(voc_tag_label, LV_ALIGN_BOTTOM_RIGHT, 0, -55);
+    lv_obj_align(voc_val_label, LV_ALIGN_BOTTOM_RIGHT, 0, -28);
+    snprintf(label_buffer, sizeof(label_buffer), "Air quality");
     lv_label_set_text(voc_tag_label, label_buffer);
 
     // Set up battery percentage label
     battery_percentage_label = lv_label_create(lv_scr_act());
-    lv_obj_set_style_text_font(battery_percentage_label, &lv_font_montserrat_18, 0);
-    lv_obj_align(battery_percentage_label, LV_ALIGN_BOTTOM_RIGHT, -3, -8);
+    lv_obj_set_style_text_font(battery_percentage_label, &lv_font_montserrat_20, 0);
+    lv_obj_align(battery_percentage_label, LV_ALIGN_BOTTOM_RIGHT, -3, -6);
 
     // Turn off display blanking for ???
     display_blanking_off(epd_dev);
@@ -120,7 +121,6 @@ int init_e_paper_display(void)
 
 int update_e_paper_display(void)
 {
-    int err;
     float temp = get_mean(TEMPERATURE);
     float hum = get_mean(HUMIDITY);
     float co2 = get_mean(CO2_CONCENTRATION);
@@ -138,10 +138,10 @@ int update_e_paper_display(void)
     snprintf(label_buffer, sizeof(label_buffer), "%d", (int)co2);
     lv_label_set_text(co2_val_label, label_buffer);
 
-    snprintf(label_buffer, sizeof(label_buffer), "%d", (int)voc);
+    snprintf(label_buffer, sizeof(label_buffer), "%s", air_quality_from_voc_index((int)voc));
     lv_label_set_text(voc_val_label, label_buffer);
 
-    snprintf(label_buffer, sizeof(label_buffer), "Battery: %d%%", (int)bat);
+    snprintf(label_buffer, sizeof(label_buffer), "BATT: %d%%", (int)bat);
     lv_label_set_text(battery_percentage_label, label_buffer);
 
     lv_task_handler();

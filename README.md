@@ -31,7 +31,6 @@ Refer to the README files in each subdirectory for more details.
     - Investigate reducing the number of configuration variables in `configs.h` to simplify customization.
     - Migrate configurations to Kconfig for better management.
     - Add warmup time for SGP40 for more reliable performance.
-    - Look in to outputting air quality label (e.g., "Good", "Moderate", "Poor") instead of VOC index. 
     - Try restricting BLE connections with a whitelist to improve security.
     - Add support for BME680 sensor.
 - **PCB**
