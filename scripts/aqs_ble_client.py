@@ -119,7 +119,10 @@ async def publish_mqtt_data(mqtt_client):
         for name, char in CHARACTERISTICS.items():
             val = char["value"]
             topic = f"{SENSOR_NAME}/{name}"
-            print(f"Value for {name}: {val:.1f}, publishing to {topic}")
+            if isinstance(val, float):
+                print(f"Value for {name}: {val:.1f}, publishing to {topic}")
+            else:
+                print(f"Value for {name}: {val}, publishing to {topic}")
             mqtt_client.publish(topic, char["value"])
 
     except Exception as e:
