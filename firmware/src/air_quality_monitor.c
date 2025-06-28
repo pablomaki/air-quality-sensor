@@ -94,8 +94,9 @@ static void periodic_task(struct k_work *work)
     // Log time for calculating correct time to sleep
     int64_t start_time_ms = k_uptime_get();
 
-    // Set state to measuring
+    // Set state to measuring and idle idle some time for sensor warmup
     set_state(MEASURING);
+    k_sleep(K_MSEC(SENSOR_WARMUP_TIME_MS));
 
 #ifdef ENABLE_BATTERY_MONITOR
     LOG_INF("Read battery level");

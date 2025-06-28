@@ -19,10 +19,11 @@
 #define ENABLE_EVENT_LED      // Enable or disable event LED
 
 // Sensors
-#define ENABLE_SHT4X  // Enable or disable SHT4X sensor
-#define ENABLE_SGP40  // Enable or disable SGP40 sensor
-#define ENABLE_SCD4X  // Enable or disable SCD4X sensor
-#define ENABLE_BMP390 // Enable or disable BMP390 sensor
+#define ENABLE_SHT4X               // Enable or disable SHT4X sensor
+#define ENABLE_SGP40               // Enable or disable SGP40 sensor
+#define ENABLE_SCD4X               // Enable or disable SCD4X sensor
+#define ENABLE_BMP390              // Enable or disable BMP390 sensor
+#define SENSOR_WARMUP_TIME_MS 5000 // Warmup time for sensors (required by at least SGP40 for more consistemt readings.)
 
 // Environment
 #define ALTITUDE 10          // meters
