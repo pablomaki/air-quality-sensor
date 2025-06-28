@@ -85,7 +85,7 @@ float bt_ess_get_voc_index(void)
 int bt_ess_set_temperature(float new_temperature)
 {
     int ret = 0;
-    if (new_temperature >= TEMPERATURE_MAX || new_temperature < TEMPERATURE_MIN)
+    if (new_temperature > 1000 || new_temperature < 0)
     {
         ret = -EINVAL;
     }
@@ -96,7 +96,7 @@ int bt_ess_set_temperature(float new_temperature)
 int bt_ess_set_humidity(float new_humidity)
 {
     int ret = 0;
-    if (new_humidity > HUMIDITY_MAX || new_humidity < HUMIDITY_MIN)
+    if (new_humidity > 100 || new_humidity < 0)
     {
         ret = -EINVAL;
     }
@@ -107,7 +107,7 @@ int bt_ess_set_humidity(float new_humidity)
 int bt_ess_set_pressure(float new_pressure)
 {
     int ret = 0;
-    if (new_pressure > PRESSURE_MAX || new_pressure < PRESSURE_MIN)
+    if (new_pressure > 200000 || new_pressure < 0)
     {
         ret = -EINVAL;
     }
@@ -118,7 +118,7 @@ int bt_ess_set_pressure(float new_pressure)
 int bt_ess_set_co2_concentration(float new_co2_concentration)
 {
     int ret = 0;
-    if (new_co2_concentration > CO2_CONCENTRATION_MAX || new_co2_concentration < CO2_CONCENTRATION_MIN)
+    if (new_co2_concentration > 10000 || new_co2_concentration < 0)
     {
         ret = -EINVAL;
     }
@@ -129,7 +129,7 @@ int bt_ess_set_co2_concentration(float new_co2_concentration)
 int bt_ess_set_voc_index(float new_voc_index)
 {
     int ret = 0;
-    if (new_voc_index > VOC_INDEX_MAX || new_voc_index < VOC_INDEX_MIN)
+    if (new_voc_index > 500 || new_voc_index < 0)
     {
         ret = -EINVAL;
     }

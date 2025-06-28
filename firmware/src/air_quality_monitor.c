@@ -69,7 +69,7 @@ static int schedule_work_task(int64_t delay)
  */
 static int64_t calculate_task_delay(int64_t start_time_ms)
 {
-    int64_t delay = MEASUREMENT_INTERVAL - (k_uptime_get() - start_time_ms);
+    int64_t delay = ADVERTISEMENT_INTERVAL / MEASUREMENTS_PER_INTERVAL - (k_uptime_get() - start_time_ms);
     if (delay < 0)
     {
         LOG_ERR("Missed deadline, scheduling immediately!");
@@ -289,7 +289,7 @@ int init_air_quality_monitor(void)
     // Initialize periodic task and time the first task in 10 seconds
     LOG_INF("Setting up the periodic task for measuring and advertising data...");
     k_work_init_delayable(&periodic_work, periodic_task);
-    err = schedule_work_task(FIRST_TASK_DELAY);
+    err = schedule_work_task(1000); // Start the first task in 1 seconds
     if (err)
     {
         dispatch_event(INITIALIZATION_ERROR);

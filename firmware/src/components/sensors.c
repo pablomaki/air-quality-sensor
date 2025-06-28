@@ -30,10 +30,10 @@ static GasIndexAlgorithmParams voc_params;
 #include <drivers/scd4x.h>
 static const struct device *scd4x_dev_p;
 static struct sensor_value co2_concentration, temperature_2, humidity_2;
-static struct sensor_value asc_initial_period = {(2 * 24 * 60 * 60) / (MEASUREMENT_INTERVAL / 1000) / 12, 0};
-static struct sensor_value asc_standard_period = {(7 * 24 * 60 * 60) / (MEASUREMENT_INTERVAL / 1000) / 12, 0};
-static struct sensor_value sensor_altitude = {ALTITUDE, 0};
-static struct sensor_value temperature_offset = {TEMPERATURE_OFFSET, 0};
+static struct sensor_value asc_initial_period = {(2 * 24 * 60 * 60) / (ADVERTISEMENT_INTERVAL / MEASUREMENTS_PER_INTERVAL / 1000) / 12, 0};
+static struct sensor_value asc_standard_period = {(7 * 24 * 60 * 60) / (ADVERTISEMENT_INTERVAL / MEASUREMENTS_PER_INTERVAL / 1000) / 12, 0};
+static struct sensor_value sensor_altitude = {SCD4X_ALTITUDE, 0};
+static struct sensor_value temperature_offset = {SCD4X_TEMPERATURE_OFFSET, 0};
 #endif
 
 #ifdef ENABLE_BMP390
@@ -62,7 +62,7 @@ int init_sensors(void)
         LOG_ERR("Device sgp40 is not ready.");
         return -ENXIO;
     }
-    GasIndexAlgorithm_init_with_sampling_interval(&voc_params, GasIndexAlgorithm_ALGORITHM_TYPE_VOC, MEASUREMENT_INTERVAL / 1000);
+    GasIndexAlgorithm_init_with_sampling_interval(&voc_params, GasIndexAlgorithm_ALGORITHM_TYPE_VOC, ADVERTISEMENT_INTERVAL / MEASUREMENTS_PER_INTERVAL / 1000);
 #endif
 
 #ifdef ENABLE_SCD4X

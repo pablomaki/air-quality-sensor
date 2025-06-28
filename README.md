@@ -28,7 +28,6 @@ Refer to the README files in each subdirectory for more details.
 - **Firmware**
     - Unify error handling across the firmware.
     - Fix a potential bug in the event handler that may trigger both warning and OK states simultaneously.
-    - Investigate reducing the number of configuration variables in `configs.h` to simplify customization.
     - Migrate configurations to Kconfig for better management.
     - Try restricting BLE connections with a whitelist to improve security.
     - Add support for BME680 sensor.

@@ -10,18 +10,22 @@
 
 LOG_MODULE_REGISTER(battery_monitor);
 
-#define BATTERY_NODE DT_NODELABEL(xiao_nrf52_bm)
-#define BM_ADC_CHANNEL SAADC_CH_PSELP_PSELP_AnalogInput7 // ADC channel
-#define BM_ADC_GAIN ADC_GAIN_1_6						 // Gain of 1/6 to fit range of 0 to 4.2V inside ADC reference voltage range of 0.6
-#define BM_ADC_REF ADC_REF_INTERNAL						 // Use internal reference voltage
-#define BATTERY_CAPACCITY_MAP_DEPTH 11					 // NUmber of voltage to percentage points in the map
+#define BATTERY_MANAGER_NODE DT_NODELABEL(xiao_nrf52_bm)
 
-static const struct device *adc_battery_dev = DEVICE_DT_GET(DT_NODELABEL(adc));
+#define BM_ADC_CHANNEL SAADC_CH_PSELP_PSELP_AnalogInput7 // ADC channel
+#define BM_ADC_REF ADC_REF_INTERNAL						 // Use internal reference voltage
+#define BM_ADC_GAIN ADC_GAIN_1_6						 // Gain of 1/6 to fit range of 0 to 4.2V inside ADC reference voltage range of 0.6V
+#define BM_ADC_ID 0                						 // ADC channel for battery monitor
+#define ADC_SAMPLES_TOTAL 10                             // Number of samples to take for averaging
+#define ADC_SAMPLE_INTERVAL_US 500                       // Microseconds
+#define BM_ADC_RESOLUTION 12                             // ADC resolution in bits
+
+static const struct device *adc_battery_manager_dev = DEVICE_DT_GET(DT_NODELABEL(adc));
 
 // BM GPIO configurations
-static const struct gpio_dt_spec enable_charging_gpios = GPIO_DT_SPEC_GET_OR(BATTERY_NODE, enable_charging_gpios, {0});
-static const struct gpio_dt_spec read_gpios = GPIO_DT_SPEC_GET_OR(BATTERY_NODE, read_gpios, {0});
-static const struct gpio_dt_spec charge_current_select_gpios = GPIO_DT_SPEC_GET_OR(BATTERY_NODE, charge_current_select_gpios, {0});
+static const struct gpio_dt_spec enable_charging_gpios = GPIO_DT_SPEC_GET_OR(BATTERY_MANAGER_NODE, enable_charging_gpios, {0});
+static const struct gpio_dt_spec read_gpios = GPIO_DT_SPEC_GET_OR(BATTERY_MANAGER_NODE, read_gpios, {0});
+static const struct gpio_dt_spec charge_current_select_gpios = GPIO_DT_SPEC_GET_OR(BATTERY_MANAGER_NODE, charge_current_select_gpios, {0});
 
 /**
  * @brief ADC channel configuration
@@ -71,11 +75,10 @@ typedef struct
 } battery_state_t;
 
 /**
- * @brief Battery capacity map for each supported battery type
+ * @brief Battery capacity map for each supported battery type (estimate, needs to be tuned)
  *
  */
-#ifdef BATTERY_TYPE_SAMSUNG_Q30
-static battery_state_t battery_capacity_map[BATTERY_CAPACCITY_MAP_DEPTH] = {
+static battery_state_t battery_capacity_map[11] = {
 	{4200, 100.0}, // Fully charged
 	{4060, 90.0},
 	{4030, 80.0},
@@ -88,7 +91,6 @@ static battery_state_t battery_capacity_map[BATTERY_CAPACCITY_MAP_DEPTH] = {
 	{3270, 10.0},
 	{3060, 0.0} // Minimum safe voltage
 };
-#endif
 
 /**
  * @brief Initial battery state
@@ -113,14 +115,14 @@ static int calculate_percentage(void)
 		battery.percentage = 100.0;
 		return 0;
 	}
-	else if (battery.voltage <= battery_capacity_map[BATTERY_CAPACCITY_MAP_DEPTH - 1].voltage)
+	else if (battery.voltage <= battery_capacity_map[sizeof(battery_capacity_map) / sizeof(battery_capacity_map[0]) - 1].voltage)
 	{
 		battery.percentage = 0.0;
 		return 0;
 	}
 
 	// Map the voltage to percentage
-	for (uint16_t i = 0; i < BATTERY_CAPACCITY_MAP_DEPTH - 1; i++)
+	for (uint16_t i = 0; i < sizeof(battery_capacity_map) / sizeof(battery_capacity_map[0]) - 1; i++)
 	{
 		uint16_t voltage_high = battery_capacity_map[i].voltage;
 		uint16_t voltage_low = battery_capacity_map[i + 1].voltage;
@@ -160,10 +162,10 @@ static int battery_get_charge_lvl(void)
 
 	int rc = 0;
 
-	uint16_t adc_vref = adc_ref_internal(adc_battery_dev);
+	uint16_t adc_vref = adc_ref_internal(adc_battery_manager_dev);
 
 	// Get ADC samples
-	rc = adc_read(adc_battery_dev, &sequence);
+	rc = adc_read(adc_battery_manager_dev, &sequence);
 	if (rc)
 	{
 		LOG_WRN("ADC read failed (err %d)", rc);
@@ -206,12 +208,12 @@ int init_battery_monitor()
 	int rc = 0;
 
 	// ADC setup
-	if (!device_is_ready(adc_battery_dev))
+	if (!device_is_ready(adc_battery_manager_dev))
 	{
 		LOG_ERR("ADC device not found!");
 		return -EIO;
 	}
-	rc = adc_channel_setup(adc_battery_dev, &bm_adc_config);
+	rc = adc_channel_setup(adc_battery_manager_dev, &bm_adc_config);
 	if (rc)
 	{
 		LOG_ERR("ADC setup failed (err %d)", rc);
@@ -266,7 +268,6 @@ int init_battery_monitor()
 	}
 
 	rc = gpio_pin_set_dt(&read_gpios, 1);
-	;
 	if (rc)
 	{
 		LOG_ERR("Failed to enable battery read (err %d)", rc);
