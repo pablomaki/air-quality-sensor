@@ -27,7 +27,7 @@ typedef enum
 int init_event_handler(void);
 
 /**
- * @brief Handle event by blinking LED if ENABLE_EVENT_LED is defined
+ * @brief Handle event by blinking LED if CONFIG_ENABLE_EVENT_LED is true
  *
  * @param event Event received
  */

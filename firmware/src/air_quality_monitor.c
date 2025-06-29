@@ -1,7 +1,6 @@
 #include <air_quality_monitor.h>
 #include <components/bluetooth_handler.h>
 #include <components/e_paper_display.h>
-#include <configs.h>
 #include <components/sensors.h>
 #include <components/battery_monitor.h>
 #include <utils/variable_buffer.h>
@@ -69,7 +68,7 @@ static int schedule_work_task(int64_t delay)
  */
 static int64_t calculate_task_delay(int64_t start_time_ms)
 {
-    int64_t delay = ADVERTISEMENT_INTERVAL / MEASUREMENTS_PER_INTERVAL - (k_uptime_get() - start_time_ms);
+    int64_t delay = CONFIG_ADVERTISEMENT_INTERVAL / CONFIG_MEASUREMENTS_PER_INTERVAL - (k_uptime_get() - start_time_ms);
     if (delay < 0)
     {
         LOG_ERR("Missed deadline, scheduling immediately!");
@@ -96,9 +95,9 @@ static void periodic_task(struct k_work *work)
 
     // Set state to measuring and idle idle some time for sensor warmup
     set_state(MEASURING);
-    k_sleep(K_MSEC(SENSOR_WARMUP_TIME_MS));
+    k_sleep(K_MSEC(CONFIG_SENSOR_WARMUP_TIME_MS));
 
-#ifdef ENABLE_BATTERY_MONITOR
+#ifdef CONFIG_ENABLE_BATTERY_MONITOR
     LOG_INF("Read battery level");
     err = read_battery_level();
     if (err)
@@ -120,9 +119,9 @@ static void periodic_task(struct k_work *work)
 
     // Increment measurement counter and print progress in log
     measurement_counter++;
-    LOG_INF("Periodic measurement %d/%d done.", measurement_counter, MEASUREMENTS_PER_INTERVAL);
+    LOG_INF("Periodic measurement %d/%d done.", measurement_counter, CONFIG_MEASUREMENTS_PER_INTERVAL);
 
-#ifdef ENABLE_EPD
+#ifdef CONFIG_ENABLE_EPD
 
     // Set state to displaying
     set_state(UPDATING);
@@ -137,7 +136,7 @@ static void periodic_task(struct k_work *work)
 #endif
 
     // Stop the periodic task in short in case of not enough measurements made yet
-    if (measurement_counter < MEASUREMENTS_PER_INTERVAL)
+    if (measurement_counter < CONFIG_MEASUREMENTS_PER_INTERVAL)
     {
         LOG_INF("Periodic task done, scheduling a new task");
         int64_t delay = calculate_task_delay(start_time_ms);
@@ -234,7 +233,7 @@ int init_air_quality_monitor(void)
     }
     LOG_INF("Event handler initialized succesfully.");
 
-#ifdef ENABLE_EPD
+#ifdef CONFIG_ENABLE_EPD
     // Initialize E-paper display
     LOG_INF("Initializing E-paper display...");
     err = init_e_paper_display();
@@ -272,7 +271,7 @@ int init_air_quality_monitor(void)
     }
     LOG_INF("Sensors initialized succesfully.");
 
-#ifdef ENABLE_BATTERY_MONITOR
+#ifdef CONFIG_ENABLE_BATTERY_MONITOR
     // Initialize battery monitor
     LOG_INF("Initializing the battery monitor...");
     err = init_battery_monitor();

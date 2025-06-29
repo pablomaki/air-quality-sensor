@@ -1,5 +1,4 @@
 #include <ble_services/ess.h>
-#include <configs.h>
 
 #include <zephyr/bluetooth/gatt.h>
 #include <zephyr/logging/log.h>
@@ -39,47 +38,47 @@ static ssize_t read_data(struct bt_conn *conn,
 
 // Create service
 BT_GATT_SERVICE_DEFINE(ess, BT_GATT_PRIMARY_SERVICE(BT_UUID_ESS),
-#ifdef ENABLE_SHT4X
+#ifdef CONFIG_ENABLE_SHT4X
                        BT_GATT_CHARACTERISTIC(BT_UUID_TEMPERATURE, BT_GATT_CHRC_READ | BT_GATT_CHRC_NOTIFY, BT_GATT_PERM_READ, read_data, NULL, &temperature),
                        BT_GATT_CHARACTERISTIC(BT_UUID_HUMIDITY, BT_GATT_CHRC_READ | BT_GATT_CHRC_NOTIFY, BT_GATT_PERM_READ, read_data, NULL, &humidity),
 #endif
 
-#ifdef ENABLE_BMP390
+#ifdef CONFIG_ENABLE_BMP390
                        BT_GATT_CHARACTERISTIC(BT_UUID_PRESSURE, BT_GATT_CHRC_READ | BT_GATT_CHRC_NOTIFY, BT_GATT_PERM_READ, read_data, NULL, &pressure),
 #endif
 
-#ifdef ENABLE_SCD4X
+#ifdef CONFIG_ENABLE_SCD4X
                        BT_GATT_CHARACTERISTIC(BT_UUID_GATT_CO2CONC, BT_GATT_CHRC_READ | BT_GATT_CHRC_NOTIFY, BT_GATT_PERM_READ, read_data, NULL, &co2_concentration),
 #endif
 
-#ifdef ENABLE_SGP40
+#ifdef CONFIG_ENABLE_SGP40
                        BT_GATT_CHARACTERISTIC(BT_UUID_VOC_INDEX, BT_GATT_CHRC_READ | BT_GATT_CHRC_NOTIFY, BT_GATT_PERM_READ, read_data, NULL, &voc_index),
 #endif
 );
 
 float bt_ess_get_temperature(void)
 {
-    return (float)temperature / TEMPERATURE_SCALE;
+    return (float)temperature / CONFIG_TEMPERATURE_SCALE;
 }
 
 float bt_ess_get_humidity(void)
 {
-    return (float)humidity / HUMIDITY_SCALE;
+    return (float)humidity / CONFIG_HUMIDITY_SCALE;
 }
 
 float bt_ess_get_pressure(void)
 {
-    return (float)pressure / PRESSURE_SCALE;
+    return (float)pressure / ((float)CONFIG_PRESSURE_SCALE / 10.0f);
 }
 
 float bt_ess_get_co2_concentration(void)
 {
-    return (float)co2_concentration / CO2_CONCENTRATION_SCALE;
+    return (float)co2_concentration / CONFIG_CO2_CONCENTRATION_SCALE;
 }
 
 float bt_ess_get_voc_index(void)
 {
-    return (float)voc_index / VOC_INDEX_SCALE;
+    return (float)voc_index / CONFIG_VOC_INDEX_SCALE;
 }
 
 int bt_ess_set_temperature(float new_temperature)
@@ -89,7 +88,7 @@ int bt_ess_set_temperature(float new_temperature)
     {
         ret = -EINVAL;
     }
-    temperature = (uint16_t)(new_temperature * TEMPERATURE_SCALE);
+    temperature = (uint16_t)(new_temperature * CONFIG_TEMPERATURE_SCALE);
     return ret;
 }
 
@@ -100,7 +99,7 @@ int bt_ess_set_humidity(float new_humidity)
     {
         ret = -EINVAL;
     }
-    humidity = (uint16_t)(new_humidity * HUMIDITY_SCALE);
+    humidity = (uint16_t)(new_humidity * CONFIG_HUMIDITY_SCALE);
     return ret;
 }
 
@@ -111,7 +110,7 @@ int bt_ess_set_pressure(float new_pressure)
     {
         ret = -EINVAL;
     }
-    pressure = (uint16_t)(new_pressure * PRESSURE_SCALE);
+    pressure = (uint16_t)(new_pressure * ((float)CONFIG_PRESSURE_SCALE / 10.0f));
     return ret;
 }
 
@@ -122,7 +121,7 @@ int bt_ess_set_co2_concentration(float new_co2_concentration)
     {
         ret = -EINVAL;
     }
-    co2_concentration = (uint16_t)(new_co2_concentration * CO2_CONCENTRATION_SCALE);
+    co2_concentration = (uint16_t)(new_co2_concentration * CONFIG_CO2_CONCENTRATION_SCALE);
     return ret;
 }
 
@@ -133,6 +132,6 @@ int bt_ess_set_voc_index(float new_voc_index)
     {
         ret = -EINVAL;
     }
-    voc_index = (uint16_t)(new_voc_index * VOC_INDEX_SCALE);
+    voc_index = (uint16_t)(new_voc_index * CONFIG_VOC_INDEX_SCALE);
     return ret;
 }

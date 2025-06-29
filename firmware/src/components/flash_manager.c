@@ -1,5 +1,4 @@
 #include <components/flash_manager.h>
-#include <configs.h>
 
 #include <zephyr/logging/log.h>
 #include <zephyr/device.h>

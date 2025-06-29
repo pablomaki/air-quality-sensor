@@ -1,5 +1,4 @@
 #include <drivers/led_controller.h>
-#include <configs.h>
 
 #include <zephyr/logging/log.h>
 #include <zephyr/drivers/gpio.h>

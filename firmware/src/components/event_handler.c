@@ -1,5 +1,4 @@
 #include <components/event_handler.h>
-#include <configs.h>
 #include <drivers/led_controller.h>
 
 #include <zephyr/logging/log.h>
@@ -9,7 +8,7 @@ LOG_MODULE_REGISTER(event_handler);
 int init_event_handler(void)
 {
     int err;
-#ifdef ENABLE_EVENT_LED
+#ifdef CONFIG_ENABLE_EVENT_LED
     err = init_led_controller();
     if (err)
     {
@@ -22,7 +21,7 @@ int init_event_handler(void)
 
 void dispatch_event(event_t event)
 {
-#ifdef ENABLE_EVENT_LED
+#ifdef CONFIG_ENABLE_EVENT_LED
     switch (event)
     {
     case INITIALIZATION_SUCCESS:

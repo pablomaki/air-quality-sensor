@@ -1,6 +1,5 @@
 #include <components/battery_monitor.h>
 #include <utils/variable_buffer.h>
-#include <configs.h>
 
 #include <zephyr/kernel.h>
 #include <zephyr/drivers/gpio.h>
@@ -190,7 +189,7 @@ static int battery_get_charge_lvl(void)
 	}
 
 	// Calculate battery voltage.
-	float scale_factor = ((float)(VOLTAGE_DIVIDER_R1 + VOLTAGE_DIVIDER_R2)) / VOLTAGE_DIVIDER_R2;
+	float scale_factor = ((float)(CONFIG_VOLTAGE_DIVIDER_R1 + CONFIG_VOLTAGE_DIVIDER_R2)) / CONFIG_VOLTAGE_DIVIDER_R2;
 	battery.voltage = (uint16_t)(adc_mv * scale_factor);
 
 	// Get battery percentage.
@@ -260,7 +259,7 @@ int init_battery_monitor()
 		return rc;
 	}
 
-	rc = gpio_pin_set_dt(&charge_current_select_gpios, USE_FAST_CHARGING);
+	rc = gpio_pin_set_dt(&charge_current_select_gpios, CONFIG_USE_FAST_CHARGING);
 	if (rc)
 	{
 		LOG_ERR("Failed to set charge current (err %d)", rc);

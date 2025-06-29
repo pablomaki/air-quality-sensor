@@ -1,5 +1,4 @@
 #include <components/sensors.h>
-#include <configs.h>
 #include <utils/variable_buffer.h>
 
 #include <sensirion_gas_index_algorithm.h>
@@ -13,30 +12,30 @@
 
 LOG_MODULE_REGISTER(sensors);
 
-#ifdef ENABLE_SHT4X
+#ifdef CONFIG_ENABLE_SHT4X
 #include <zephyr/drivers/sensor/sht4x.h>
 static const struct device *sht4x_dev_p;
 static struct sensor_value temperature, humidity;
 #endif
 
-#ifdef ENABLE_SGP40
+#ifdef CONFIG_ENABLE_SGP40
 #include <zephyr/drivers/sensor/sgp40.h>
 static const struct device *sgp40_dev_p;
 static struct sensor_value voc_raw, voc_index;
 static GasIndexAlgorithmParams voc_params;
 #endif
 
-#ifdef ENABLE_SCD4X
+#ifdef CONFIG_ENABLE_SCD4X
 #include <drivers/scd4x.h>
 static const struct device *scd4x_dev_p;
 static struct sensor_value co2_concentration, temperature_2, humidity_2;
-static struct sensor_value asc_initial_period = {(2 * 24 * 60 * 60) / (ADVERTISEMENT_INTERVAL / MEASUREMENTS_PER_INTERVAL / 1000) / 12, 0};
-static struct sensor_value asc_standard_period = {(7 * 24 * 60 * 60) / (ADVERTISEMENT_INTERVAL / MEASUREMENTS_PER_INTERVAL / 1000) / 12, 0};
-static struct sensor_value sensor_altitude = {SCD4X_ALTITUDE, 0};
-static struct sensor_value temperature_offset = {SCD4X_TEMPERATURE_OFFSET, 0};
+static struct sensor_value asc_initial_period = {(2 * 24 * 60 * 60) / (CONFIG_ADVERTISEMENT_INTERVAL / CONFIG_MEASUREMENTS_PER_INTERVAL / 1000) / 12, 0};
+static struct sensor_value asc_standard_period = {(7 * 24 * 60 * 60) / (CONFIG_ADVERTISEMENT_INTERVAL / CONFIG_MEASUREMENTS_PER_INTERVAL / 1000) / 12, 0};
+static struct sensor_value sensor_altitude = {CONFIG_SCD4X_ALTITUDE, 0};
+static struct sensor_value temperature_offset = {CONFIG_SCD4X_TEMPERATURE_OFFSET, 0};
 #endif
 
-#ifdef ENABLE_BMP390
+#ifdef CONFIG_ENABLE_BMP390
 #include <drivers/bmp390.h>
 static const struct device *bmp390_dev_p;
 static struct sensor_value pressure, temperature_3;
@@ -46,7 +45,7 @@ int init_sensors(void)
 {
     int err;
 
-#ifdef ENABLE_SHT4X
+#ifdef CONFIG_ENABLE_SHT4X
     sht4x_dev_p = DEVICE_DT_GET_ANY(sensirion_sht4x);
     if (!device_is_ready(sht4x_dev_p))
     {
@@ -55,17 +54,17 @@ int init_sensors(void)
     }
 #endif
 
-#ifdef ENABLE_SGP40
+#ifdef CONFIG_ENABLE_SGP40
     sgp40_dev_p = DEVICE_DT_GET_ANY(sensirion_sgp40);
     if (!device_is_ready(sgp40_dev_p))
     {
         LOG_ERR("Device sgp40 is not ready.");
         return -ENXIO;
     }
-    GasIndexAlgorithm_init_with_sampling_interval(&voc_params, GasIndexAlgorithm_ALGORITHM_TYPE_VOC, ADVERTISEMENT_INTERVAL / MEASUREMENTS_PER_INTERVAL / 1000);
+    GasIndexAlgorithm_init_with_sampling_interval(&voc_params, GasIndexAlgorithm_ALGORITHM_TYPE_VOC, CONFIG_ADVERTISEMENT_INTERVAL / CONFIG_MEASUREMENTS_PER_INTERVAL / 1000);
 #endif
 
-#ifdef ENABLE_SCD4X
+#ifdef CONFIG_ENABLE_SCD4X
     scd4x_dev_p = DEVICE_DT_GET_ANY(sensirion_scd41);
     if (!device_is_ready(scd4x_dev_p))
     {
@@ -84,7 +83,7 @@ int init_sensors(void)
     }
 #endif
 
-#ifdef ENABLE_BMP390
+#ifdef CONFIG_ENABLE_BMP390
     bmp390_dev_p = DEVICE_DT_GET_ANY(bosch_bmp390);
     if (!device_is_ready(bmp390_dev_p))
     {
@@ -94,7 +93,7 @@ int init_sensors(void)
 #endif
 
     // Initialize the buffers for the sensor values
-    err = init_buffers(MEASUREMENTS_PER_INTERVAL);
+    err = init_buffers(CONFIG_MEASUREMENTS_PER_INTERVAL);
     if (err)
     {
         LOG_ERR("Failed to initialize sensor value buffers (err %d)", err);
@@ -104,7 +103,7 @@ int init_sensors(void)
     return 0;
 }
 
-#ifdef ENABLE_SHT4X
+#ifdef CONFIG_ENABLE_SHT4X
 /**
  * @brief Read SHT4X sensor data and save the temperature and humidity to the variables
  *
@@ -141,7 +140,7 @@ static int read_sht4x_data()
 }
 #endif
 
-#ifdef ENABLE_SGP40
+#ifdef CONFIG_ENABLE_SGP40
 /**
  * @brief Read SGP40 sensor data and save the VOC index to the variables
  *
@@ -201,7 +200,7 @@ static int warm_up_sgp40()
 }
 #endif
 
-#ifdef ENABLE_BMP390
+#ifdef CONFIG_ENABLE_BMP390
 /**
  * @brief Read BMP390 sensor data and save the pressure to the variables
  *
@@ -235,7 +234,7 @@ static int read_bmp390_data()
 }
 #endif
 
-#ifdef ENABLE_SCD4X
+#ifdef CONFIG_ENABLE_SCD4X
 /**
  * @brief Read SCD4X sensor data and save the temperature, humidity and CO2 levels to the variables
  *
@@ -245,7 +244,7 @@ static int read_scd4x_data()
 {
     int err, err2, err3;
 
-#ifdef ENABLE_BMP390
+#ifdef CONFIG_ENABLE_BMP390
     err = sensor_attr_set(scd4x_dev_p, SENSOR_CHAN_CO2, SENSOR_ATTR_SCD4X_AMBIENT_PRESSURE, &pressure);
     if (err)
     {
@@ -274,7 +273,7 @@ static int read_scd4x_data()
 
     // Save values
     set_value(CO2_CONCENTRATION, sensor_value_to_float(&co2_concentration));
-#ifndef ENABLE_SHT4X
+#ifndef CONFIG_ENABLE_SHT4X
     set_value(TEMPERATURE, sensor_value_to_float(&temperature_2));
     set_value(HUMIDITY, sensor_value_to_float(&humidity_2));
 #endif
@@ -290,7 +289,7 @@ int read_sensors(void)
     int err;
     int success = true;
 
-#ifdef ENABLE_SHT4X
+#ifdef CONFIG_ENABLE_SHT4X
     err = read_sht4x_data();
     if (err)
     {
@@ -299,7 +298,7 @@ int read_sensors(void)
     }
 #endif
 
-#ifdef ENABLE_BMP390
+#ifdef CONFIG_ENABLE_BMP390
     err = read_bmp390_data();
     if (err)
     {
@@ -308,7 +307,7 @@ int read_sensors(void)
     }
 #endif
 
-#ifdef ENABLE_SCD4X
+#ifdef CONFIG_ENABLE_SCD4X
     err = read_scd4x_data();
     if (err)
     {
@@ -317,7 +316,7 @@ int read_sensors(void)
     }
 #endif
 
-#ifdef ENABLE_SGP40
+#ifdef CONFIG_ENABLE_SGP40
     err = read_sgp40_data();
     if (err)
     {
@@ -332,7 +331,7 @@ int activate_sensors(void)
 {
     LOG_INF("Activating sensors");
     int err, ret = 0;
-#ifdef ENABLE_SGP40
+#ifdef CONFIG_ENABLE_SGP40
     err = pm_device_action_run(sgp40_dev_p, PM_DEVICE_ACTION_RESUME);
     if (err)
     {
@@ -346,7 +345,7 @@ int activate_sensors(void)
         ret = err;
     }
 #endif
-#ifdef ENABLE_BMP390
+#ifdef CONFIG_ENABLE_BMP390
     err = pm_device_action_run(bmp390_dev_p, PM_DEVICE_ACTION_RESUME);
     if (err)
     {
@@ -354,7 +353,7 @@ int activate_sensors(void)
         ret = err;
     }
 #endif
-#ifdef ENABLE_SCD4X
+#ifdef CONFIG_ENABLE_SCD4X
     err = pm_device_action_run(scd4x_dev_p, PM_DEVICE_ACTION_RESUME);
     if (err)
     {
@@ -369,7 +368,7 @@ int suspend_sensors(void)
 {
     LOG_INF("Suspending sensors");
     int err, ret = 0;
-#ifdef ENABLE_SGP40
+#ifdef CONFIG_ENABLE_SGP40
     err = pm_device_action_run(sgp40_dev_p, PM_DEVICE_ACTION_SUSPEND);
     if (err)
     {
@@ -377,7 +376,7 @@ int suspend_sensors(void)
         ret = err;
     }
 #endif
-#ifdef ENABLE_BMP390
+#ifdef CONFIG_ENABLE_BMP390
     err = pm_device_action_run(bmp390_dev_p, PM_DEVICE_ACTION_SUSPEND);
     if (err)
     {
@@ -385,7 +384,7 @@ int suspend_sensors(void)
         ret = err;
     }
 #endif
-#ifdef ENABLE_SCD4X
+#ifdef CONFIG_ENABLE_SCD4X
     err = pm_device_action_run(scd4x_dev_p, PM_DEVICE_ACTION_SUSPEND);
     if (err)
     {

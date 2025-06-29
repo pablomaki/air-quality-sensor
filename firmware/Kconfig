@@ -1,0 +1,162 @@
+# Main Kconfig file for air quality sensor
+
+mainmenu "Air Quality Sensor Configuration"
+
+source "Kconfig.zephyr"
+
+menu "Application Configuration"
+
+menu "Timing Configuration"
+
+config ADVERTISEMENT_INTERVAL
+    int "Advertisement interval (milliseconds)"
+    default 300000
+    help
+      Interval between BLE advertisements in milliseconds.
+
+config BLE_TIMEOUT
+    int "BLE timeout (milliseconds)"
+    default 10000
+    help
+      Timeout for BLE operations in milliseconds.
+
+config MEASUREMENTS_PER_INTERVAL
+    int "Measurements per interval"
+    default 5
+    help
+      Number of sensor measurements to take per advertising interval.
+
+config SENSOR_WARMUP_TIME_MS
+    int "Sensor warmup time (milliseconds)"
+    default 5000
+    help
+      Warmup time for sensors in milliseconds. Required by SGP40 for consistent readings.
+
+endmenu
+
+menu "Bluetooth Configuration"
+
+config ENABLE_CONN_FILTER_LIST
+    bool "Enable connection filter list"
+    default n
+    help
+      Use filter list for BLE connections (feature not finished).
+
+config TEMPERATURE_SCALE
+    int "Temperature scale factor"
+    default 100
+    help
+      Scale factor for temperature values. 100 for 2 decimal places.
+
+config HUMIDITY_SCALE
+    int "Humidity scale factor"
+    default 100
+    help
+      Scale factor for humidity values. 100 for 2 decimal places.
+
+config PRESSURE_SCALE
+    int "Pressure scale factor"
+    default 1
+    help
+      Pressure scale factor divided by 10. Use 1 for 0.1 scale factor.
+
+config CO2_CONCENTRATION_SCALE
+    int "CO2 concentration scale factor"
+    default 10
+    help
+      Scale factor for CO2 concentration. 10 for 1 decimal place.
+
+config VOC_INDEX_SCALE
+    int "VOC index scale factor"
+    default 10
+    help
+      Scale factor for VOC index. 10 for 1 decimal place.
+
+endmenu
+
+menu "Peripheral Configuration"
+
+config ENABLE_EVENT_LED
+    bool "Enable event LED"
+    default y
+    help
+      Enable or disable the event LED.
+
+config ENABLE_SHT4X
+    bool "Enable SHT4X sensor"
+    default y
+    help
+      Enable or disable SHT4X temperature/humidity sensor.
+
+config ENABLE_SGP40
+    bool "Enable SGP40 sensor"
+    default y
+    help
+      Enable or disable SGP40 VOC sensor.
+
+config ENABLE_SCD4X
+    bool "Enable SCD4X sensor"
+    default y
+    help
+      Enable or disable SCD4X CO2 sensor.
+
+config ENABLE_BMP390
+    bool "Enable BMP390 sensor"
+    default y
+    help
+      Enable or disable BMP390 pressure sensor.
+
+config ENABLE_EPD
+    bool "Enable e-paper display"
+    default y
+    help
+      Enable or disable the e-paper display screen.
+
+config ENABLE_BATTERY_MONITOR
+    bool "Enable battery monitor"
+    default y
+    help
+      Enable or disable battery voltage monitoring.
+
+endmenu
+
+menu "SCD4X Sensor Configuration"
+
+config SCD4X_ALTITUDE
+    int "Altitude (meters)"
+    default 10
+    help
+      Altitude in meters. Only used if pressure is not provided by other sensors.
+
+config SCD4X_TEMPERATURE_OFFSET
+    int "Temperature offset (Celsius)"
+    default 0
+    help
+      Temperature offset in Celsius. Reported temperature = measured - offset.
+      SCD41 temperature readings are not currently used.
+
+endmenu
+
+menu "Battery Monitor Configuration"
+
+config USE_FAST_CHARGING
+    bool "Use fast charging"
+    default y
+    help
+      Enable fast charging (100 mA) instead of slow charging (50 mA).
+
+config VOLTAGE_DIVIDER_R1
+    int "Voltage divider R1 (kohm)"
+    default 1031
+    help
+      R1 resistor value in kohm. Needs manual calibration for accurate readings.
+
+config VOLTAGE_DIVIDER_R2
+    int "Voltage divider R2 (kohm)"
+    default 510
+    help
+      R2 resistor value in kohm. Needs manual calibration for accurate readings.
+
+endmenu
+
+endmenu

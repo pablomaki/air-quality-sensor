@@ -1,5 +1,4 @@
 #include <components/bluetooth_handler.h>
-#include <configs.h>
 #include <utils/variable_buffer.h>
 #include <ble_services/ess.h>
 #include <ble_services/bas.h>
@@ -30,7 +29,7 @@ typedef enum
 static const struct bt_data adv_data[] = {
     BT_DATA_BYTES(BT_DATA_FLAGS, (BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR)), // Options
     BT_DATA_BYTES(BT_DATA_UUID16_ALL,
-#ifdef ENABLE_BATTERY_MONITOR
+#ifdef CONFIG_ENABLE_BATTERY_MONITOR
                   BT_UUID_16_ENCODE(BT_UUID_BAS_VAL),
 #endif
                   BT_UUID_16_ENCODE(BT_UUID_ESS_VAL))}; // Battery & Environmental sensing service
@@ -193,7 +192,7 @@ static struct bt_conn_cb conn_callbacks = {
     .disconnected = on_disconnect,
 };
 
-#ifdef ENABLE_CONN_FILTER_LIST
+#ifdef CONFIG_ENABLE_CONN_FILTER_LIST
 /**
  * @brief Struct for allowed connections
  *
@@ -244,7 +243,7 @@ int init_ble(ble_exit_cb_t exit_cb, ble_connect_cb_t conn_cb)
     // Initialize work delayable queue for advertisement timeout handling
     k_work_init_delayable(&stop_ble_work, ble_timeout);
 
-#ifdef ENABLE_CONN_FILTER_LIST
+#ifdef CONFIG_ENABLE_CONN_FILTER_LIST
     // Register connectable addresses if filter is used
     bt_le_filter_accept_list_add(&phone_1_address);
     bt_le_filter_accept_list_add(&phone_2_address);
@@ -266,7 +265,7 @@ int update_advertisement_data()
         ret = -EIO;
     }
 
-#ifdef ENABLE_SHT4X
+#ifdef CONFIG_ENABLE_SHT4X
     err = bt_ess_set_temperature(get_mean(TEMPERATURE));
     if (err)
     {
@@ -281,7 +280,7 @@ int update_advertisement_data()
     }
 #endif
 
-#ifdef ENABLE_BMP390
+#ifdef CONFIG_ENABLE_BMP390
     err = bt_ess_set_pressure(get_mean(PRESSURE));
     if (err)
     {
@@ -290,7 +289,7 @@ int update_advertisement_data()
     }
 #endif
 
-#ifdef ENABLE_SCD4X
+#ifdef CONFIG_ENABLE_SCD4X
     err = bt_ess_set_co2_concentration(get_mean(CO2_CONCENTRATION));
     if (err)
     {
@@ -299,7 +298,7 @@ int update_advertisement_data()
     }
 #endif
 
-#ifdef ENABLE_SGP40
+#ifdef CONFIG_ENABLE_SGP40
     err = bt_ess_set_voc_index(get_mean(VOC_INDEX));
     if (err)
     {
@@ -315,7 +314,7 @@ int start_advertise(void)
     LOG_INF("Starting BLE advertisement");
     int err;
 
-#ifdef ENABLE_CONN_FILTER_LIST
+#ifdef CONFIG_ENABLE_CONN_FILTER_LIST
     err = bt_le_adv_start(&adv_params_multi_whitelist, adv_data, ARRAY_SIZE(adv_data), NULL, 0);
 #else
     err = bt_le_adv_start(BT_LE_ADV_CONN_ONE_TIME, adv_data, ARRAY_SIZE(adv_data), NULL, 0);
@@ -328,7 +327,7 @@ int start_advertise(void)
     set_ble_state(BLE_ADVERTISING);
 
     // Schedule timeout for stopping advertising
-    err = k_work_schedule(&stop_ble_work, K_MSEC(BLE_TIMEOUT));
+    err = k_work_schedule(&stop_ble_work, K_MSEC(CONFIG_BLE_TIMEOUT));
     if (err != 0 && err != 1)
     {
         LOG_ERR("Error scheduling a advertise timeout task (err %d)", err);

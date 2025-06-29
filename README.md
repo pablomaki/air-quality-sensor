@@ -26,7 +26,6 @@ Refer to the README files in each subdirectory for more details.
 
 ## TODO
 - **Firmware**
-    - Migrate configurations to Kconfig for better management.
     - Try restricting BLE connections with a whitelist to improve security.
     - Add support for BME680 sensor.
 - **PCB**
