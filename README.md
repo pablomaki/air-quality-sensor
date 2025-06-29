@@ -26,7 +26,6 @@ Refer to the README files in each subdirectory for more details.
 
 ## TODO
 - **Firmware**
-    - Fix a potential bug in the event handler that may trigger both warning and OK states simultaneously.
     - Migrate configurations to Kconfig for better management.
     - Try restricting BLE connections with a whitelist to improve security.
     - Add support for BME680 sensor.
