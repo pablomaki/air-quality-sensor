@@ -3,7 +3,7 @@
 
 #include <zephyr/kernel.h>
 
-#include <utils/variables.h>
+#include <utils/variable_buffer.h>
 
 /**
  * @brief Enumeration for events

@@ -4,7 +4,7 @@
 #include <configs.h>
 #include <components/sensors.h>
 #include <components/battery_monitor.h>
-#include <utils/variables.h>
+#include <utils/variable_buffer.h>
 #include <components/event_handler.h>
 #include <components/state_manager.h>
 

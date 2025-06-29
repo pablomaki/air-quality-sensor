@@ -1,38 +1,64 @@
-#include "utils/variable_buffer.h"
+#include <utils/variable_buffer.h>
+
 #include <stdlib.h>
 
-int buffer_init(variable_buffer_t *buffer, size_t size)
+static variable_buffer_t buffers[NUM_VARIABLES];
+
+int init_buffers(size_t size)
 {
-    buffer->data = (float *)malloc(size * sizeof(float));
-    if (!buffer->data)
-    {
-        return -1; // Memory allocation failed
-    }
-    buffer->size = size;
-    buffer->index = 0;
-    return 0;
+	for (int i = 0; i < NUM_VARIABLES; i++)
+	{
+		buffers[i].data = (float *)malloc(size * sizeof(float));
+		if (!buffers[i].data)
+		{
+			// Free already allocated buffers on failure
+			for (int j = 0; j < i; j++)
+			{
+				free(buffers[j].data);
+			}
+			return -1;
+		}
+		buffers[i].size = size;
+		buffers[i].index = 0;
+	}
+	return 0;
 }
 
-void buffer_add(variable_buffer_t *buffer, float value)
+void free_buffers(void)
 {
-    buffer->data[buffer->index] = value;
-    buffer->index = (buffer->index + 1) % buffer->size; // Circular buffer
+	for (int i = 0; i < NUM_VARIABLES; i++)
+	{
+		free(buffers[i].data);
+		buffers[i].data = NULL;
+		buffers[i].size = 0;
+		buffers[i].index = 0;
+	}
 }
 
-float buffer_get_mean(const variable_buffer_t *buffer)
+void set_value(variable_t variable, float value)
 {
-    float sum = 0.0f;
-    for (size_t i = 0; i < buffer->size; i++)
-    {
-        sum += buffer->data[i];
-    }
-    return sum / buffer->size;
+	variable_buffer_t *buffer = &buffers[variable];
+	buffer->data[buffer->index] = value;
+	buffer->index = (buffer->index + 1) % buffer->size; // Circular buffer
 }
 
-void buffer_free(variable_buffer_t *buffer)
+float get_mean(variable_t variable)
 {
-    free(buffer->data);
-    buffer->data = NULL;
-    buffer->size = 0;
-    buffer->index = 0;
+	variable_buffer_t *buffer = &buffers[variable];
+	float sum = 0.0f;
+	for (size_t i = 0; i < buffer->size; i++)
+	{
+		if (buffer->data[i] < 0)
+		{
+			return -1.0f; // Indicate reading error within the buffer
+		}
+		sum += buffer->data[i];
+	}
+	return sum / buffer->size;
+}
+
+float get_latest(variable_t variable)
+{
+	variable_buffer_t *buffer = &buffers[variable];
+	return buffer->data[(buffer->index - 1 + buffer->size) % buffer->size]; // Get the last added value
 }

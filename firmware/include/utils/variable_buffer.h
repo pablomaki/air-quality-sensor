@@ -4,6 +4,19 @@
 #include <stdint.h>
 #include <stddef.h>
 
+// Define the variables that will be stored in buffers
+typedef enum
+{
+    BATTERY_LEVEL,
+    TEMPERATURE,
+    HUMIDITY,
+    PRESSURE,
+    CO2_CONCENTRATION,
+    VOC_INDEX,
+    NUM_VARIABLES // Total number of variables
+} variable_t;
+
+// Define the buffer structure for each variable
 typedef struct
 {
     float *data;
@@ -11,36 +24,42 @@ typedef struct
     size_t index;
 } variable_buffer_t;
 
+
 /**
- * @brief Initialize a buffer
+ * @brief Initialize all buffers
  *
- * @param buffer Pointer to the buffer
- * @param size Size of the buffer
+ * @param size Size of each buffer
  * @return 0 on success, -1 on failure
  */
-int buffer_init(variable_buffer_t *buffer, size_t size);
+int init_buffers(size_t size);
 
 /**
- * @brief Add a value to the buffer
- *
- * @param buffer Pointer to the buffer
- * @param value Value to add
+ * @brief Free all buffers
  */
-void buffer_add(variable_buffer_t *buffer, float value);
+void free_buffers(void);
 
 /**
- * @brief Get the mean of the buffer
+ * @brief Set a value in the buffer
  *
- * @param buffer Pointer to the buffer
- * @return Mean of the buffer values
+ * @param variable The variable to set (e.g., TEMPERATURE)
+ * @param value The value to set
  */
-float buffer_get_mean(const variable_buffer_t *buffer);
+void set_value(variable_t variable, float value);
 
 /**
- * @brief Free the buffer memory
+ * @brief Get the mean value of a buffer
  *
- * @param buffer Pointer to the buffer
+ * @param variable The variable to get (e.g., TEMPERATURE)
+ * @return The mean value of the buffer
  */
-void buffer_free(variable_buffer_t *buffer);
+float get_mean(variable_t variable);
 
-#endif // VARIABLE_BUFFER_H
+/**
+ * @brief Get the latest value in the buffer
+ *
+ * @param variable The variable to get (e.g., TEMPERATURE)
+ * @return The latest value
+ */
+float get_latest(variable_t variable);
+
+#endif // VARIABLE_BUFFERS_H

@@ -1,5 +1,5 @@
 #include <components/battery_monitor.h>
-#include <utils/variables.h>
+#include <utils/variable_buffer.h>
 #include <configs.h>
 
 #include <zephyr/kernel.h>

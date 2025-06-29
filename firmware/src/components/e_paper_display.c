@@ -1,5 +1,5 @@
 #include <components/e_paper_display.h>
-#include <utils/variables.h>
+#include <utils/variable_buffer.h>
 #include <utils/air_quality_mapper.h>
 #include <utils/lv_font_montserrat_64.h>
 
@@ -122,7 +122,7 @@ int init_e_paper_display(void)
 int update_e_paper_display(void)
 {
     // Set temperature
-    float temp = get_mean(TEMPERATURE);
+    float temp = get_latest(TEMPERATURE);
     if (temp == -1) {
         lv_label_set_text(temp_ms_label, "--");
         lv_label_set_text(temp_ls_label, ".-");
@@ -134,7 +134,7 @@ int update_e_paper_display(void)
     }
 
     // Set humidity
-    float hum = get_mean(HUMIDITY);
+    float hum = get_latest(HUMIDITY);
     if (temp == -1) {
         lv_label_set_text(hum_val_label, "--");
     } else {
@@ -143,7 +143,7 @@ int update_e_paper_display(void)
     }
 
     // Set CO2 concentration
-    float co2 = get_mean(CO2_CONCENTRATION);
+    float co2 = get_latest(CO2_CONCENTRATION);
     if (co2 == -1) {
         lv_label_set_text(co2_val_label, "----");
     } else {
@@ -152,12 +152,12 @@ int update_e_paper_display(void)
     }
 
     // Set VOC index air quality label
-    float voc = get_mean(VOC_INDEX); 
+    float voc = get_latest(VOC_INDEX); 
     snprintf(label_buffer, sizeof(label_buffer), "%s", air_quality_from_voc_index((int)voc));
     lv_label_set_text(voc_val_label, label_buffer);
 
     // Set battery percentage
-    float bat = get_mean(BATTERY_LEVEL);
+    float bat = get_latest(BATTERY_LEVEL);
     if (bat == -1)
     {        
         lv_label_set_text(battery_percentage_label, "BATT: --");
