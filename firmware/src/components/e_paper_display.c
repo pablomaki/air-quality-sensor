@@ -121,28 +121,52 @@ int init_e_paper_display(void)
 
 int update_e_paper_display(void)
 {
+    // Set temperature
     float temp = get_mean(TEMPERATURE);
+    if (temp == -1) {
+        lv_label_set_text(temp_ms_label, "--");
+        lv_label_set_text(temp_ls_label, ".-");
+    } else {
+        snprintf(label_buffer, sizeof(label_buffer), "%d", (int)temp);
+        lv_label_set_text(temp_ms_label, label_buffer);
+        snprintf(label_buffer, sizeof(label_buffer), ".%01d", (int)((temp - (int)temp) * 10));
+        lv_label_set_text(temp_ls_label, label_buffer);
+    }
+
+    // Set humidity
     float hum = get_mean(HUMIDITY);
+    if (temp == -1) {
+        lv_label_set_text(hum_val_label, "--");
+    } else {
+        snprintf(label_buffer, sizeof(label_buffer), "%d", (int)hum);
+        lv_label_set_text(hum_val_label, label_buffer);
+    }
+
+    // Set CO2 concentration
     float co2 = get_mean(CO2_CONCENTRATION);
-    float voc = get_mean(VOC_INDEX);
-    float bat = get_mean(BATTERY_LEVEL);
+    if (co2 == -1) {
+        lv_label_set_text(co2_val_label, "----");
+    } else {
+        snprintf(label_buffer, sizeof(label_buffer), "%d", (int)co2);
+        lv_label_set_text(co2_val_label, label_buffer);
+    }
 
-    snprintf(label_buffer, sizeof(label_buffer), "%d", (int)temp);
-    lv_label_set_text(temp_ms_label, label_buffer);
-    snprintf(label_buffer, sizeof(label_buffer), ".%01d", (int)((temp - (int)temp) * 10));
-    lv_label_set_text(temp_ls_label, label_buffer);
-
-    snprintf(label_buffer, sizeof(label_buffer), "%d", (int)hum);
-    lv_label_set_text(hum_val_label, label_buffer);
-
-    snprintf(label_buffer, sizeof(label_buffer), "%d", (int)co2);
-    lv_label_set_text(co2_val_label, label_buffer);
-
+    // Set VOC index air quality label
+    float voc = get_mean(VOC_INDEX); 
     snprintf(label_buffer, sizeof(label_buffer), "%s", air_quality_from_voc_index((int)voc));
     lv_label_set_text(voc_val_label, label_buffer);
 
-    snprintf(label_buffer, sizeof(label_buffer), "BATT: %d%%", (int)bat);
-    lv_label_set_text(battery_percentage_label, label_buffer);
+    // Set battery percentage
+    float bat = get_mean(BATTERY_LEVEL);
+    if (bat == -1)
+    {        
+        lv_label_set_text(battery_percentage_label, "BATT: --");
+    } 
+    else
+    {
+        snprintf(label_buffer, sizeof(label_buffer), "BATT: %d%%", (int)bat);
+        lv_label_set_text(battery_percentage_label, label_buffer);
+    }
 
     lv_task_handler();
 

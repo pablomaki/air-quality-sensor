@@ -117,6 +117,8 @@ static int read_sht4x_data()
     if (err)
     {
         LOG_ERR("Failed to fetch sample from SHT4X device (err %d)", err);
+        set_value(TEMPERATURE, -1.0f); // Error indicator
+        set_value(HUMIDITY, -1.0f); // Error indicator
         return err;
     }
 
@@ -125,6 +127,8 @@ static int read_sht4x_data()
     if (err)
     {
         LOG_ERR("Failed to get temperature or humidity data (err %d, %d)", err, err2);
+        set_value(TEMPERATURE, -1.0f); // Error indicator
+        set_value(HUMIDITY, -1.0f); // Error indicator
         return err;
     }
 
@@ -151,6 +155,7 @@ static int read_sgp40_data()
     if (err || err2)
     {
         LOG_ERR("Failed to set compensation temperature and or humidity (err %d, %d)", err, err2);
+        set_value(VOC_INDEX, -1.0f); // Error indicator
         return err;
     }
 
@@ -158,6 +163,7 @@ static int read_sgp40_data()
     if (err)
     {
         LOG_ERR("Failed to fetch sample from SGP40 device (err %d)", err);
+        set_value(VOC_INDEX, -1.0f); // Error indicator
         return err;
     }
 
@@ -165,6 +171,7 @@ static int read_sgp40_data()
     if (err)
     {
         LOG_ERR("Failed to get VOC idnex data (err %d)", err);
+        set_value(VOC_INDEX, -1.0f); // Error indicator
         return err;
     }
     GasIndexAlgorithm_process(&voc_params, voc_raw.val1, &voc_index.val1);
@@ -207,6 +214,7 @@ static int read_bmp390_data()
     if (err)
     {
         LOG_ERR("Failed to fetch sample from BMP390 device (err %d)", err);
+        set_value(PRESSURE, -1.0f); // Error indicator
         return err;
     }
 
@@ -215,6 +223,7 @@ static int read_bmp390_data()
     if (err)
     {
         LOG_ERR("Failed to get pressure data (err %d)", err);
+        set_value(PRESSURE, -1.0f); // Error indicator
         return err;
     }
 
@@ -241,6 +250,7 @@ static int read_scd4x_data()
     if (err)
     {
         LOG_ERR("Failed to set pressure compensation (err %d)", err);
+        set_value(CO2_CONCENTRATION, -1.0f); // Error indicator
         return err;
     }
 #endif
@@ -249,6 +259,7 @@ static int read_scd4x_data()
     if (err)
     {
         LOG_ERR("Failed to fetch sample from SCD4x device (err %d)", err);
+        set_value(CO2_CONCENTRATION, -1.0f); // Error indicator
         return err;
     }
 

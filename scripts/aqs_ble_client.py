@@ -120,6 +120,9 @@ async def publish_mqtt_data(mqtt_client):
             val = char["value"]
             topic = f"{SENSOR_NAME}/{name}"
             if isinstance(val, float):
+                if val == -1.0:
+                    print(f"Value for {name} is invalid, not publishing to {topic}")
+                    continue
                 print(f"Value for {name}: {val:.1f}, publishing to {topic}")
             else:
                 print(f"Value for {name}: {val}, publishing to {topic}")

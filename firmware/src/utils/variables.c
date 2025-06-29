@@ -49,6 +49,10 @@ float get_mean(variable_t variable)
 	float sum = 0.0f;
 	for (size_t i = 0; i < buffer->size; i++)
 	{
+		if (buffer->data[i] < 0)
+		{
+			return -1.0f; // Indicate reading error within the buffer
+		}
 		sum += buffer->data[i];
 	}
 	return sum / buffer->size;
