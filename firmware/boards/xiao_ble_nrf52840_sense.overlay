@@ -12,12 +12,21 @@
 // You can also visit the nRF DeviceTree extension documentation at https: //docs.nordicsemi.com/bundle/nrf-connect-vscode/page/guides/ncs_configure_app.html#devicetree-support-in-the-extension
 
 / {
-	xiao_nrf52_bm: xiao_nrf52_bm{
-		compatible = "seeed,xiao-nrf52-bm";
-		enable-charging-gpios = <&gpio0 17 GPIO_ACTIVE_LOW>;
-		read-gpios = <&gpio0 14 GPIO_ACTIVE_LOW>;
+	bq25100: bq25100{
+		compatible = "ti,bq25100";
+		enable-led-gpios = <&gpio0 17 GPIO_ACTIVE_LOW>;
+		enable-read-gpios = <&gpio0 14 GPIO_ACTIVE_LOW>;
 		charge-current-select-gpios = <&gpio0 13 GPIO_ACTIVE_LOW>;
 	};
+};
+
+/ {
+   vbatt: vbatt {
+      compatible = "voltage-divider";
+      io-channels = <&adc 7>;
+      output-ohms = <510000>;
+      full-ohms = <(1031000 + 510000)>;
+   };
 };
 
 &i2c1 {
@@ -169,7 +178,17 @@
 };
 
 &adc {
-	status = "okay";
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	channel@7 {
+		reg = <7>;
+		zephyr,gain = "ADC_GAIN_1_6";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,input-positive = <NRF_SAADC_AIN7>; /* P0.31 */
+		zephyr,resolution = <12>;
+	};
 };
 
 &uart0 {

@@ -27,7 +27,6 @@ Refer to the README files in each subdirectory for more details.
 ## TODO
 - **Firmware**
     - Try restricting BLE connections with a whitelist to improve security.
-    - Use ADC device in battery manager to get configurations to devicetree
     - Add support for BME680 sensor.
 - **PCB**
     - Add support for BME680 sensor.

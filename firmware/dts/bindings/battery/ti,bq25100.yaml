@@ -1,15 +1,15 @@
-description: binding for Seeed XIAO nRF52 battery monitor
+description: binding for Texas Instruments BQ25100 control on seeed XIAO nrf52840 board
 
-compatible: "seeed,xiao-nrf52-bm"
+compatible: "ti,bq25100"
 
 properties:
-  enable-charging-gpios:
+  enable-led-gpios:
     type: phandle-array
     required: true
     description: |
-      GPIO for enabling charging
+      GPIO for enabling charging status LED
 
-  read-gpios:
+  enable-read-gpios:
     type: phandle-array
     required: true
     description: |
