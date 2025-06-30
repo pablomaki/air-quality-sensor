@@ -7,13 +7,13 @@ LOG_MODULE_REGISTER(event_handler);
 
 int init_event_handler(void)
 {
-    int err;
+    int rc = 0;
 #ifdef CONFIG_ENABLE_EVENT_LED
-    err = init_led_controller();
-    if (err)
+    rc = init_led_controller();
+    if (rc != 0)
     {
-        LOG_ERR("LED setup failed (err %d)", err);
-        return err;
+        LOG_ERR("LED setup failed (err %d).", rc);
+        return rc;
     }
 #endif
     return 0;

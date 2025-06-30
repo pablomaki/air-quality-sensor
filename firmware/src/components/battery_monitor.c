@@ -113,54 +113,54 @@ int init_battery_monitor()
 	// GPIO setup
 	if (!gpio_is_ready_dt(&enable_led_gpios))
 	{
-		LOG_ERR("GPIO enable_led_gpios not ready");
+		LOG_ERR("GPIO enable_led_gpios not ready.");
 		return -EIO;
 	}
 
 	if (!gpio_is_ready_dt(&enable_read_gpios))
 	{
-		LOG_ERR("GPIO enable_read_gpios not ready");
+		LOG_ERR("GPIO enable_read_gpios not ready.");
 		return -EIO;
 	}
 
 	if (!gpio_is_ready_dt(&charge_current_select_gpios))
 	{
-		LOG_ERR("GPIO charge_current_select_gpios not ready");
+		LOG_ERR("GPIO charge_current_select_gpios not ready.");
 		return -EIO;
 	}
 
 	rc = gpio_pin_configure_dt(&enable_led_gpios, GPIO_INPUT | GPIO_ACTIVE_LOW);
-	if (rc)
+	if (rc != 0)
 	{
-		LOG_ERR("GPIO configuration for led enable pin failed (err %d)", rc);
+		LOG_ERR("GPIO configuration for led enable pin failed (err %d).", rc);
 		return rc;
 	}
 
 	rc = gpio_pin_configure_dt(&enable_read_gpios, GPIO_OUTPUT | GPIO_ACTIVE_LOW);
-	if (rc)
+	if (rc != 0)
 	{
-		LOG_ERR("GPIO configuration for enable battery voltage read pin failed (err %d)", rc);
+		LOG_ERR("GPIO configuration for enable battery voltage read pin failed (err %d).", rc);
 		return rc;
 	}
 
 	rc = gpio_pin_configure_dt(&charge_current_select_gpios, GPIO_OUTPUT | GPIO_ACTIVE_LOW);
-	if (rc)
+	if (rc != 0)
 	{
-		LOG_ERR("GPIO configuration for charge current select pin failed (err %d)", rc);
+		LOG_ERR("GPIO configuration for charge current select pin failed (err %d).", rc);
 		return rc;
 	}
 
 	rc = gpio_pin_set_dt(&charge_current_select_gpios, CONFIG_USE_FAST_CHARGING);
-	if (rc)
+	if (rc != 0)
 	{
-		LOG_ERR("Failed to set charge current (err %d)", rc);
+		LOG_ERR("Failed to set charge current (err %d).", rc);
 		return rc;
 	}
 
 	rc = gpio_pin_set_dt(&enable_read_gpios, 1);
-	if (rc)
+	if (rc != 0)
 	{
-		LOG_ERR("Failed to enable battery read (err %d)", rc);
+		LOG_ERR("Failed to enable battery read (err %d).", rc);
 		return rc;
 	}
 
@@ -173,17 +173,17 @@ int read_battery_level()
 
 	// Get ADC samples
 	rc = sensor_sample_fetch(voltage_divider);
-	if (rc)
+	if (rc != 0)
 	{
-		LOG_ERR("Failed to fetch sample from voltage divider (err %d)", rc);
+		LOG_ERR("Failed to fetch sample from voltage divider (err %d).", rc);
 		set_value(BATTERY_LEVEL, -1.0f); // Error indicator
 		return rc;
 	}
 
 	rc = sensor_channel_get(voltage_divider, SENSOR_CHAN_VOLTAGE, &battery_voltage);
-	if (rc)
+	if (rc != 0)
 	{
-		LOG_ERR("Failed to get voltage from voltage divider (err %d)", rc);
+		LOG_ERR("Failed to get voltage from voltage divider (err %d).", rc);
 		set_value(BATTERY_LEVEL, -1.0f); // Error indicator
 		return rc;
 	}
@@ -191,9 +191,9 @@ int read_battery_level()
 	// Get battery percentage.
 	float percentage = 0.0;
 	rc = calculate_percentage(&battery_voltage, &percentage);
-	if (rc)
+	if (rc != 0)
 	{
-		LOG_ERR("Battery percentage calculation failed (err %d)", rc);
+		LOG_ERR("Battery percentage calculation failed (err %d).", rc);
 		set_value(BATTERY_LEVEL, -1.0f); // Error indicator
 		return rc;
 	}

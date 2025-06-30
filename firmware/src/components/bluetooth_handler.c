@@ -113,11 +113,11 @@ static void on_disconnect(struct bt_conn *conn, uint8_t reason)
  */
 void stop_advertise(void)
 {
-    int err;
-    err = bt_le_adv_stop();
-    if (err)
+    int rc = 0;
+    rc = bt_le_adv_stop();
+    if (rc != 0)
     {
-        LOG_ERR("Failed to stop data advertisement (err %d)", err);
+        LOG_ERR("Failed to stop data advertisement (err %d).", rc);
     }
 }
 
@@ -129,9 +129,9 @@ void stop_advertise(void)
  */
 static void on_connect(struct bt_conn *conn, uint8_t err)
 {
-    if (err)
+    if (err != 0)
     {
-        LOG_ERR("Connection failed (err %d)", err);
+        LOG_ERR("Connection failed (err %d).", err);
         return;
     }
     current_conn = bt_conn_ref(conn);
@@ -151,11 +151,11 @@ static void on_connect(struct bt_conn *conn, uint8_t err)
  */
 void disconnect(void)
 {
-    int err;
-    err = bt_conn_disconnect(current_conn, BT_HCI_ERR_REMOTE_USER_TERM_CONN);
-    if (err)
+    int rc = 0;
+    rc = bt_conn_disconnect(current_conn, BT_HCI_ERR_REMOTE_USER_TERM_CONN);
+    if (rc != 0)
     {
-        LOG_ERR("Failed to disconnect from device (err %d)", err);
+        LOG_ERR("Failed to disconnect from device (err %d).", rc);
     }
     set_ble_state(BLE_IDLE);
 }
@@ -225,12 +225,12 @@ static const struct bt_le_adv_param adv_params_multi_whitelist = {
 
 int init_ble(ble_exit_cb_t exit_cb, ble_connect_cb_t conn_cb)
 {
-    int err;
-    err = bt_enable(NULL);
-    if (err)
+    int rc = 0;
+    rc = bt_enable(NULL);
+    if (rc != 0)
     {
-        LOG_ERR("BLE enable failed (err %d)", err);
-        return err;
+        LOG_ERR("BLE enable failed (err %d).", rc);
+        return rc;
     }
 
     // Register bluetooth callbacks for connection and disconnection
@@ -253,85 +253,78 @@ int init_ble(ble_exit_cb_t exit_cb, ble_connect_cb_t conn_cb)
     return 0;
 }
 
-int update_advertisement_data()
+void update_advertisement_data(void)
 {
-    LOG_INF("Updating advertisement data");
+    LOG_INF("Updating advertisement data.");
 
-    int err, ret = 0;
-    err = bt_bas_set_battery_level(get_mean(BATTERY_LEVEL));
-    if (err)
+    int rc = 0;
+    rc = bt_bas_set_battery_level(get_mean(BATTERY_LEVEL));
+    if (rc != 0)
     {
-        LOG_WRN("Battery level outside of the expected limits (err %d, value %d)", err, (uint16_t)(BATTERY_LEVEL));
-        ret = -EIO;
+        LOG_WRN("Battery level outside of the expected limits (err %d, value %d).", rc, (uint16_t)(BATTERY_LEVEL));
     }
 
 #ifdef CONFIG_ENABLE_SHT4X
-    err = bt_ess_set_temperature(get_mean(TEMPERATURE));
-    if (err)
+    rc = bt_ess_set_temperature(get_mean(TEMPERATURE));
+    if (rc != 0)
     {
-        LOG_WRN("Temperature outside of the expected limits (err %d, value %d)", err, (uint16_t)get_mean(TEMPERATURE));
-        ret = -EIO;
+        LOG_WRN("Temperature outside of the expected limits (err %d, value %d).", rc, (uint16_t)get_mean(TEMPERATURE));
     }
-    err = bt_ess_set_humidity(get_mean(HUMIDITY));
-    if (err)
+    rc = bt_ess_set_humidity(get_mean(HUMIDITY));
+    if (rc != 0)
     {
-        LOG_WRN("Humidity outside of the expected limits (err %d, value %d)", err, (uint16_t)get_mean(HUMIDITY));
-        ret = -EIO;
+        LOG_WRN("Humidity outside of the expected limits (err %d, value %d).", rc, (uint16_t)get_mean(HUMIDITY));
     }
 #endif
 
 #ifdef CONFIG_ENABLE_BMP390
-    err = bt_ess_set_pressure(get_mean(PRESSURE));
-    if (err)
+    rc = bt_ess_set_pressure(get_mean(PRESSURE));
+    if (rc != 0)
     {
-        LOG_WRN("Pressure outside of the expected limits (err %d, value %d)", err, (uint16_t)get_mean(PRESSURE));
-        ret = -EIO;
+        LOG_WRN("Pressure outside of the expected limits (err %d, value %d).", rc, (uint16_t)get_mean(PRESSURE));
     }
 #endif
 
 #ifdef CONFIG_ENABLE_SCD4X
-    err = bt_ess_set_co2_concentration(get_mean(CO2_CONCENTRATION));
-    if (err)
+    rc = bt_ess_set_co2_concentration(get_mean(CO2_CONCENTRATION));
+    if (rc != 0)
     {
-        LOG_WRN("CO2 concentration outside of the expected limits (err %d, value %d)", err, (uint16_t)get_mean(CO2_CONCENTRATION));
-        ret = -EIO;
+        LOG_WRN("CO2 concentration outside of the expected limits (err %d, value %d).", rc, (uint16_t)get_mean(CO2_CONCENTRATION));
     }
 #endif
 
 #ifdef CONFIG_ENABLE_SGP40
-    err = bt_ess_set_voc_index(get_mean(VOC_INDEX));
-    if (err)
+    rc = bt_ess_set_voc_index(get_mean(VOC_INDEX));
+    if (rc != 0)
     {
-        LOG_WRN("VOC index outside of the expected limits (err %d, value %d)", err, (uint16_t)get_mean(VOC_INDEX));
-        ret = -EIO;
+        LOG_WRN("VOC index outside of the expected limits (err %d, value %d).", rc, (uint16_t)get_mean(VOC_INDEX));
     }
 #endif
-    return ret;
 }
 
 int start_advertise(void)
 {
-    LOG_INF("Starting BLE advertisement");
-    int err;
+    LOG_INF("Starting BLE advertisement.");
+    int rc = 0;
 
 #ifdef CONFIG_ENABLE_CONN_FILTER_LIST
-    err = bt_le_adv_start(&adv_params_multi_whitelist, adv_data, ARRAY_SIZE(adv_data), NULL, 0);
+    rc = bt_le_adv_start(&adv_params_multi_whitelist, adv_data, ARRAY_SIZE(adv_data), NULL, 0);
 #else
-    err = bt_le_adv_start(BT_LE_ADV_CONN_ONE_TIME, adv_data, ARRAY_SIZE(adv_data), NULL, 0);
+    rc = bt_le_adv_start(BT_LE_ADV_CONN_ONE_TIME, adv_data, ARRAY_SIZE(adv_data), NULL, 0);
 #endif
-    if (err)
+    if (rc != 0)
     {
-        LOG_ERR("Failed to start data advertisement (err %d)", err);
-        return err;
+        LOG_ERR("Failed to start data advertisement (err %d).", rc);
+        return rc;
     }
     set_ble_state(BLE_ADVERTISING);
 
     // Schedule timeout for stopping advertising
-    err = k_work_schedule(&stop_ble_work, K_MSEC(CONFIG_BLE_TIMEOUT));
-    if (err != 0 && err != 1)
+    rc = k_work_schedule(&stop_ble_work, K_MSEC(CONFIG_BLE_TIMEOUT));
+    if (rc != 0 && rc != 1)
     {
-        LOG_ERR("Error scheduling a advertise timeout task (err %d)", err);
-        return err;
+        LOG_ERR("Error scheduling a advertise timeout task (err %d).", rc);
+        return rc;
     }
     return 0;
 }

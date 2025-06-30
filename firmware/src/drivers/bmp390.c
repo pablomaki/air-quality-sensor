@@ -305,7 +305,7 @@ static int bmp390_init(const struct device *dev)
     rc = bmp390_write_reg(dev, BMP390_REG_CMD, BMP390_CMD_SOFT_RESET);
     if (rc < 0)
     {
-        LOG_ERR("Cannot reboot chip.");
+        LOG_ERR("Cannot reboot chip (err %d).", rc);
         return -EIO;
     }
     k_busy_wait(BMP390_START_UP_WAIT_TIME_MS * 1000);
@@ -314,7 +314,7 @@ static int bmp390_init(const struct device *dev)
     rc = bmp390_get_calibration_data(dev);
     if (rc < 0)
     {
-        LOG_ERR("Failed to read calibration data.");
+        LOG_ERR("Failed to read calibration data (err %d).", rc);
         return -EIO;
     }
 
@@ -370,7 +370,7 @@ static int bmp390_init(const struct device *dev)
     /* OSR and ODR config not proper */
     if (val & BMP390_STATUS_CONF_ERR)
     {
-        LOG_ERR("OSR and ODR configuration is not proper");
+        LOG_ERR("OSR and ODR configuration is not proper.");
         return -EINVAL;
     }
 

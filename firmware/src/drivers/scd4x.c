@@ -22,12 +22,12 @@ static uint8_t scd4x_calc_crc(uint16_t value)
 static int scd4x_read_reg(const struct device *dev, uint8_t *rx_buf, uint8_t rx_buf_size)
 {
     const scd4x_config_t *cfg = dev->config;
-    int rc;
+    int rc = 0;
 
     rc = i2c_read_dt(&cfg->bus, rx_buf, rx_buf_size);
     if (rc < 0)
     {
-        LOG_ERR("Failed to read i2c data.");
+        LOG_ERR("Failed to read i2c data (err %d).", rc);
         return rc;
     }
 
@@ -36,7 +36,7 @@ static int scd4x_read_reg(const struct device *dev, uint8_t *rx_buf, uint8_t rx_
         rc = scd4x_calc_crc(sys_get_be16(&rx_buf[i * 3]));
         if (rc != rx_buf[(i * 3) + 2])
         {
-            LOG_ERR("Invalid CRC.");
+            LOG_ERR("Invalid CRC (err %d).", rc);
             return -EIO;
         }
     }
@@ -64,12 +64,12 @@ static int scd4x_write_reg(const struct device *dev, uint16_t cmd, uint16_t *dat
 
 static int scd4x_read_sample(const struct device *dev, uint16_t *co2_sample, uint16_t *t_sample, uint16_t *rh_sample)
 {
-    int rc;
+    int rc = 0;
 
     rc = scd4x_write_reg(dev, SCD4X_CMD_READ_MEASUREMENT, NULL, 0);
     if (rc < 0)
     {
-        LOG_ERR("Failed to start measurement.");
+        LOG_ERR("Failed to start measurement (err %d).", rc);
         return rc;
     }
     k_sleep(K_MSEC(SCD4X_DEFAULT_WAIT_MS));
@@ -78,7 +78,7 @@ static int scd4x_read_sample(const struct device *dev, uint16_t *co2_sample, uin
     rc = scd4x_read_reg(dev, rx_buf, sizeof(rx_buf));
     if (rc < 0)
     {
-        LOG_ERR("Failed to read data from device.");
+        LOG_ERR("Failed to read data from device (err %d).", rc);
         return rc;
     }
 
@@ -92,7 +92,7 @@ static int scd4x_read_sample(const struct device *dev, uint16_t *co2_sample, uin
 static int scd4x_set_idle_mode(const struct device *dev)
 {
     const scd4x_config_t *cfg = dev->config;
-    int rc;
+    int rc = 0;
 
     if (cfg->mode == SCD4X_MODE_SINGLE_SHOT)
     {
@@ -104,7 +104,7 @@ static int scd4x_set_idle_mode(const struct device *dev)
         rc = scd4x_write_reg(dev, SCD4X_CMD_WAKE_UP, NULL, 0);
         if (rc < 0)
         {
-            LOG_ERR("Failed write wake_up command.");
+            LOG_ERR("Failed write wake_up command (err %d).", rc);
             return rc;
         }
         k_sleep(K_MSEC(SCD4X_WAKE_UP_WAIT_MS));
@@ -114,7 +114,7 @@ static int scd4x_set_idle_mode(const struct device *dev)
         rc = scd4x_write_reg(dev, SCD4X_CMD_STOP_PERIODIC_MEASUREMENT, NULL, 0);
         if (rc < 0)
         {
-            LOG_ERR("Failed to write stop_periodic_measurement command.");
+            LOG_ERR("Failed to write stop_periodic_measurement command (err %d).", rc);
             return rc;
         }
         k_sleep(K_MSEC(SCD4X_STOP_PERIODIC_MEASUREMENT_WAIT_MS));
@@ -126,7 +126,7 @@ static int scd4x_set_idle_mode(const struct device *dev)
 static int scd4x_setup_measurement(const struct device *dev)
 {
     const scd4x_config_t *cfg = dev->config;
-    int rc;
+    int rc = 0;
 
     switch ((scd4x_mode_t)cfg->mode)
     {
@@ -134,7 +134,7 @@ static int scd4x_setup_measurement(const struct device *dev)
         rc = scd4x_write_reg(dev, SCD4X_CMD_START_PERIODIC_MEASUREMENT, NULL, 0);
         if (rc < 0)
         {
-            LOG_ERR("Failed to write start_periodic_measurement command.");
+            LOG_ERR("Failed to write start_periodic_measurement command (err %d).", rc);
             return rc;
         }
         break;
@@ -142,7 +142,7 @@ static int scd4x_setup_measurement(const struct device *dev)
         rc = scd4x_write_reg(dev, SCD4X_CMD_START_LOW_POWER_PERIODIC_MEASUREMENT, NULL, 0);
         if (rc < 0)
         {
-            LOG_ERR("Failed to write start_low_power_periodic_measurement command.");
+            LOG_ERR("Failed to write start_low_power_periodic_measurement command (err %d).", rc);
             return rc;
         }
         break;
@@ -162,7 +162,7 @@ static int scd4x_attr_set(const struct device *dev,
                           const struct sensor_value *val)
 {
     const scd4x_config_t *cfg = dev->config;
-    int rc;
+    int rc = 0;
     bool idle_mode = false;
 
     if (chan != SENSOR_CHAN_ALL && chan != SENSOR_CHAN_AMBIENT_TEMP &&
@@ -177,7 +177,7 @@ static int scd4x_attr_set(const struct device *dev,
         rc = scd4x_set_idle_mode(dev);
         if (rc < 0)
         {
-            LOG_ERR("Failed to set idle mode.");
+            LOG_ERR("Failed to set idle mode (err %d).", rc);
             return rc;
         }
         idle_mode = true;
@@ -264,7 +264,7 @@ static int scd4x_attr_set(const struct device *dev,
 
     if (rc < 0)
     {
-        LOG_ERR("Failed to set attribute.");
+        LOG_ERR("Failed to set attribute (err %d).", rc);
         return rc;
     }
     k_sleep(K_MSEC(SCD4X_DEFAULT_WAIT_MS));
@@ -274,7 +274,7 @@ static int scd4x_attr_set(const struct device *dev,
         rc = scd4x_setup_measurement(dev);
         if (rc < 0)
         {
-            LOG_ERR("Failed to setup measurement.");
+            LOG_ERR("Failed to setup measurement (err %d).", rc);
             return rc;
         }
     }
@@ -285,14 +285,14 @@ static int scd4x_attr_set(const struct device *dev,
 static int scd4x_data_ready(const struct device *dev, bool *is_data_ready)
 {
     uint8_t rx_buf[3];
-    int rc;
+    int rc = 0;
 
     *is_data_ready = false;
 
     rc = scd4x_write_reg(dev, SCD4X_CMD_GET_DATA_READY_STATUS, NULL, 0);
     if (rc < 0)
     {
-        LOG_ERR("Failed to write get_data_ready_status command.");
+        LOG_ERR("Failed to write get_data_ready_status command (err %d).", rc);
         return rc;
     }
     k_sleep(K_MSEC(SCD4X_DEFAULT_WAIT_MS));
@@ -300,7 +300,7 @@ static int scd4x_data_ready(const struct device *dev, bool *is_data_ready)
     rc = scd4x_read_reg(dev, rx_buf, sizeof(rx_buf));
     if (rc < 0)
     {
-        LOG_ERR("Failed to read get_data_ready_status register.");
+        LOG_ERR("Failed to read get_data_ready_status register (err %d).", rc);
         return rc;
     }
 
@@ -317,7 +317,7 @@ static int scd4x_sample_fetch(const struct device *dev, enum sensor_channel chan
 {
     const scd4x_config_t *cfg = dev->config;
     scd4x_data_t *data = dev->data;
-    int rc;
+    int rc = 0;
 
     if (chan != SENSOR_CHAN_ALL && chan != SENSOR_CHAN_CO2 && chan != SENSOR_CHAN_AMBIENT_TEMP &&
         chan != SENSOR_CHAN_HUMIDITY)
@@ -330,7 +330,7 @@ static int scd4x_sample_fetch(const struct device *dev, enum sensor_channel chan
         rc = scd4x_write_reg(dev, SCD4X_CMD_MEASURE_SINGLE_SHOT, NULL, 0);
         if (rc < 0)
         {
-            LOG_ERR("Failed to start measurement.");
+            LOG_ERR("Failed to start measurement (err %d).", rc);
             return rc;
         }
         k_sleep(K_MSEC(SCD4X_MEASURE_SINGLE_SHOT_WAIT_MS));
@@ -341,7 +341,7 @@ static int scd4x_sample_fetch(const struct device *dev, enum sensor_channel chan
         rc = scd4x_data_ready(dev, &is_data_ready);
         if (rc < 0)
         {
-            LOG_ERR("Failed to check data ready.");
+            LOG_ERR("Failed to check data ready (err %d).", rc);
             return rc;
         }
         if (!is_data_ready)
@@ -354,7 +354,7 @@ static int scd4x_sample_fetch(const struct device *dev, enum sensor_channel chan
     rc = scd4x_read_sample(dev, &data->co2_sample, &data->t_sample, &data->rh_sample);
     if (rc < 0)
     {
-        LOG_ERR("Failed to fetch data.");
+        LOG_ERR("Failed to fetch data (err %d).", rc);
         return rc;
     }
 
@@ -398,19 +398,19 @@ int scd4x_forced_recalibration(const struct device *dev, uint16_t target_concent
                                uint16_t *frc_correction)
 {
     uint8_t rx_buf[3];
-    int rc;
+    int rc = 0;
 
     rc = scd4x_set_idle_mode(dev);
     if (rc < 0)
     {
-        LOG_ERR("Failed to set idle mode.");
+        LOG_ERR("Failed to set idle mode (err %d).", rc);
         return rc;
     }
 
     rc = scd4x_write_reg(dev, SCD4X_CMD_PERFORM_FORCED_RECALIBRATION, &target_concentration_ticks, 1);
     if (rc < 0)
     {
-        LOG_ERR("Failed to write perform_forced_recalibration register.");
+        LOG_ERR("Failed to write perform_forced_recalibration register (err %d).", rc);
         return rc;
     }
     k_sleep(K_MSEC(SCD4X_FORCED_CALIBRATION_WAIT_MS));
@@ -418,7 +418,7 @@ int scd4x_forced_recalibration(const struct device *dev, uint16_t target_concent
     rc = scd4x_read_reg(dev, rx_buf, sizeof(rx_buf));
     if (rc < 0)
     {
-        LOG_ERR("Failed to read perform_forced_recalibration register.");
+        LOG_ERR("Failed to read perform_forced_recalibration register (err %d).", rc);
         return rc;
     }
 
@@ -427,7 +427,7 @@ int scd4x_forced_recalibration(const struct device *dev, uint16_t target_concent
     /*from datasheet*/
     if (*frc_correction == 0xFFFF)
     {
-        LOG_ERR("FRC failed. Returned 0xFFFF.");
+        LOG_ERR("FRC failed. Returned 0xFFFF (err %d).", rc);
         return -EIO;
     }
 
@@ -436,7 +436,7 @@ int scd4x_forced_recalibration(const struct device *dev, uint16_t target_concent
     rc = scd4x_setup_measurement(dev);
     if (rc < 0)
     {
-        LOG_ERR("Failed to setup measurement.");
+        LOG_ERR("Failed to setup measurement (err %d).", rc);
         return rc;
     }
 
@@ -445,19 +445,19 @@ int scd4x_forced_recalibration(const struct device *dev, uint16_t target_concent
 
 int scd4x_factory_reset(const struct device *dev)
 {
-    int rc;
+    int rc = 0;
 
     rc = scd4x_set_idle_mode(dev);
     if (rc < 0)
     {
-        LOG_ERR("Failed to set idle mode.");
+        LOG_ERR("Failed to set idle mode (err %d).", rc);
         return rc;
     }
 
     rc = scd4x_write_reg(dev, SCD4X_CMD_PERFORM_FACTORY_RESET, NULL, 0);
     if (rc < 0)
     {
-        LOG_ERR("Failed to write perfom_factory_reset command.");
+        LOG_ERR("Failed to write perfom_factory_reset command (err %d).", rc);
         return rc;
     }
     k_sleep(K_MSEC(SCD4X_FACTORY_RESET_WAIT_MS));
@@ -465,7 +465,7 @@ int scd4x_factory_reset(const struct device *dev)
     rc = scd4x_setup_measurement(dev);
     if (rc < 0)
     {
-        LOG_ERR("Failed to setup measurement.");
+        LOG_ERR("Failed to setup measurement (err %d).", rc);
         return rc;
     }
     return 0;
@@ -473,19 +473,19 @@ int scd4x_factory_reset(const struct device *dev)
 
 int scd4x_persist_settings(const struct device *dev)
 {
-    int rc;
+    int rc = 0;
 
     rc = scd4x_set_idle_mode(dev);
     if (rc < 0)
     {
-        LOG_ERR("Failed to set idle mode.");
+        LOG_ERR("Failed to set idle mode (err %d).", rc);
         return rc;
     }
 
     rc = scd4x_write_reg(dev, SCD4X_CMD_PERSIST_SETTINGS, NULL, 0);
     if (rc < 0)
     {
-        LOG_ERR("Failed to write persist_settings command.");
+        LOG_ERR("Failed to write persist_settings command (err %d).", rc);
         return rc;
     }
     k_sleep(K_MSEC(SCD4X_PERSIST_SETTINGS_WAIT_MS));
@@ -493,7 +493,7 @@ int scd4x_persist_settings(const struct device *dev)
     rc = scd4x_setup_measurement(dev);
     if (rc < 0)
     {
-        LOG_ERR("Failed to setup measurement.");
+        LOG_ERR("Failed to setup measurement (err %d).", rc);
         return rc;
     }
 
@@ -504,19 +504,19 @@ static int scd4x_selftest(const struct device *dev)
 {
     uint8_t rx_buf[3];
     uint16_t return_value;
-    int rc;
+    int rc = 0;
 
     rc = scd4x_set_idle_mode(dev);
     if (rc < 0)
     {
-        LOG_ERR("Failed to set idle mode.");
+        LOG_ERR("Failed to set idle mode (err %d).", rc);
         return rc;
     }
 
     rc = scd4x_write_reg(dev, SCD4X_CMD_PERFORM_SELF_TEST, NULL, 0);
     if (rc < 0)
     {
-        LOG_ERR("Failed to start selftest!");
+        LOG_ERR("Failed to start selftest (err %d).", rc);
         return rc;
     }
     k_sleep(K_MSEC(SCD4X_TEST_WAIT_MS));
@@ -524,14 +524,14 @@ static int scd4x_selftest(const struct device *dev)
     rc = scd4x_read_reg(dev, rx_buf, sizeof(rx_buf));
     if (rc < 0)
     {
-        LOG_ERR("Failed to read data sample.");
+        LOG_ERR("Failed to read data sample (err %d).", rc);
         return rc;
     }
 
     return_value = sys_get_be16(rx_buf);
     if (return_value != SCD4X_TEST_OK)
     {
-        LOG_ERR("Selftest failed.");
+        LOG_ERR("Selftest failed (return value %d != 0x0000).", return_value);
         return -EIO;
     }
 
@@ -582,7 +582,7 @@ static int scd4x_init(const struct device *dev)
     rc = scd4x_write_reg(dev, SCD4X_CMD_WAKE_UP, NULL, 0);
     if (rc < 0)
     {
-        LOG_ERR("Failed to wake up the device.");
+        LOG_ERR("Failed to wake up the device (err %d).", rc);
         return rc;
     }
     k_sleep(K_MSEC(SCD4X_WAKE_UP_WAIT_MS));
@@ -590,7 +590,7 @@ static int scd4x_init(const struct device *dev)
     rc = scd4x_write_reg(dev, SCD4X_CMD_STOP_PERIODIC_MEASUREMENT, NULL, 0);
     if (rc < 0)
     {
-        LOG_ERR("Failed to put the device to idle mode.");
+        LOG_ERR("Failed to put the device to idle mode (err %d).", rc);
         return rc;
     }
     k_sleep(K_MSEC(SCD4X_STOP_PERIODIC_MEASUREMENT_WAIT_MS));
@@ -598,7 +598,7 @@ static int scd4x_init(const struct device *dev)
     rc = scd4x_write_reg(dev, SCD4X_CMD_REINIT, NULL, 0);
     if (rc < 0)
     {
-        LOG_ERR("Failed to reinitialize the device.");
+        LOG_ERR("Failed to reinitialize the device (err %d).", rc);
         return rc;
     }
     k_sleep(K_MSEC(SCD4X_REINIT_WAIT_MS));
@@ -609,16 +609,16 @@ static int scd4x_init(const struct device *dev)
 
         if (rc < 0)
         {
-            LOG_ERR("Selftest failed!");
+            LOG_ERR("Selftest failed (err %d).", rc);
             return rc;
         }
-        LOG_DBG("Selftest succeeded!");
+        LOG_DBG("Selftest succeeded.");
     }
 
     rc = scd4x_setup_measurement(dev);
     if (rc < 0)
     {
-        LOG_ERR("Failed to setup measurement.");
+        LOG_ERR("Failed to setup measurement (err %d).", rc);
         return rc;
     }
 

@@ -75,13 +75,13 @@ static state_t current_state = STATE_NOT_SET;
 
 static int execute(action_array_t action_arr)
 {
-    int err, ret = 0;
+    int rc, ret = 0;
     for (int i = 0; i < action_arr.count; i++)
     {
-        err = action_arr.actions[i]();
-        if (err)
+        rc = action_arr.actions[i]();
+        if (rc != 0)
         {
-            ret = err;
+            ret = rc;
         }
     }
     return ret;
@@ -93,34 +93,34 @@ static int execute(action_array_t action_arr)
  */
 static int enter_state(state_t state)
 {
-    int err = 0;
+    int rc = 0;
     switch (state)
     {
     case STATE_NOT_SET:
         break;
     case INITIALIZING:
-        err = execute(initialize_actions.on_enter);
+        rc = execute(initialize_actions.on_enter);
         break;
     case MEASURING:
-        err = execute(measuring_actions.on_enter);
+        rc = execute(measuring_actions.on_enter);
         break;
     case UPDATING:
-        err = execute(updating_actions.on_enter);
+        rc = execute(updating_actions.on_enter);
         break;
     case ADVERTISING:
-        err = execute(advertising_actions.on_enter);
+        rc = execute(advertising_actions.on_enter);
         break;
     case IDLE:
-        err = execute(idle_actions.on_enter);
+        rc = execute(idle_actions.on_enter);
         break;
     case ERROR:
-        err = execute(error_actions.on_enter);
+        rc = execute(error_actions.on_enter);
         break;
     default:
-        err = -EINVAL;
+        rc = -EINVAL;
         break;
     }
-    return err;
+    return rc;
 }
 
 /**
@@ -130,34 +130,34 @@ static int enter_state(state_t state)
  */
 static int exit_state(state_t state)
 {
-    int err = 0;
+    int rc = 0;
     switch (state)
     {
     case STATE_NOT_SET:
         break;
     case INITIALIZING:
-        err = execute(initialize_actions.on_exit);
+        rc = execute(initialize_actions.on_exit);
         break;
     case MEASURING:
-        err = execute(measuring_actions.on_exit);
+        rc = execute(measuring_actions.on_exit);
         break;
     case UPDATING:
-        err = execute(updating_actions.on_exit);
+        rc = execute(updating_actions.on_exit);
         break;
     case ADVERTISING:
-        err = execute(advertising_actions.on_exit);
+        rc = execute(advertising_actions.on_exit);
         break;
     case IDLE:
-        err = execute(idle_actions.on_exit);
+        rc = execute(idle_actions.on_exit);
         break;
     case ERROR:
-        err = execute(error_actions.on_exit);
+        rc = execute(error_actions.on_exit);
         break;
     default:
-        err = -EINVAL;
+        rc = -EINVAL;
         break;
     }
-    return err;
+    return rc;
 }
 
 const char *state_to_string(state_t state)
@@ -186,16 +186,16 @@ const char *state_to_string(state_t state)
 void set_state(state_t new_state)
 {
     LOG_INF("Changing state from %s to %s", state_to_string(current_state), state_to_string(new_state));
-    int err;
-    err = exit_state(current_state);
-    if (err)
+    int rc = 0;
+    rc = exit_state(current_state);
+    if (rc != 0)
     {
-        LOG_ERR("Failed to exit state %s (err %d)", state_to_string(current_state), err);
+        LOG_ERR("Failed to exit state %s (err %d).", state_to_string(current_state), rc);
     }
-    err = enter_state(new_state);
-    if (err)
+    rc = enter_state(new_state);
+    if (rc != 0)
     {
-        LOG_ERR("Failed to enter state %s (err %d)", state_to_string(new_state), err);
+        LOG_ERR("Failed to enter state %s (err %d).", state_to_string(new_state), rc);
     }
     current_state = new_state;
 }

@@ -27,9 +27,8 @@ int init_ble(ble_exit_cb_t exit_cb, ble_connect_cb_t connect_cb);
 /**
  * @brief Update advertisement data
  *
- * @return int Zero for success, non-zero otherwise.
  */
-int update_advertisement_data();
+void update_advertisement_data();
 
 /**
  * @brief Start advertising data. Setup timeout to end advertisement.

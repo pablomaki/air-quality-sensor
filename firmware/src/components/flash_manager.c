@@ -21,24 +21,24 @@ int init_flash_manager(void)
 
 int activate_flash(void)
 {
-    LOG_INF("Activating flash");
-    int err;
-    err = pm_device_action_run(qspi_dev, PM_DEVICE_ACTION_RESUME);
-    if (err)
+    LOG_INF("Activating flash.");
+    int rc = 0;
+    rc = pm_device_action_run(qspi_dev, PM_DEVICE_ACTION_RESUME);
+    if (rc != 0)
     {
-        LOG_ERR("Failed to activate P25Q16H (err, %d)", err);
+        LOG_ERR("Failed to activate P25Q16H (err %d).", rc);
     }
-    return err;
+    return rc;
 }
 
 int suspend_flash(void)
 {
-    LOG_INF("Suspending flash");
-    int err;
-    err = pm_device_action_run(qspi_dev, PM_DEVICE_ACTION_SUSPEND);
-    if (err)
+    LOG_INF("Suspending flash.");
+    int rc = 0;
+    rc = pm_device_action_run(qspi_dev, PM_DEVICE_ACTION_SUSPEND);
+    if (rc != 0)
     {
-        LOG_ERR("Failed to suspend P25Q16H (err, %d)", err);
+        LOG_ERR("Failed to suspend P25Q16H (err %d).", rc);
     }
-    return err;
+    return rc;
 }

@@ -1,5 +1,7 @@
 #include <utils/variable_buffer.h>
 
+# include <zephyr/kernel.h>
+
 #include <stdlib.h>
 
 static variable_buffer_t buffers[NUM_VARIABLES];
@@ -16,7 +18,7 @@ int init_buffers(size_t size)
 			{
 				free(buffers[j].data);
 			}
-			return -1;
+			return -ENXIO;
 		}
 		buffers[i].size = size;
 		buffers[i].index = 0;

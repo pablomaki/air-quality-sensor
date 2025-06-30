@@ -53,18 +53,28 @@ int init_led_controller(void)
 {
     if (!gpio_is_ready_dt(&led_red_spec) || !gpio_is_ready_dt(&led_green_spec) || !gpio_is_ready_dt(&led_blue_spec))
     {
-        LOG_ERR("LED devices not ready");
+        LOG_ERR("LED devices not ready.");
         return -ENXIO;
     }
 
-    int err, err2, err3;
-    err = gpio_pin_configure_dt(&led_red_spec, GPIO_OUTPUT_INACTIVE);
-    err2 = gpio_pin_configure_dt(&led_green_spec, GPIO_OUTPUT_INACTIVE);
-    err3 = gpio_pin_configure_dt(&led_blue_spec, GPIO_OUTPUT_INACTIVE);
-    if (err || err2 || err3)
+    int rc = 0;
+    rc = gpio_pin_configure_dt(&led_red_spec, GPIO_OUTPUT_INACTIVE);
+    if (rc != 0)
     {
-        LOG_ERR("GPIO configuration failed (err %d, %d, %d)", err, err2, err3);
-        return err ? err : (err2 ? err2 : err3);
+        LOG_ERR("GPIO configuration for red led failed (err %d).", rc);
+        return rc;
+    }
+    rc = gpio_pin_configure_dt(&led_green_spec, GPIO_OUTPUT_INACTIVE);
+    if (rc != 0)
+    {
+        LOG_ERR("GPIO configuration for green led failed (err %d).", rc);
+        return rc;
+    }
+    rc = gpio_pin_configure_dt(&led_blue_spec, GPIO_OUTPUT_INACTIVE);
+    if (rc != 0)
+    {
+        LOG_ERR("GPIO configuration for blue led failed (err %d).", rc);
+        return rc;
     }
     k_timer_init(&blink_ctx.timer, blink_handler, NULL);
     return 0;

@@ -41,7 +41,7 @@ int init_e_paper_display(void)
     epd_dev = DEVICE_DT_GET(DT_ALIAS(ssd1680));
     if (!device_is_ready(epd_dev))
     {
-        LOG_ERR("Display device not ready");
+        LOG_ERR("Display device not ready.");
         return -ENXIO;
     }
 
@@ -175,24 +175,24 @@ int update_e_paper_display(void)
 
 int activate_epd(void)
 {
-    LOG_INF("Activating EPD");
-    int err;
-    err = pm_device_action_run(epd_dev, PM_DEVICE_ACTION_RESUME);
-    if (err)
+    LOG_INF("Activating EPD.");
+    int rc = 0;
+    rc = pm_device_action_run(epd_dev, PM_DEVICE_ACTION_RESUME);
+    if (rc != 0)
     {
-        LOG_ERR("Failed to activate EPD device (err, %d)", err);
+        LOG_ERR("Failed to activate EPD device (err %d).", rc);
     }
-    return err;
+    return rc;
 }
 
 int suspend_epd(void)
 {
-    LOG_INF("Suspending EPD");
-    int err;
-    err = pm_device_action_run(epd_dev, PM_DEVICE_ACTION_SUSPEND);
-    if (err)
+    LOG_INF("Suspending EPD.");
+    int rc = 0;
+    rc = pm_device_action_run(epd_dev, PM_DEVICE_ACTION_SUSPEND);
+    if (rc != 0)
     {
-        LOG_ERR("Failed to suspend EPD device (err, %d)", err);
+        LOG_ERR("Failed to suspend EPD device (err %d).", rc);
     }
-    return err;
+    return rc;
 }
