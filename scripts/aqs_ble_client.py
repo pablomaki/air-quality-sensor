@@ -51,19 +51,19 @@ CHARACTERISTICS = {
         "value": 0.0,
         "action": air_quality_from_voc_index,
     },
-    "Temperature": {
+    "temperature": {
         "uuid": "00002a6e-0000-1000-8000-00805f9b34fb",
         "scale": 0.01,
         "value": 0.0,
         "action": None,
     },
-    "CO2 Concentration": {
+    "co2_concentration": {
         "uuid": "00002b8c-0000-1000-8000-00805f9b34fb",
         "scale": 0.1,
         "value": 0.0,
         "action": None,
     },
-    "Humidity": {
+    "humidity": {
         "uuid": "00002a6f-0000-1000-8000-00805f9b34fb",
         "scale": 0.01,
         "value": 0.0,
