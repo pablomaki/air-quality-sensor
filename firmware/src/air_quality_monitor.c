@@ -280,6 +280,18 @@ int init_air_quality_monitor(void)
     }
     LOG_INF("Battery monitor initialized succesfully.");
 #endif
+    dispatch_event(INITIALIZATION_SUCCESS);
+
+    // Enter idle state
+    set_state(IDLE);
+
+    return 0;
+}
+
+
+int start_air_quality_monitor(void)
+{
+    int rc = 0;
 
     // Initialize periodic task and time the first task in 10 seconds
     LOG_INF("Setting up the periodic task for measuring and advertising data.");
@@ -292,10 +304,5 @@ int init_air_quality_monitor(void)
         return rc;
     }
     LOG_INF("Periodic task initialized succesfully.");
-    dispatch_event(INITIALIZATION_SUCCESS);
-
-    // Enter idle state
-    set_state(IDLE);
-
     return 0;
 }
