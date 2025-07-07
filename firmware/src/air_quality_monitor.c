@@ -91,7 +91,9 @@ static void periodic_task(struct k_work *work)
 
     // Set state to measuring and idle idle some time for sensor warmup
     set_state(MEASURING);
+    LOG_INF("Sensor warming up started, waiting for %d ms.", CONFIG_SENSOR_WARMUP_TIME_MS);
     k_sleep(K_MSEC(CONFIG_SENSOR_WARMUP_TIME_MS));
+    LOG_INF("Sensor warm up complete.");
 
 #ifdef CONFIG_ENABLE_BATTERY_MONITOR
     LOG_INF("Reading battery level.");
@@ -287,7 +289,6 @@ int init_air_quality_monitor(void)
 
     return 0;
 }
-
 
 int start_air_quality_monitor(void)
 {
