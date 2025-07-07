@@ -33,11 +33,4 @@ int init_event_handler(void);
  */
 void dispatch_event(event_t event);
 
-/**
- * @brief Wake up from SYSTEM_OFF sleep
- *
- * @return int, 0 if ok, non-zero if an error occured
- */
-int wake_up(void);
-
 #endif // EVENT_HANDLER_H

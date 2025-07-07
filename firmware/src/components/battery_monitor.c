@@ -11,7 +11,7 @@
 
 LOG_MODULE_REGISTER(battery_monitor);
 
-#define BQ25100_NODE DT_NODELABEL(bq25100)                        // ADC resolution in bits
+#define BQ25100_NODE DT_NODELABEL(bq25100)
 
 // BM GPIO configurations
 static const struct gpio_dt_spec enable_led_gpios = GPIO_DT_SPEC_GET_OR(BQ25100_NODE, enable_led_gpios, {0});
