@@ -37,36 +37,42 @@ CHARACTERISTICS = {
         "uuid": "00002a19-0000-1000-8000-00805f9b34fb",
         "scale": 1,
         "value": 0.0,
+        "raw_value": 0.0,
         "action": None,
     },
     "pressure": {
         "uuid": "00002a6d-0000-1000-8000-00805f9b34fb",
         "scale": 0.01,
         "value": 0.0,
+        "raw_value": 0.0,
         "action": None,
     },
     "voc_air_quality": {
         "uuid": "8caa4e2a-31ef-4e50-a19d-bdfd38918119",
         "scale": 0.1,
         "value": 0.0,
+        "raw_value": 0.0,
         "action": air_quality_from_voc_index,
     },
     "temperature": {
         "uuid": "00002a6e-0000-1000-8000-00805f9b34fb",
         "scale": 0.01,
         "value": 0.0,
+        "raw_value": 0.0,
         "action": None,
     },
     "co2_concentration": {
         "uuid": "00002b8c-0000-1000-8000-00805f9b34fb",
         "scale": 0.1,
         "value": 0.0,
+        "raw_value": 0.0,
         "action": None,
     },
     "humidity": {
         "uuid": "00002a6f-0000-1000-8000-00805f9b34fb",
         "scale": 0.01,
         "value": 0.0,
+        "raw_value": 0.0,
         "action": None,
     }
 }
@@ -99,9 +105,10 @@ async def connect_and_read():
                     scaled_value = int_value * char["scale"]
                     if char["action"]:
                         processed_value = char["action"](scaled_value)
+                        char["raw_value"] = scaled_value
                         char["value"] = processed_value
                     else:
-                        char["value"] = scaled_value 
+                        char["value"] = scaled_value
                 except Exception as e:
                     print(f"Error reading {name}: {e}")
     except BleakError as e:
@@ -118,14 +125,15 @@ async def publish_mqtt_data(mqtt_client):
 
         for name, char in CHARACTERISTICS.items():
             val = char["value"]
+            raw_val = char["raw_value"]
             topic = f"{SENSOR_NAME}/{name}"
-            if isinstance(val, float):
+            if isinstance(val, float) or isinstance(val, int):
                 if val == -1.0:
                     print(f"Value for {name} is invalid, not publishing to {topic}")
                     continue
                 print(f"Value for {name}: {val:.1f}, publishing to {topic}")
             else:
-                print(f"Value for {name}: {val}, publishing to {topic}")
+                print(f"Value for {name}: {val} ({raw_val:.1f}), publishing to {topic}")
             mqtt_client.publish(topic, char["value"])
 
     except Exception as e:
