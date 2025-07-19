@@ -6,6 +6,7 @@
 #include <utils/variable_buffer.h>
 #include <components/event_handler.h>
 #include <components/state_manager.h>
+#include <components/flash_manager.h>
 
 #include <zephyr/logging/log.h>
 
@@ -268,6 +269,17 @@ int init_air_quality_monitor(void)
         return rc;
     }
     LOG_INF("Sensors initialized succesfully.");
+
+    LOG_INF("Initializing flash manager.");
+    rc = init_flash_manager();
+    if (rc != 0)
+    {
+        LOG_ERR("Error while initializing flash manager (err %d).", rc);
+        dispatch_event(INITIALIZATION_ERROR);
+        set_state(ERROR);
+        return rc;
+    }
+    LOG_INF("Flash manager initialized succesfully.");
 
 #ifdef CONFIG_ENABLE_BATTERY_MONITOR
     // Initialize battery monitor
