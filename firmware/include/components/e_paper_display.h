@@ -11,6 +11,14 @@
 int init_e_paper_display(void);
 
 /**
+ * @brief Displayt notification message on e-paper display
+ *
+ * @param message Message to display
+ * @return int, 0 if ok, non-zero if an error occured
+ */
+int display_notification(const char *message);
+
+/**
  * @brief Update data displayed
  *
  * @return int, 0 if ok, non-zero if an error occured

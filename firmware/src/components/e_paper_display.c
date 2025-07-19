@@ -19,6 +19,7 @@ LV_FONT_DECLARE(lv_font_montserrat_64);
 
 static const struct device *epd_dev;
 
+static lv_obj_t *notif_label;
 static lv_obj_t *temp_tag_label;
 static lv_obj_t *temp_ms_label;
 static lv_obj_t *temp_ls_label;
@@ -44,6 +45,11 @@ int init_e_paper_display(void)
         LOG_ERR("Display device not ready.");
         return -ENXIO;
     }
+
+    // Setup notification label
+    notif_label = lv_label_create(lv_scr_act());
+    lv_obj_set_style_text_font(notif_label, &lv_font_montserrat_64, 0);
+    lv_obj_align(notif_label, LV_ALIGN_CENTER, 0, 0);
 
     // Set up temperature labels
     temp_tag_label = lv_label_create(lv_scr_act());
@@ -77,12 +83,6 @@ int init_e_paper_display(void)
     lv_obj_align(hum_val_label, LV_ALIGN_BOTTOM_RIGHT, -165, 3);
     lv_obj_align(hum_unit1_label, LV_ALIGN_BOTTOM_LEFT, 85, -23);
     lv_obj_align(hum_unit2_label, LV_ALIGN_BOTTOM_LEFT, 82, -6);
-    snprintf(label_buffer, sizeof(label_buffer), "Humidity");
-    lv_label_set_text(hum_tag_label, label_buffer);
-    snprintf(label_buffer, sizeof(label_buffer), "%%");
-    lv_label_set_text(hum_unit1_label, label_buffer);
-    snprintf(label_buffer, sizeof(label_buffer), "RH");
-    lv_label_set_text(hum_unit2_label, label_buffer);
 
     // Set up CO2 labels
     co2_tag1_label = lv_label_create(lv_scr_act());
@@ -94,10 +94,6 @@ int init_e_paper_display(void)
     lv_obj_align(co2_tag1_label, LV_ALIGN_BOTTOM_RIGHT, 0, -115);
     lv_obj_align(co2_tag2_label, LV_ALIGN_BOTTOM_RIGHT, -50, -114);
     lv_obj_align(co2_val_label, LV_ALIGN_BOTTOM_RIGHT, 0, -68);
-    snprintf(label_buffer, sizeof(label_buffer), "CO  (ppm)");
-    lv_label_set_text(co2_tag1_label, label_buffer);
-    snprintf(label_buffer, sizeof(label_buffer), "2");
-    lv_label_set_text(co2_tag2_label, label_buffer);
 
     // Set up VOC labels
     voc_val_label = lv_label_create(lv_scr_act());
@@ -106,8 +102,6 @@ int init_e_paper_display(void)
     lv_obj_set_style_text_font(voc_val_label, &lv_font_montserrat_28, 0);
     lv_obj_align(voc_tag_label, LV_ALIGN_BOTTOM_RIGHT, 0, -55);
     lv_obj_align(voc_val_label, LV_ALIGN_BOTTOM_RIGHT, 0, -28);
-    snprintf(label_buffer, sizeof(label_buffer), "Air quality");
-    lv_label_set_text(voc_tag_label, label_buffer);
 
     // Set up battery percentage label
     battery_percentage_label = lv_label_create(lv_scr_act());
@@ -119,14 +113,58 @@ int init_e_paper_display(void)
     return 0;
 }
 
+int display_notification(const char *message)
+{
+    lv_label_set_text(notif_label, "");
+    lv_label_set_text(temp_tag_label, "");
+    lv_label_set_text(temp_ms_label, "");
+    lv_label_set_text(temp_ls_label, "");
+    lv_label_set_text(temp_unit_label, "");
+    lv_label_set_text(hum_tag_label, "");
+    lv_label_set_text(hum_val_label, "");
+    lv_label_set_text(hum_unit1_label, "");
+    lv_label_set_text(hum_unit2_label, "");
+    lv_label_set_text(co2_tag1_label, "");
+    lv_label_set_text(co2_tag2_label, "");
+    lv_label_set_text(co2_val_label, "");
+    lv_label_set_text(voc_val_label, "");
+    lv_label_set_text(voc_tag_label, "");
+    lv_label_set_text(battery_percentage_label, "");
+    lv_label_set_text(notif_label, message);
+    lv_task_handler();
+    return 0;
+}
+
 int update_e_paper_display(void)
 {
+    lv_label_set_text(notif_label, "");
+    snprintf(label_buffer, sizeof(label_buffer), "Temperature");
+    lv_label_set_text(temp_tag_label, label_buffer);
+    snprintf(label_buffer, sizeof(label_buffer), "\xB0"
+                                                 "C");
+    lv_label_set_text(temp_unit_label, label_buffer);
+    snprintf(label_buffer, sizeof(label_buffer), "Humidity");
+    lv_label_set_text(hum_tag_label, label_buffer);
+    snprintf(label_buffer, sizeof(label_buffer), "%%");
+    lv_label_set_text(hum_unit1_label, label_buffer);
+    snprintf(label_buffer, sizeof(label_buffer), "RH");
+    lv_label_set_text(hum_unit2_label, label_buffer);
+    snprintf(label_buffer, sizeof(label_buffer), "CO  (ppm)");
+    lv_label_set_text(co2_tag1_label, label_buffer);
+    snprintf(label_buffer, sizeof(label_buffer), "2");
+    lv_label_set_text(co2_tag2_label, label_buffer);
+    snprintf(label_buffer, sizeof(label_buffer), "Air quality");
+    lv_label_set_text(voc_tag_label, label_buffer);
+
     // Set temperature
     float temp = get_latest(TEMPERATURE);
-    if (temp == -1) {
-        lv_label_set_text(temp_ms_label, "--");
+    if (temp == -1)
+    {
+        lv_label_set_text(temp_ms_label, "n/a");
         lv_label_set_text(temp_ls_label, ".-");
-    } else {
+    }
+    else
+    {
         snprintf(label_buffer, sizeof(label_buffer), "%d", (int)temp);
         lv_label_set_text(temp_ms_label, label_buffer);
         snprintf(label_buffer, sizeof(label_buffer), ".%01d", (int)((temp - (int)temp) * 10));
@@ -135,33 +173,39 @@ int update_e_paper_display(void)
 
     // Set humidity
     float hum = get_latest(HUMIDITY);
-    if (temp == -1) {
-        lv_label_set_text(hum_val_label, "--");
-    } else {
+    if (temp == -1)
+    {
+        lv_label_set_text(hum_val_label, "n/a");
+    }
+    else
+    {
         snprintf(label_buffer, sizeof(label_buffer), "%d", (int)hum);
         lv_label_set_text(hum_val_label, label_buffer);
     }
 
     // Set CO2 concentration
     float co2 = get_latest(CO2_CONCENTRATION);
-    if (co2 == -1) {
-        lv_label_set_text(co2_val_label, "----");
-    } else {
+    if (co2 == -1)
+    {
+        lv_label_set_text(co2_val_label, "n/a");
+    }
+    else
+    {
         snprintf(label_buffer, sizeof(label_buffer), "%d", (int)co2);
         lv_label_set_text(co2_val_label, label_buffer);
     }
 
     // Set VOC index air quality label
-    float voc = get_latest(VOC_INDEX); 
+    float voc = get_latest(VOC_INDEX);
     snprintf(label_buffer, sizeof(label_buffer), "%s", air_quality_from_voc_index((int)voc));
     lv_label_set_text(voc_val_label, label_buffer);
 
     // Set battery percentage
     float bat = get_latest(BATTERY_LEVEL);
     if (bat == -1)
-    {        
-        lv_label_set_text(battery_percentage_label, "BATT: --");
-    } 
+    {
+        lv_label_set_text(battery_percentage_label, "BATT: n/a");
+    }
     else
     {
         snprintf(label_buffer, sizeof(label_buffer), "BATT: %d%%", (int)bat);
