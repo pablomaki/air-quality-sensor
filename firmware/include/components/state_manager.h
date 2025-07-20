@@ -9,6 +9,7 @@ typedef enum
 {
     STATE_NOT_SET,
     INITIALIZING,
+    STARTUP,
     MEASURING,
     UPDATING,
     ADVERTISING,

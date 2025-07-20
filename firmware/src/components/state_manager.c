@@ -28,7 +28,15 @@ action_fn_t initialize_enter[] = {};
 action_fn_t initialize_exit[] = {suspend_flash, suspend_sensors, suspend_epd};
 state_actions_t initialize_actions = {
     .on_enter = {.actions = initialize_enter, .count = sizeof(initialize_enter) / sizeof(initialize_enter[0])},
-    .on_exit = {.actions = initialize_exit, .count = sizeof(initialize_exit) / sizeof(initialize_enter[0])},
+    .on_exit = {.actions = initialize_exit, .count = sizeof(initialize_exit) / sizeof(initialize_exit[0])},
+};
+
+// By default suspend everything at the end
+action_fn_t startup_enter[] = {activate_epd};
+action_fn_t startup_exit[] = {suspend_epd};
+state_actions_t startup_actions = {
+    .on_enter = {.actions = startup_enter, .count = sizeof(startup_enter) / sizeof(startup_enter[0])},
+    .on_exit = {.actions = startup_exit, .count = sizeof(startup_exit) / sizeof(startup_exit[0])},
 };
 
 // Activate sensors and suspend when done
@@ -101,6 +109,9 @@ static int enter_state(state_t state)
     case INITIALIZING:
         rc = execute(initialize_actions.on_enter);
         break;
+    case STARTUP:
+        rc = execute(startup_actions.on_enter);
+        break;
     case MEASURING:
         rc = execute(measuring_actions.on_enter);
         break;
@@ -138,6 +149,9 @@ static int exit_state(state_t state)
     case INITIALIZING:
         rc = execute(initialize_actions.on_exit);
         break;
+    case STARTUP:
+        rc = execute(startup_actions.on_exit);
+        break;
     case MEASURING:
         rc = execute(measuring_actions.on_exit);
         break;
@@ -168,6 +182,8 @@ const char *state_to_string(state_t state)
         return "STATE_NOT_SET";
     case INITIALIZING:
         return "INITIALIZING";
+    case STARTUP:
+        return "STARTUP";
     case MEASURING:
         return "MEASURING";
     case UPDATING:

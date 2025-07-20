@@ -342,6 +342,9 @@ int start_air_quality_monitor(void)
 {
     int rc = 0;
 
+    // Enter idle state
+    set_state(STARTUP);
+
     // Start periodic task work queue
     k_work_queue_start(&periodic_task_work_q, periodic_task_stack,
                        PERIODIC_TASK_THREAD_STACK_SIZE, PERIODIC_TASK_THREAD_PRIORITY, NULL);
@@ -352,10 +355,11 @@ int start_air_quality_monitor(void)
     rc = schedule_work_task(1000); // Start the first task in 1 seconds
     if (rc != 0)
     {
-        dispatch_event(INITIALIZATION_ERROR);
+        dispatch_event(STARTUP_ERROR);
         set_state(ERROR);
         return rc;
     }
     LOG_INF("Periodic task initialized succesfully.");
+    dispatch_event(STARTUP_SUCCESS);
     return 0;
 }

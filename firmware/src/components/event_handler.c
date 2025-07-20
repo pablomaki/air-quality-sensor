@@ -26,9 +26,17 @@ void dispatch_event(event_t event)
     {
     case INITIALIZATION_SUCCESS:
         // LED off
-        blink_led(LED_GREEN, 2);
+        blink_led(LED_GREEN, 3);
         break;
     case INITIALIZATION_ERROR:
+        // LED off
+        blink_led(LED_RED, 3);
+        break;
+    case STARTUP_SUCCESS:
+        // LED off
+        blink_led(LED_GREEN, 2);
+        break;
+    case STARTUP_ERROR:
         // LED off
         blink_led(LED_RED, 2);
         break;
