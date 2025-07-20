@@ -10,6 +10,9 @@
 
 LOG_MODULE_REGISTER(bluetooth_handler);
 
+#define SCHEDULE_SUCCESS 0
+#define SCHEDULE_ALREADY_QUEUED 1
+
 /**
  * @brief Enumeration for BLE state
  *
@@ -19,9 +22,7 @@ typedef enum
     BLE_STATE_NOT_SET,
     BLE_IDLE,
     BLE_PAIRING,
-    BLE_ADVERTISING,
-    BLE_CONNECTED,
-    BLE_DISCONNECTED
+    BLE_ADVERTISING
 } ble_state_t;
 
 /**
@@ -123,17 +124,18 @@ static ble_state_t get_ble_state(void)
 static void on_disconnect(struct bt_conn *conn, uint8_t reason)
 {
     LOG_INF("Device disconnected.");
-    k_work_cancel_delayable(&stop_ble_work);
-    set_ble_state(BLE_DISCONNECTED);
-
     if (current_conn)
     {
         bt_conn_unref(current_conn);
         current_conn = NULL;
     }
 
-    // Report successfull BLE termination as the central device disconnected
-    ble_exit_cb((reason == BT_HCI_ERR_REMOTE_USER_TERM_CONN) ? true : false);
+    if (get_ble_state() == BLE_ADVERTISING)
+    {
+        k_work_cancel_delayable(&stop_ble_work);
+        // Report successfull BLE termination as the central device disconnected
+        ble_exit_cb((reason == BT_HCI_ERR_REMOTE_USER_TERM_CONN) ? true : false);
+    }
 }
 
 /**
@@ -167,11 +169,13 @@ static void on_connect(struct bt_conn *conn, uint8_t err)
     const bt_addr_le_t *addr = bt_conn_get_dst(conn);
     char addr_str[BT_ADDR_LE_STR_LEN];
     bt_addr_le_to_str(addr, addr_str, sizeof(addr_str));
-
     LOG_INF("Device connected (%s), stopping advertisement.", addr_str);
-    stop_advertise();
-    ble_connect_cb();
-    set_ble_state(BLE_CONNECTED);
+
+    if (get_ble_state() == BLE_ADVERTISING)
+    {
+        stop_advertise();
+        ble_connect_cb();
+    }
 }
 
 /**
@@ -206,13 +210,15 @@ static void security_changed(struct bt_conn *conn, bt_security_t level, enum bt_
     {
         LOG_INF("Security failed: level %d err %d.", level, err);
         // Remove bond if security fails
-        bt_addr_le_t *addr = bt_conn_get_dst(conn);
+        const bt_addr_le_t *addr = bt_conn_get_dst(conn);
         bt_unpair(BT_ID_DEFAULT, addr);
         LOG_INF("Old bond removed.");
     }
 }
 
 static struct bt_conn_cb pairing_conn_callbacks = {
+    .connected = on_connect,
+    .disconnected = on_disconnect,
     .security_changed = security_changed,
 };
 
@@ -268,17 +274,17 @@ static void pairing_failed(struct bt_conn *conn, enum bt_security_err reason)
  */
 static void ble_timeout(struct k_work *work)
 {
-    if (get_ble_state() == BLE_ADVERTISING)
+    if (current_conn)
+    {
+        LOG_INF("BLE timeout reached, disconnecting from connected device.");
+        disconnect();
+    }
+    else
     {
         LOG_INF("BLE timeout reached, stopping advertising.");
         stop_advertise();
         set_ble_state(BLE_IDLE);
         ble_exit_cb(false);
-    }
-    else if (get_ble_state() == BLE_CONNECTED)
-    {
-        LOG_INF("BLE timeout reached, disconnecting from connected device.");
-        disconnect();
     }
 }
 
@@ -386,12 +392,41 @@ void register_ble_connect_cb(ble_connect_cb_t cb)
 /**
  * @brief Helper function for counting bonds bonds
  *
- * @param info
- * @param user_data
+ * @param info Bond information
+ * @param user_data User data, not used in this function
  */
 static void count_bonds(const struct bt_bond_info *info, void *user_data)
 {
     (*(int *)user_data) += 1;
+}
+
+/**
+ * @brief Helper function for adding bonded devices to the filter accept list
+ *
+ * @param info Bond information
+ * @param user_data User data, not used in this function
+ */
+static void add_to_filter_list(const struct bt_bond_info *info, void *user_data)
+{
+    char addr_str[BT_ADDR_LE_STR_LEN];
+    bt_addr_le_to_str(&info->addr, addr_str, sizeof(addr_str));
+    LOG_INF("Adding bonded device to filter list: %s", addr_str);
+
+    // Add bonded device to filter accept list
+    bt_le_filter_accept_list_add(&info->addr);
+}
+
+/**
+ * @brief Populate filter accept list with bonded devices
+ *
+ */
+static void populate_bonded_filter_list(void)
+{
+    // Clear existing filter list
+    bt_le_filter_accept_list_clear();
+
+    // Add all bonded devices to filter list
+    bt_foreach_bond(BT_ID_DEFAULT, add_to_filter_list, NULL);
 }
 
 bool has_bonded_devices(void)
@@ -433,7 +468,7 @@ int start_pairing()
 
     // Schedule pairing timeout
     rc = k_work_schedule(&pairing_timeout_work, K_MSEC(CONFIG_PAIRING_TIMEOUT));
-    if (rc != 0 && rc != 1)
+    if (rc != SCHEDULE_SUCCESS && rc != SCHEDULE_ALREADY_QUEUED)
     {
         LOG_ERR("Error scheduling pairing timeout task (err %d).", rc);
         stop_advertise();
@@ -468,6 +503,9 @@ int setup_data_advertisement(void)
         LOG_ERR("Failed to register connection callbacks (err %d).", rc);
         return rc;
     }
+
+    // Populate the white list with bonded devices
+    populate_bonded_filter_list();
     return rc;
 }
 
@@ -522,10 +560,10 @@ void update_advertisement_data(void)
 
 int start_advertise(void)
 {
-    LOG_INF("Starting BLE advertisement.");
+    LOG_INF("Starting BLE advertisement for bonded devices.");
     int rc = 0;
 
-    rc = bt_le_adv_start(BT_LE_ADV_CONN_ONE_TIME, adv_data, ARRAY_SIZE(adv_data), NULL, 0);
+    rc = bt_le_adv_start(&adv_params_multi_whitelist, adv_data, ARRAY_SIZE(adv_data), NULL, 0);
     if (rc != 0)
     {
         LOG_ERR("Failed to start data advertisement (err %d).", rc);
@@ -535,7 +573,7 @@ int start_advertise(void)
 
     // Schedule timeout for stopping advertising
     rc = k_work_schedule(&stop_ble_work, K_MSEC(CONFIG_BLE_TIMEOUT));
-    if (rc != 0 && rc != 1)
+    if (rc != SCHEDULE_SUCCESS && rc != SCHEDULE_ALREADY_QUEUED)
     {
         LOG_ERR("Error scheduling a advertise timeout task (err %d).", rc);
         stop_advertise();

@@ -34,7 +34,7 @@ ssize_t read_batt_lvl(struct bt_conn *conn,
 // Create service
 BT_GATT_SERVICE_DEFINE(bas,
 					   BT_GATT_PRIMARY_SERVICE(BT_UUID_BAS),
-					   BT_GATT_CHARACTERISTIC(BT_UUID_BAS_BATTERY_LEVEL, BT_GATT_CHRC_READ | BT_GATT_CHRC_NOTIFY, BT_GATT_PERM_READ, read_batt_lvl, NULL, &battery_level), );
+					   BT_GATT_CHARACTERISTIC(BT_UUID_BAS_BATTERY_LEVEL, BT_GATT_CHRC_READ | BT_GATT_CHRC_NOTIFY, BT_GATT_PERM_READ_ENCRYPT, read_batt_lvl, NULL, &battery_level), );
 
 float bt_bas_get_battery_level(void)
 {

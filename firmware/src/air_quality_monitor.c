@@ -19,7 +19,7 @@ LOG_MODULE_REGISTER(air_quality_monitor);
  * @brief Lower priority work queue for handling Periodic task progress
  *
  */
-#define PERIODIC_TASK_THREAD_STACK_SIZE 4192
+#define PERIODIC_TASK_THREAD_STACK_SIZE 4096
 #define PERIODIC_TASK_THREAD_PRIORITY K_PRIO_PREEMPT(0)
 K_THREAD_STACK_DEFINE(periodic_task_stack, PERIODIC_TASK_THREAD_STACK_SIZE);
 static struct k_work_q periodic_task_work_q;
@@ -446,7 +446,7 @@ int start_air_quality_monitor(void)
     // Initialize periodic task and time the first task in 10 seconds
     LOG_INF("Setting up the periodic task for measuring and advertising data.");
     k_work_init_delayable(&periodic_work, periodic_task);
-    rc = schedule_work_task(1000); // Start the first task in 1 seconds
+    rc = schedule_work_task(10000); // Start the first task in 10 seconds, some fuckery with timing and priorities here...
     if (rc != 0)
     {
         dispatch_event(STARTUP_ERROR);
