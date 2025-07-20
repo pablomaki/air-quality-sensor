@@ -25,6 +25,12 @@ K_THREAD_STACK_DEFINE(periodic_task_stack, PERIODIC_TASK_THREAD_STACK_SIZE);
 static struct k_work_q periodic_task_work_q;
 
 /**
+ * @brief Semaphore to synchronize pairing completion
+ *
+ */
+static struct k_sem pairing_sem;
+
+/**
  * @brief Semaphore to synchronize advertising completion
  *
  */
@@ -192,7 +198,7 @@ static void periodic_task(struct k_work *work)
     }
 
     // Wait for advertisement to complete or timeout
-    rc = k_sem_take(&advertising_sem, K_MSEC(CONFIG_BLE_TIMEOUT + 5000)); // Add 1s buffer
+    rc = k_sem_take(&advertising_sem, K_MSEC(CONFIG_BLE_TIMEOUT + 1000)); // Add 1s buffer
     if (rc != 0)
     {
         LOG_ERR("Advertising semaphore timeout (err %d).", rc);
@@ -244,6 +250,47 @@ static void ble_connected_callback(void)
     dispatch_event(BLE_CONNECTION_SUCCESS);
 }
 
+/**
+ * @brief Callback for pairing mode completion
+ *
+ * @param task_success True if task completed succesfully, false if it timed out.
+ */
+static void pairing_task_callback(bool task_success)
+{
+    if (!task_success)
+    {
+        LOG_INF("BLE pairing failed or timed out.");
+        dispatch_event(PAIRING_FAILURE);
+    }
+    else
+    {
+        LOG_INF("BLE pairing completed succesfully.");
+    }
+
+    // Signal that pairing process is complete
+    k_sem_give(&pairing_sem);
+}
+
+/**
+ * @brief Callback for pairing result
+ *
+ * @param success True if a device was successfully paired, false if not
+ */
+static void pairing_result_callback(bool success)
+{
+    // Check pairing results and decide next action
+    if (success)
+    {
+        LOG_INF("Device successfully paired.");
+        dispatch_event(PAIRING_SUCCESS);
+    }
+    else
+    {
+        LOG_INF("Device pairing failed.");
+        dispatch_event(PAIRING_FAILURE);
+    }
+}
+
 int init_air_quality_monitor(void)
 {
     int rc = 0;
@@ -292,6 +339,8 @@ int init_air_quality_monitor(void)
     k_sem_init(&advertising_sem, 0, 1);
     register_ble_task_cb(ble_task_callback);
     register_ble_connect_cb(ble_connected_callback);
+    register_pairing_result_cb(pairing_result_callback);
+    register_pairing_complete_cb(pairing_task_callback);
     LOG_INF("BLE initialized succesfully. BLE device \"%s\" online.", CONFIG_BT_DEVICE_NAME);
 
     // Initialize sensors
@@ -345,9 +394,54 @@ int start_air_quality_monitor(void)
     // Enter idle state
     set_state(STARTUP);
 
+    // Initialize pairing and advertisement semaphores
+    k_sem_init(&pairing_sem, 0, 1);
+
+    // Start pairing mode
+    LOG_INF("Starting pairing, waiting for %d ms.", CONFIG_PAIRING_TIMEOUT);
+    display_notification("Pairing");
+
+    rc = start_pairing();
+    if (rc != 0)
+    {
+        LOG_ERR("Error while starting pairing mode (err %d).", rc);
+        dispatch_event(STARTUP_ERROR);
+        set_state(ERROR);
+        return rc;
+    }
+
+    // Wait for pairing to complete or timeout
+    rc = k_sem_take(&pairing_sem, K_MSEC(CONFIG_PAIRING_TIMEOUT + 1000)); // Add 1s buffer
+    if (rc != 0)
+    {
+        LOG_ERR("Pairing semaphore timeout (err %d).", rc);
+        dispatch_event(STARTUP_ERROR);
+        set_state(ERROR);
+        return rc;
+    }
+    display_notification("");
+
+    if (!has_bonded_devices())
+    {
+        LOG_ERR("No pairing occurred and no bonded devices exist.");
+        dispatch_event(STARTUP_ERROR);
+        set_state(ERROR);
+        return rc;
+    }
+
+    rc = setup_data_advertisement();
+    if (rc != 0)
+    {
+        LOG_ERR("Error while setting up normal advertisement (err %d).", rc);
+        dispatch_event(STARTUP_ERROR);
+        set_state(ERROR);
+        return rc;
+    }
+
     // Start periodic task work queue
     k_work_queue_start(&periodic_task_work_q, periodic_task_stack,
                        PERIODIC_TASK_THREAD_STACK_SIZE, PERIODIC_TASK_THREAD_PRIORITY, NULL);
+    k_sem_init(&advertising_sem, 0, 1);
 
     // Initialize periodic task and time the first task in 10 seconds
     LOG_INF("Setting up the periodic task for measuring and advertising data.");
@@ -359,7 +453,11 @@ int start_air_quality_monitor(void)
         set_state(ERROR);
         return rc;
     }
-    LOG_INF("Periodic task initialized succesfully.");
+    LOG_INF("Periodic task started succesfully.");
     dispatch_event(STARTUP_SUCCESS);
+
+    // Enter idle state
+    set_state(IDLE);
+
     return 0;
 }

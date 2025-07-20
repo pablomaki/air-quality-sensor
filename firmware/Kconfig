@@ -20,6 +20,12 @@ config BLE_TIMEOUT
     help
       Timeout for BLE operations in milliseconds.
 
+config PAIRING_TIMEOUT
+    int "Pairing timeout (milliseconds)"
+    default 5000
+    help
+      Timeout for pairing mode during device startup in milliseconds.
+
 config MEASUREMENTS_PER_INTERVAL
     int "Measurements per interval"
     default 5

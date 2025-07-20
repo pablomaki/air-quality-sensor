@@ -3,6 +3,7 @@
 #include <ble_services/ess.h>
 #include <ble_services/bas.h>
 
+#include <zephyr/settings/settings.h>
 #include <zephyr/bluetooth/conn.h>
 #include <zephyr/bluetooth/uuid.h>
 #include <zephyr/logging/log.h>
@@ -17,13 +18,23 @@ typedef enum
 {
     BLE_STATE_NOT_SET,
     BLE_IDLE,
+    BLE_PAIRING,
     BLE_ADVERTISING,
     BLE_CONNECTED,
     BLE_DISCONNECTED
 } ble_state_t;
 
 /**
- * @brief Object containing the advertised data
+ *@brief Struct containing the pairing advertisement data
+ *
+ *
+ */
+static const struct bt_data pairing_data[] = {
+    BT_DATA_BYTES(BT_DATA_FLAGS, (BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR)),                        // Options
+    BT_DATA(BT_DATA_NAME_COMPLETE, CONFIG_BT_DEVICE_NAME, (sizeof(CONFIG_BT_DEVICE_NAME) - 1))}; // Device name
+
+/**
+ * @brief Struct containing the advertised data
  *
  */
 static const struct bt_data adv_data[] = {
@@ -33,6 +44,12 @@ static const struct bt_data adv_data[] = {
                   BT_UUID_16_ENCODE(BT_UUID_BAS_VAL),
 #endif
                   BT_UUID_16_ENCODE(BT_UUID_ESS_VAL))}; // Battery & Environmental sensing service
+
+/**
+ * @brief Work queue for handling pairing timeout
+ *
+ */
+static struct k_work_delayable pairing_timeout_work;
 
 /**
  * @brief Work queue for handling ble timeout
@@ -51,6 +68,18 @@ static ble_state_t ble_state = BLE_STATE_NOT_SET;
  *
  */
 static struct bt_conn *current_conn = NULL;
+
+/**
+ * @brief Callback for pairing results
+ *
+ */
+static pairing_result_cb_t pairing_result_cb = NULL;
+
+/**
+ * @brief Callback for pairing completion
+ *
+ */
+static pairing_result_cb_t pairing_complete_cb = NULL;
 
 /**
  * @brief Callback for when connection is closed or timeout is triggered
@@ -164,6 +193,73 @@ void disconnect(void)
 }
 
 /**
+ * @brief Callback when security changes
+ * This callback will be utilized during pairing and bonding to remove all prior prior should the first pairing attempt fail.
+ *
+ * @param conn Connection object
+ * @param level Security level
+ * @param err Security error
+ */
+static void security_changed(struct bt_conn *conn, bt_security_t level, enum bt_security_err err)
+{
+    if (err != BT_SECURITY_ERR_SUCCESS)
+    {
+        LOG_INF("Security failed: level %d err %d.", level, err);
+        // Remove bond if security fails
+        bt_addr_le_t *addr = bt_conn_get_dst(conn);
+        bt_unpair(BT_ID_DEFAULT, addr);
+        LOG_INF("Old bond removed.");
+    }
+}
+
+static struct bt_conn_cb pairing_conn_callbacks = {
+    .security_changed = security_changed,
+};
+
+/**
+ * @brief Security callback for pairing complete
+ *
+ * @param conn Connection object
+ * @param bonded True if bonding was successful
+ */
+static void pairing_complete(struct bt_conn *conn, bool bonded)
+{
+    char addr_str[BT_ADDR_LE_STR_LEN];
+    bt_addr_le_to_str(bt_conn_get_dst(conn), addr_str, sizeof(addr_str));
+    if (bonded)
+    {
+        LOG_INF("Device paired and bonded successfully: %s, stopping advertising.", addr_str);
+        k_work_cancel_delayable(&pairing_timeout_work);
+        stop_advertise();
+        disconnect();
+        pairing_result_cb(true);
+        pairing_complete_cb(true);
+    }
+    else
+    {
+        LOG_WRN("Device paired but not bonded: %s", addr_str);
+        disconnect();
+        pairing_result_cb(false);
+    }
+}
+
+/**
+ * @brief Security callback for pairing failed
+ *
+ * @param conn Connection object
+ * @param reason Pairing failure reason
+ */
+static void pairing_failed(struct bt_conn *conn, enum bt_security_err reason)
+
+{
+    char addr_str[BT_ADDR_LE_STR_LEN];
+    bt_addr_le_to_str(bt_conn_get_dst(conn), addr_str, sizeof(addr_str));
+    LOG_WRN("Pairing failed with %s, reason: %d", addr_str, reason);
+    disconnect();
+    pairing_result_cb(false);
+}
+
+/**
  * @brief Callback for when the timeout timer for BLE functionality runs out.
  * Stop advertising or disconnect the current connection.
  * Call the ble_exit_cb in the end
@@ -187,6 +283,28 @@ static void ble_timeout(struct k_work *work)
 }
 
 /**
+ * @brief Pairing timeout callback
+ *
+ * @param work Work item
+ */
+static void pairing_timeout(struct k_work *work)
+{
+    LOG_INF("Pairing timeout reached, stopping advertising.");
+    stop_advertise();
+    disconnect();
+    pairing_complete_cb(false);
+}
+
+/**
+ * @brief Pairing callbacks strucs
+ *
+ */
+static struct bt_conn_auth_info_cb auth_info_cb = {
+    .pairing_complete = pairing_complete,
+    .pairing_failed = pairing_failed,
+};
+
+/**
  * @brief Connection callbacks struct
  *
  */
@@ -195,40 +313,31 @@ static struct bt_conn_cb conn_callbacks = {
     .disconnected = on_disconnect,
 };
 
-#ifdef CONFIG_ENABLE_CONN_FILTER_LIST
 /**
- * @brief Struct for allowed connections
- *
- */
-bt_addr_le_t phone_1_address = {
-    .type = BT_ADDR_LE_RANDOM,
-    .a = {{0x53, 0xC4, 0x5A, 0x49, 0xA9, 0x2D}},
-};
-bt_addr_le_t phone_2_address = {
-    .type = BT_ADDR_LE_RANDOM,
-    .a = {{0xA0, 0xFB, 0xC5, 0x84, 0x2C, 0x85}},
-};
-bt_addr_le_t rpi_address = {
-    .type = BT_ADDR_LE_RANDOM,
-    .a = {{0xD8, 0x3A, 0xDD, 0x02, 0xF0, 0x62}},
-};
-
-/**
- * @brief Struct for advertisement parameters
+ * @brief Advertisement parameters for multiple devices in whitelist mode
  *
  */
 static const struct bt_le_adv_param adv_params_multi_whitelist = {
     .options =
-        BT_LE_ADV_OPT_CONNECTABLE | BT_LE_ADV_OPT_FILTER_CONN | BT_LE_ADV_OPT_USE_IDENTITY | BT_LE_ADV_OPT_ONE_TIME,
+        BT_LE_ADV_OPT_CONNECTABLE | BT_LE_ADV_OPT_FILTER_CONN | BT_LE_ADV_OPT_USE_IDENTITY,
     .interval_min = BT_GAP_ADV_FAST_INT_MIN_2,
     .interval_max = BT_GAP_ADV_FAST_INT_MAX_2,
     .peer = NULL, // NULL means use acceptlist (multiple allowed)
 };
-#endif
 
 int init_ble()
 {
     int rc = 0;
+
+    // Enable settings subsystem for persistent bonding
+    rc = settings_subsys_init();
+    if (rc != 0)
+    {
+        LOG_ERR("Settings subsystem init failed (err %d).", rc);
+        return rc;
+    }
+
+    // Enable BT
     rc = bt_enable(NULL);
     if (rc != 0)
     {
@@ -236,20 +345,32 @@ int init_ble()
         return rc;
     }
 
-    // Register bluetooth callbacks for connection and disconnection
-    bt_conn_cb_register(&conn_callbacks);
+    // Load settings from flash
+    rc = settings_load();
+    if (rc != 0)
+    {
+        LOG_ERR("Loading settings failed (err %d).", rc);
+        return rc;
+    }
 
-    // Initialize work delayable queue for advertisement timeout handling
+    // Initialize delayable pairing timeout work
+    k_work_init_delayable(&pairing_timeout_work, pairing_timeout);
+
+    // Initialize delayable work for advertisement timeout handling
     k_work_init_delayable(&stop_ble_work, ble_timeout);
 
-#ifdef CONFIG_ENABLE_CONN_FILTER_LIST
-    // Register connectable addresses if filter is used
-    bt_le_filter_accept_list_add(&phone_1_address);
-    bt_le_filter_accept_list_add(&phone_2_address);
-    bt_le_filter_accept_list_add(&rpi_address);
-#endif
     set_ble_state(BLE_IDLE);
     return 0;
+}
+
+void register_pairing_result_cb(pairing_result_cb_t cb)
+{
+    pairing_result_cb = cb;
+}
+
+void register_pairing_complete_cb(pairing_complete_cb_t cb)
+{
+    pairing_complete_cb = cb;
 }
 
 void register_ble_task_cb(ble_exit_cb_t cb)
@@ -260,6 +381,94 @@ void register_ble_task_cb(ble_exit_cb_t cb)
 void register_ble_connect_cb(ble_connect_cb_t cb)
 {
     ble_connect_cb = cb;
+}
+
+/**
+ * @brief Helper function for counting bonds bonds
+ *
+ * @param info
+ * @param user_data
+ */
+static void count_bonds(const struct bt_bond_info *info, void *user_data)
+{
+    (*(int *)user_data) += 1;
+}
+
+bool has_bonded_devices(void)
+
+{
+    int count = 0;
+    bt_foreach_bond(BT_ID_DEFAULT, count_bonds, &count);
+    LOG_INF("Bonds: %d", count);
+    return count > 0;
+}
+
+int start_pairing()
+{
+    LOG_INF("Starting BLE pairing mode.");
+    int rc = 0;
+    set_ble_state(BLE_PAIRING);
+
+    // Register bluetooth callbacks for pairing complete and failure as well as security changes
+    rc = bt_conn_auth_info_cb_register(&auth_info_cb);
+    if (rc != 0)
+    {
+        LOG_ERR("Failed to start pairing callbacks (err %d).", rc);
+        return rc;
+    }
+    rc = bt_conn_cb_register(&pairing_conn_callbacks);
+    if (rc != 0)
+    {
+        LOG_ERR("Failed to register pairing connection callbacks (err %d).", rc);
+        return rc;
+    }
+
+    // Start advertising for pairing (connectable by any device)
+    rc = bt_le_adv_start(BT_LE_ADV_CONN, pairing_data, ARRAY_SIZE(pairing_data), NULL, 0);
+    if (rc != 0)
+    {
+        LOG_ERR("Failed to start pairing advertisement (err %d).", rc);
+        return rc;
+    }
+
+    // Schedule pairing timeout
+    rc = k_work_schedule(&pairing_timeout_work, K_MSEC(CONFIG_PAIRING_TIMEOUT));
+    if (rc != 0 && rc != 1)
+    {
+        LOG_ERR("Error scheduling pairing timeout task (err %d).", rc);
+        stop_advertise();
+        return rc;
+    }
+    return 0;
+}
+
+int setup_data_advertisement(void)
+{
+    LOG_INF("Setting up normal advertisement.");
+    int rc = 0;
+
+    // Unregister pairing callbacks
+    rc = bt_conn_cb_unregister(&pairing_conn_callbacks);
+    if (rc != 0)
+    {
+        LOG_ERR("Failed to unregister pairing connection callbacks (err %d).", rc);
+        return rc;
+    }
+    rc = bt_conn_auth_info_cb_unregister(&auth_info_cb);
+    if (rc != 0)
+    {
+        LOG_ERR("Failed to unregister pairing callbacks (err %d).", rc);
+        return rc;
+    }
+
+    // Register connection callbacks
+    rc = bt_conn_cb_register(&conn_callbacks);
+    if (rc != 0)
+    {
+        LOG_ERR("Failed to register connection callbacks (err %d).", rc);
+        return rc;
+    }
+    return rc;
 }
 
 void update_advertisement_data(void)
@@ -316,11 +525,7 @@ int start_advertise(void)
     LOG_INF("Starting BLE advertisement.");
     int rc = 0;
 
-#ifdef CONFIG_ENABLE_CONN_FILTER_LIST
-    rc = bt_le_adv_start(&adv_params_multi_whitelist, adv_data, ARRAY_SIZE(adv_data), NULL, 0);
-#else
     rc = bt_le_adv_start(BT_LE_ADV_CONN_ONE_TIME, adv_data, ARRAY_SIZE(adv_data), NULL, 0);
-#endif
     if (rc != 0)
     {
         LOG_ERR("Failed to start data advertisement (err %d).", rc);

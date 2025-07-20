@@ -40,6 +40,14 @@ void dispatch_event(event_t event)
         // LED off
         blink_led(LED_RED, 2);
         break;
+    case PAIRING_SUCCESS:
+        // LED off
+        blink_led(LED_BLUE, 2);
+        break;
+    case PAIRING_FAILURE:
+        // LED off
+        blink_led(LED_YELLOW, 2);
+        break;
     case PERIODIC_TASK_SUCCESS:
         // LED off
         blink_led(LED_GREEN, 1);
