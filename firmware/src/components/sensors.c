@@ -131,7 +131,7 @@ static int read_sht4x_data()
     {
         LOG_ERR("Failed to fetch sample from SHT4X device (err %d).", rc);
         set_value(TEMPERATURE, -1.0f); // Error indicator
-        set_value(HUMIDITY, -1.0f); // Error indicator
+        set_value(HUMIDITY, -1.0f);    // Error indicator
         return rc;
     }
 
@@ -140,7 +140,7 @@ static int read_sht4x_data()
     {
         LOG_ERR("Failed to get temperature data (err %d).", rc);
         set_value(TEMPERATURE, -1.0f); // Error indicator
-        set_value(HUMIDITY, -1.0f); // Error indicator
+        set_value(HUMIDITY, -1.0f);    // Error indicator
         return rc;
     }
     rc = sensor_channel_get(sht4x_dev_p, SENSOR_CHAN_HUMIDITY, &humidity);
@@ -148,7 +148,7 @@ static int read_sht4x_data()
     {
         LOG_ERR("Failed to get humidity data (err %d).", rc);
         set_value(TEMPERATURE, -1.0f); // Error indicator
-        set_value(HUMIDITY, -1.0f); // Error indicator
+        set_value(HUMIDITY, -1.0f);    // Error indicator
         return rc;
     }
 

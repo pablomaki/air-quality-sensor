@@ -50,7 +50,7 @@ static ble_state_t ble_state = BLE_STATE_NOT_SET;
  * @brief Stores the current connection information
  *
  */
-static struct bt_conn *current_conn;
+static struct bt_conn *current_conn = NULL;
 
 /**
  * @brief Callback for when connection is closed or timeout is triggered
@@ -151,11 +151,14 @@ static void on_connect(struct bt_conn *conn, uint8_t err)
  */
 void disconnect(void)
 {
-    int rc = 0;
-    rc = bt_conn_disconnect(current_conn, BT_HCI_ERR_REMOTE_USER_TERM_CONN);
-    if (rc != 0)
+    if (current_conn)
     {
-        LOG_ERR("Failed to disconnect from device (err %d).", rc);
+        int rc = 0;
+        rc = bt_conn_disconnect(current_conn, BT_HCI_ERR_REMOTE_USER_TERM_CONN);
+        if (rc != 0)
+        {
+            LOG_ERR("Failed to disconnect from device (err %d).", rc);
+        }
     }
     set_ble_state(BLE_IDLE);
 }
@@ -324,6 +327,7 @@ int start_advertise(void)
     if (rc != 0 && rc != 1)
     {
         LOG_ERR("Error scheduling a advertise timeout task (err %d).", rc);
+        stop_advertise();
         return rc;
     }
     return 0;

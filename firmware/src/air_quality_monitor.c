@@ -15,6 +15,25 @@ LOG_MODULE_REGISTER(air_quality_monitor);
 #define SCHEDULE_SUCCESS 0
 #define SCHEDULE_ALREADY_QUEUED 1
 
+/**
+ * @brief Lower priority work queue for handling Periodic task progress
+ *
+ */
+#define PERIODIC_TASK_THREAD_STACK_SIZE 4192
+#define PERIODIC_TASK_THREAD_PRIORITY K_PRIO_PREEMPT(0)
+K_THREAD_STACK_DEFINE(periodic_task_stack, PERIODIC_TASK_THREAD_STACK_SIZE);
+static struct k_work_q periodic_task_work_q;
+
+/**
+ * @brief Semaphore to synchronize advertising completion
+ *
+ */
+static struct k_sem advertising_sem;
+
+/**
+ * @brief Work item for periodic task that reads sensor data and advertises it
+ *
+ */
 static struct k_work_delayable periodic_work;
 
 /**
@@ -48,7 +67,7 @@ static int advertise_data(void)
 static int schedule_work_task(int64_t delay)
 {
     int rc = 0;
-    rc = k_work_schedule(&periodic_work, K_MSEC(delay));
+    rc = k_work_schedule_for_queue(&periodic_task_work_q, &periodic_work, K_MSEC(delay));
     if (rc != SCHEDULE_SUCCESS && rc != SCHEDULE_ALREADY_QUEUED)
     {
         LOG_ERR("Error scheduling a task (err %d).", rc);
@@ -162,10 +181,21 @@ static void periodic_task(struct k_work *work)
     // Set state to advertising
     set_state(ADVERTISING);
 
+    // Reset semaphore for next advertisement
+    k_sem_reset(&advertising_sem);
+
     LOG_INF("Advertising data.");
     rc = advertise_data();
     if (rc != 0)
     {
+        dispatch_event(PERIODIC_TASK_WARNING);
+    }
+
+    // Wait for advertisement to complete or timeout
+    rc = k_sem_take(&advertising_sem, K_MSEC(CONFIG_BLE_TIMEOUT + 5000)); // Add 1s buffer
+    if (rc != 0)
+    {
+        LOG_ERR("Advertising semaphore timeout (err %d).", rc);
         dispatch_event(PERIODIC_TASK_WARNING);
     }
 
@@ -178,7 +208,8 @@ static void periodic_task(struct k_work *work)
         set_state(ERROR);
     }
 
-    LOG_INF("Task scheduled, waiting BLE communication to stop before idle.");
+    LOG_INF("Task scheduled, going idle.");
+    set_state(IDLE);
 }
 
 /**
@@ -199,8 +230,8 @@ static void ble_task_callback(bool task_success)
         dispatch_event(PERIODIC_TASK_WARNING);
     }
 
-    // Enter idle state
-    set_state(IDLE);
+    // Signal that pairing process is complete
+    k_sem_give(&advertising_sem);
 }
 
 /**
@@ -256,6 +287,7 @@ int init_air_quality_monitor(void)
         set_state(ERROR);
         return rc;
     }
+    k_sem_init(&advertising_sem, 0, 1);
     LOG_INF("BLE initialized succesfully. BLE device \"%s\" online.", CONFIG_BT_DEVICE_NAME);
 
     // Initialize sensors
@@ -305,6 +337,10 @@ int init_air_quality_monitor(void)
 int start_air_quality_monitor(void)
 {
     int rc = 0;
+
+    // Start periodic task work queue
+    k_work_queue_start(&periodic_task_work_q, periodic_task_stack,
+                       PERIODIC_TASK_THREAD_STACK_SIZE, PERIODIC_TASK_THREAD_PRIORITY, NULL);
 
     // Initialize periodic task and time the first task in 10 seconds
     LOG_INF("Setting up the periodic task for measuring and advertising data.");
