@@ -18,11 +18,23 @@ typedef void (*ble_connect_cb_t)(void);
 /**
  * @brief Enable BLE
  *
- * @param exit_cb callback or when advertising is stopped
- * @param connect_cb callback or when connections is established
  * @return int Zero for success, non-zero otherwise.
  */
-int init_ble(ble_exit_cb_t exit_cb, ble_connect_cb_t connect_cb);
+int init_ble();
+
+/**
+ * @brief Register pairing complete callback
+ *
+ * @param cb callback for when pairing timeout occurs or pairing succeeds
+ */
+void register_ble_task_cb(ble_exit_cb_t cb);
+
+/**
+ * @brief Register pairing complete callback
+ *
+ * @param cb callback for when pairing timeout occurs or pairing succeeds
+ */
+void register_ble_connect_cb(ble_connect_cb_t cb);
 
 /**
  * @brief Update advertisement data

@@ -226,7 +226,7 @@ static const struct bt_le_adv_param adv_params_multi_whitelist = {
 };
 #endif
 
-int init_ble(ble_exit_cb_t exit_cb, ble_connect_cb_t conn_cb)
+int init_ble()
 {
     int rc = 0;
     rc = bt_enable(NULL);
@@ -239,10 +239,6 @@ int init_ble(ble_exit_cb_t exit_cb, ble_connect_cb_t conn_cb)
     // Register bluetooth callbacks for connection and disconnection
     bt_conn_cb_register(&conn_callbacks);
 
-    // Register advertising stopped and connection formed callbacks
-    ble_exit_cb = exit_cb;
-    ble_connect_cb = conn_cb;
-
     // Initialize work delayable queue for advertisement timeout handling
     k_work_init_delayable(&stop_ble_work, ble_timeout);
 
@@ -254,6 +250,16 @@ int init_ble(ble_exit_cb_t exit_cb, ble_connect_cb_t conn_cb)
 #endif
     set_ble_state(BLE_IDLE);
     return 0;
+}
+
+void register_ble_task_cb(ble_exit_cb_t cb)
+{
+    ble_exit_cb = cb;
+}
+
+void register_ble_connect_cb(ble_connect_cb_t cb)
+{
+    ble_connect_cb = cb;
 }
 
 void update_advertisement_data(void)

@@ -279,7 +279,7 @@ int init_air_quality_monitor(void)
 
     // Initialize bluetooth
     LOG_INF("Initializing BLE.");
-    rc = init_ble(ble_task_callback, ble_connected_callback);
+    rc = init_ble();
     if (rc != 0)
     {
         LOG_ERR("Error while initializing BLE (err %d).", rc);
@@ -287,7 +287,11 @@ int init_air_quality_monitor(void)
         set_state(ERROR);
         return rc;
     }
+
+    // Initialize advertising semaphore and register callbacks
     k_sem_init(&advertising_sem, 0, 1);
+    register_ble_task_cb(ble_task_callback);
+    register_ble_connect_cb(ble_connected_callback);
     LOG_INF("BLE initialized succesfully. BLE device \"%s\" online.", CONFIG_BT_DEVICE_NAME);
 
     // Initialize sensors
