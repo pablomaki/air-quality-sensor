@@ -7,7 +7,30 @@ This directory contains utility scripts for interacting with the air quality sen
 - **aqs_ble_client.py**: A Python script for communicating with the air quality sensor over BLE (Bluetooth Low Energy) and publishing the data to MQTT topics.
 
 ## Usage
-To use the script, ensure you have Python installed along with the required libraries. You can run the script with the following command:
+To use the script, ensure you have Python installed along with the required libraries. In addition, make sure the device is already paired with the system running the bluetooth script as otherwise the connection will not work.
+
+Pairing can be done using `bluetoothctl` or any other bluetooth management tool. Start the bluetoothctl tool and use the following commands:
+
+```bash
+sudo bluetoothctl
+
+# Enable agent (handles pairing)
+[bluetooth]# agent on
+[bluetooth]# default-agent
+
+# Scan for devices
+[bluetooth]# scan on
+
+# When you see your device, pair it
+[bluetooth]# pair XX:XX:XX:XX:XX:XX
+
+# Trust the device for automatic reconnection
+[bluetooth]# trust XX:XX:XX:XX:XX:XX
+```
+
+Note that this can be only done when the device is in pairing mode (indicated by the text "Pairing" on the screen).
+
+When the device is successfully paired, run the script with the following command:
 
 ```bash
 python aqs_ble_client.py
