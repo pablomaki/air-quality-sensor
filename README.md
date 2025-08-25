@@ -23,7 +23,8 @@ This repository contains the firmware, hardware design, and scripts for an indoo
 
 - **docker/**: Contains Docker configuration files for setting up the BLE sensor reader.
 - **firmware/**: Contains the firmware source code and build files for the air quality sensor.
-- **pcb/**: Contains the PCB design files for the air quality sensor.
+- **pcb/**: Contains the design files for the air quality sensor PCB.
+- **enclosure/**: Contains the design files for the air quality sensor enclosure.
 - **scripts/**: Contains utility scripts for interacting with the air quality sensor used by the docker image for reading the sensor data output.
 
 Refer to the README files in each subdirectory for more details.

@@ -1,6 +1,6 @@
 # Docker
 
-This directory contains the Docker configuration files for setting up the development environment for the air quality sensor project.
+This directory contains the Docker configuration files for setting up the environment for the script that communicates with the air quality sensor.
 
 ## Files
 
