@@ -2,6 +2,8 @@
 
 This repository contains the firmware, hardware design, and scripts for an indoor air quality sensor.
 
+![Air Quality Sensor](images/air_quality_sensor.jpg)
+
 ## Features
 
 - **Supported Sensors**: The system supports a variety of sensors for measuring air quality parameters such as:
@@ -15,6 +17,8 @@ This repository contains the firmware, hardware design, and scripts for an indoo
 - **Battery powered**: Battery life sensor and measurement/advertisement frequency dependent, but the default configurations aim for 1+ month up time.
 - **Dockerized data receiver**: Simple script for BLE sensor reading and publishing the data to MQTT serverfor smart home integration ([MQTTThing](https://github.com/arachnetech/homebridge-mqttthing)).
 
+![Air Quality Sensor](images/pcb.jpg)
+
 ## Structure
 
 - **docker/**: Contains Docker configuration files for setting up the BLE sensor reader.
@@ -26,7 +30,6 @@ Refer to the README files in each subdirectory for more details.
 
 ## TODO
 - **Firmware**
-    - Try restricting BLE connections with a whitelist to improve security.
     - Add support for BME680 sensor.
 - **PCB**
     - Add support for BME680 sensor.
