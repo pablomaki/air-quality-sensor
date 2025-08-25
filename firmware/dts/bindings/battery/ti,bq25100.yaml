@@ -1,0 +1,22 @@
+description: binding for Texas Instruments BQ25100 control on seeed XIAO nrf52840 board
+
+compatible: "ti,bq25100"
+
+properties:
+  enable-led-gpios:
+    type: phandle-array
+    required: true
+    description: |
+      GPIO for enabling charging status LED
+
+  enable-read-gpios:
+    type: phandle-array
+    required: true
+    description: |
+      GPIO for reading the battery voltage
+
+  charge-current-select-gpios:
+    type: phandle-array
+    required: true
+    description: |
+      GPIO for selecting the charging speed (high = 100mA, low = 50mA)

@@ -1,0 +1,206 @@
+// To get started, press Ctrl+Space to bring up the completion menu and view the available nodes.
+
+// You can also use the buttons in the sidebar to perform actions on nodes.
+// Actions currently available include:
+
+// * Enabling / disabling the node
+// * Adding the bus to a bus
+// * Removing the node
+// * Connecting ADC channels
+
+// For more help, browse the DeviceTree documentation at https: //docs.zephyrproject.org/latest/guides/dts/index.html
+// You can also visit the nRF DeviceTree extension documentation at https: //docs.nordicsemi.com/bundle/nrf-connect-vscode/page/guides/ncs_configure_app.html#devicetree-support-in-the-extension
+
+/ {
+	bq25100: bq25100{
+		compatible = "ti,bq25100";
+		enable-led-gpios = <&gpio0 17 GPIO_ACTIVE_LOW>;
+		enable-read-gpios = <&gpio0 14 GPIO_ACTIVE_LOW>;
+		charge-current-select-gpios = <&gpio0 13 GPIO_ACTIVE_LOW>;
+	};
+};
+
+/ {
+   vbatt: vbatt {
+      compatible = "voltage-divider";
+      io-channels = <&adc 7>;
+      output-ohms = <510000>;
+      full-ohms = <(1031000 + 510000)>;
+   };
+};
+
+&i2c1 {
+	status = "okay";
+	clock-frequency = <I2C_BITRATE_FAST>;
+	sht4x@44 {
+		status = "okay";
+		compatible = "sensirion,sht4x";
+		reg = <0x44>;
+		repeatability = <2>;
+	};
+	sgp40@59 {
+		status = "okay";
+		compatible = "sensirion,sgp40";
+		reg = <0x59>;
+		// enable-selftest;
+	};
+	bmp390@77 {
+		status = "okay";
+		compatible = "bosch,bmp390";
+		reg = <0x77>;
+		odr = "50";
+		osr-press = <2>;
+		osr-temp = <1>;
+		iir-filter = <1>;
+		mode = <1>;
+		enable-pressure;
+		enable-temp;
+	};
+	scd412@62 {
+		status = "okay";
+		compatible = "sensirion,scd41";
+		reg = <0x62>;
+		mode = <2>;
+		// enable-selftest;
+	};
+};
+
+&qspi {
+	// Do not change the pins during sleep otherwise a 6mA consumption happens
+	pinctrl-1 = <&qspi_default>;
+};
+
+&spi2 {
+	status = "okay";
+	cs-gpios = <&gpio0 29 GPIO_ACTIVE_LOW>;
+};
+
+/{
+	 mipi_dbi {
+		compatible = "zephyr,mipi-dbi-spi";
+		spi-dev = <&spi2>;
+		dc-gpios = <&gpio0 28 GPIO_ACTIVE_HIGH>;
+		reset-gpios = <&gpio0 3 GPIO_ACTIVE_LOW>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		ssd16xx: ssd16xxfb@0 {
+			compatible = "solomon,ssd1680";
+			mipi-max-frequency = <4000000>;
+			reg = <0>;
+			width = <250>;
+			height = <136>;
+			rotation = <0>;
+			busy-gpios = <&gpio0 2 GPIO_ACTIVE_HIGH>;
+
+			full {
+				// gdv = [15];
+				// sdv = [41 a8 32];
+				// vcom = <0x26>;
+				// border-waveform = <0x03>;
+				// dummy-line = <0x30>;
+				// gate-line-width = <0x0a>;
+				lut = [];
+					// /*
+					// * Waveform Composition
+					// *
+					// * There are 7 Voltage Source (VS) Level groups
+					// * n = {0,1,2...6}, each group contains
+					// * 4 phases x = {A,B,C,D}.
+					// * 2 bits represent the voltage in a phase:
+					// * 00 – VSS, 01 – VSH1, 10 – VSL, 11 - VSH2
+					// *
+					// * For example 0x80 represents sequence VSL-VSS-VSS-VSS,
+					// */
+					// 80 60 40 00 00 00 00 /* LUT0: BB: VS 0..6 */
+					// 10 60 20 00 00 00 00 /* LUT1: BW: VS 0..6 */
+					// 80 60 40 00 00 00 00 /* LUT2: WB: VS 0..6 */
+					// 10 60 20 00 00 00 00 /* LUT3: WW: VS 0..6 */
+					// 00 00 00 00 00 00 00 /* LUT4: VCOM: VS 0..6 */
+					// /*
+					// * TPnx determines the length of each phase,
+					// * and RPn repeat count of a sequence.
+					// * TPnA, TPnB, TPnC, TPnD, RPn
+					// *
+					// * For example TP0A=3, TP0B=3, and RP0=2:
+					// * VS sequence                    : VSL-VSS-VSS-VSS
+					// * number of Gate Pulses (length) :  3   3   0   0
+					// * repeat count                   :        2
+					// */
+					// 03 03 00 00 02 /* TP0A TP0B TP0C TP0D RP0 */
+					// 09 09 00 00 02 /* TP1A TP1B TP1C TP1D RP1 */
+					// 03 03 00 00 02 /* TP2A TP2B TP2C TP2D RP2 */
+					// 00 00 00 00 00 /* TP3A TP3B TP3C TP3D RP3 */
+					// 00 00 00 00 00 /* TP4A TP4B TP4C TP4D RP4 */
+					// 00 00 00 00 00 /* TP5A TP5B TP5C TP5D RP5 */
+					// 00 00 00 00 00 /* TP6A TP6B TP6C TP6D RP6 */
+				// ];
+			};
+
+			// partial {
+			// // 	gdv = [15];
+			// // 	sdv = [41 a8 32];
+			// // 	vcom = <0x26>;
+			// // 	border-waveform = <0x01>;
+			// // 	dummy-line = <0x30>;
+			// // 	gate-line-width = <0x0a>;
+			// 	lut = [];
+			// // 		00 00 00 00 00 00 00 /* LUT0: BB: VS0..6 */
+			// // 		80 00 00 00 00 00 00 /* LUT1: BW: VS0..6 */
+			// // 		40 00 00 00 00 00 00 /* LUT2: WB: VS0..6 */
+			// // 		80 00 00 00 00 00 00 /* LUT3: WW: VS0..6 */
+			// // 		00 00 00 00 00 00 00 /* LUT4: VCOM: VS0..6 */
+			// // 		0A 00 00 00 04 /* TP0A TP0B TP0C TP0D RP0 */
+			// // 		00 00 00 00 00 /* TP1A TP1B TP1C TP1D RP1 */
+			// // 		00 00 00 00 00 /* TP2A TP2B TP2C TP2D RP2 */
+			// // 		00 00 00 00 00 /* TP3A TP3B TP3C TP3D RP3 */
+			// // 		00 00 00 00 00 /* TP4A TP4B TP4C TP4D RP4 */
+			// // 		00 00 00 00 00 /* TP5A TP5B TP5C TP5D RP5 */
+			// // 		00 00 00 00 00 /* TP6A TP6B TP6C TP6D RP6 */
+			// // 	];
+			// };
+		};
+	};
+};
+
+/ {
+	aliases {
+		ssd1680 = &ssd16xx;
+		spi-flash0 = &p25q16h;
+	};
+	chosen {
+		zephyr_display = &ssd16xx; // or your display node label
+	};
+};
+
+&spi3 {
+	status = "disabled";
+};
+
+&adc {
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	channel@7 {
+		reg = <7>;
+		zephyr,gain = "ADC_GAIN_1_6";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,input-positive = <NRF_SAADC_AIN7>; /* P0.31 */
+		zephyr,resolution = <12>;
+	};
+};
+
+&uart0 {
+	status = "disabled";
+};
+
+&pwm0 {
+	status = "disabled";
+};
+
+&gpio0 {
+	status = "okay";
+};
+
+

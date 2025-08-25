@@ -1,0 +1,24 @@
+services:
+  aqs_ble_client_1:
+    image: aqs_ble_client:latest
+    container_name: aqs_ble_client_1
+    restart: always
+    network_mode: "host"  # Needed for BLE + MQTT on host network
+    privileged: true      # Grants access to BLE hardware (HCI interface)
+    build: .
+    environment:
+      - SENSOR_NAME=air_quality_sensor_001           # Sensor name for topic namespace
+      - BROKER=192.168.0.1                           # MQTT broker address
+      - PORT=1883                                    # MQTT broker port
+      - USERNAME=admin                               # MQTT username
+      - PASSWORD=1234                                # MQTT password
+      - TARGET_ADDRESS=12:34:56:78:9A:BC             # BLE address for the device
+      - DBUS_SYSTEM_BUS_ADDRESS=unix:path=/var/run/dbus/system_bus_socket
+    volumes:
+      - /var/run/dbus:/var/run/dbus
+      - ../scripts:/app  # Mount Python code to container
+      - ../data:/data  # Mount data file to container
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"

@@ -1,0 +1,66 @@
+#include <ble_services/bas.h>
+
+#include <zephyr/logging/log.h>
+#include <zephyr/bluetooth/gatt.h>
+
+LOG_MODULE_REGISTER(bas);
+
+// Declaration and initialization of sensor reading values
+static uint8_t battery_level = 0;
+
+// Handle for bas characteristics
+static struct bt_gatt_attr *batt_lvl_handle;
+
+/** @brief Battery level read attribute value helper.
+ *
+ *  @param conn Connection object.
+ *  @param attr Attribute to read.
+ *  @param buf Buffer to store the value.
+ *  @param buf_len Buffer length.
+ *  @param offset Start offset.
+ *  @param value Attribute value.
+ *  @param value_len Length of the attribute value.
+ *
+ *  @return number of bytes read in case of success or negative values in case of error.
+ */
+ssize_t read_batt_lvl(struct bt_conn *conn,
+					  const struct bt_gatt_attr *attr, void *buf,
+					  uint16_t len, uint16_t offset)
+{
+	const uint8_t *sensor_value_ptr = (const uint8_t *)attr->user_data;
+	return bt_gatt_attr_read(conn, attr, buf, len, offset, sensor_value_ptr, sizeof(*sensor_value_ptr));
+}
+
+// Create service
+BT_GATT_SERVICE_DEFINE(bas,
+					   BT_GATT_PRIMARY_SERVICE(BT_UUID_BAS),
+					   BT_GATT_CHARACTERISTIC(BT_UUID_BAS_BATTERY_LEVEL, BT_GATT_CHRC_READ | BT_GATT_CHRC_NOTIFY, BT_GATT_PERM_READ_ENCRYPT, read_batt_lvl, NULL, &battery_level), );
+
+float bt_bas_get_battery_level(void)
+{
+	return (float)battery_level;
+}
+
+int bt_bas_set_battery_level(float new_battery_level)
+{
+	int ret = 0;
+	if (new_battery_level > 100U)
+	{
+		ret = -EINVAL;
+	}
+	battery_level = (uint8_t)new_battery_level;
+	return ret;
+}
+
+/**
+ * @brief Initialize handles for characteristics
+ *
+ * @return int
+ */
+static int bas_init(void)
+{
+	batt_lvl_handle = bt_gatt_find_by_uuid(bas.attrs, 0, BT_UUID_BAS_BATTERY_LEVEL);
+	return 0;
+}
+
+SYS_INIT(bas_init, APPLICATION, CONFIG_APPLICATION_INIT_PRIORITY);
