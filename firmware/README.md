@@ -30,6 +30,7 @@ To build the project, ensure you have the following tools installed:
 2. Open the project in Visual Studio Code.
 3. Configure the build environment using the nRF Connect extension (v2.9 SDK and toolkit).
 4. Build the firmware by selecting the appropriate build target for the Seeed XIAO NRF52840 board.
+5. Selecting "No sysbuild" might be necessary to avoid build issues.
 
 ## Additional Resources
 
