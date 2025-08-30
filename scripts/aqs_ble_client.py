@@ -96,7 +96,7 @@ async def setup_mqtt_client():
 
 async def connect_and_read():
     try:
-        async with BleakClient(TARGET_ADDRESS, timeout=60) as client:
+        async with BleakClient(TARGET_ADDRESS, timeout=600) as client:
             print("Connected to device.")
             for name, char in CHARACTERISTICS.items():
                 try:
