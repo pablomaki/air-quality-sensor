@@ -31,6 +31,22 @@ def air_quality_from_voc_index(voc_index):
     else:
         return "UNKNOWN"
 
+
+def air_quality_from_iaq_index(voc_index):
+    """Convert VOC index to air quality level."""
+    if voc_index >= 0 and voc_index < 51:
+        return "EXCELLENT"
+    if voc_index >= 51 and voc_index < 101:
+        return "GOOD"
+    if voc_index >= 101 and voc_index < 151:
+        return "FAIR"
+    if voc_index >= 151 and voc_index < 201:
+        return "INFERIOR"
+    if voc_index >= 201 and voc_index <= 500:
+        return "POOR"
+    else:
+        return "UNKNOWN"
+
 # BLE settings
 TARGET_ADDRESS = os.getenv("SENSOR_ADDRESS", "FF:33:0F:C1:C7:BF")
 CHARACTERISTICS = {
@@ -57,6 +73,14 @@ CHARACTERISTICS = {
         "raw_value": 0.0,
         "action": air_quality_from_voc_index,
         "gauge": Gauge(f'{SENSOR_NAME}/voc_index', 'VOC Index Value'),
+    },
+    "iaq_index": {
+        "uuid": "57cc882c-b1f9-4d3e-ae15-bb8dc0129c15",
+        "scale": 0.1,
+        "value": 0.0,
+        "raw_value": 0.0,
+        "action": air_quality_from_iaq_index,
+        "gauge": Gauge(f'{SENSOR_NAME}/iaq_index', 'IAQ Index Value'),
     },
     "temperature": {
         "uuid": "00002a6e-0000-1000-8000-00805f9b34fb",

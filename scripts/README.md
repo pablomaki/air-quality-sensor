@@ -46,3 +46,4 @@ The script publishes the following topics:
 - `{SENSOR_NAME}/humidity`: Humidity readings from the sensor (%RH).
 - `{SENSOR_NAME}/co2_concentration`: CO2 concentration readings from the sensor (ppm).
 - `{SENSOR_NAME}/voc_index`: VOC index readings from the sensor (0-500).
+- `{SENSOR_NAME}/iaq_index`: IAQ index readings from the sensor (0-500).
