@@ -3,6 +3,7 @@ from bleak import BleakClient, BleakScanner
 from bleak.exc import BleakError
 import paho.mqtt.client as mqtt
 from paho.mqtt.client import CallbackAPIVersion
+from prometheus_client import start_http_server, Gauge
 import os
 
 # Configuration
@@ -39,6 +40,7 @@ CHARACTERISTICS = {
         "value": 0.0,
         "raw_value": 0.0,
         "action": None,
+        "gauge": Gauge(f'{SENSOR_NAME}/battery_level', 'Battery Level Percentage'),
     },
     "pressure": {
         "uuid": "00002a6d-0000-1000-8000-00805f9b34fb",
@@ -46,6 +48,7 @@ CHARACTERISTICS = {
         "value": 0.0,
         "raw_value": 0.0,
         "action": None,
+        "gauge": Gauge(f'{SENSOR_NAME}/pressure', 'Atmospheric Pressure in hPa'),
     },
     "voc_air_quality": {
         "uuid": "8caa4e2a-31ef-4e50-a19d-bdfd38918119",
@@ -53,6 +56,7 @@ CHARACTERISTICS = {
         "value": 0.0,
         "raw_value": 0.0,
         "action": air_quality_from_voc_index,
+        "gauge": Gauge(f'{SENSOR_NAME}/voc_index', 'VOC Index Value'),
     },
     "temperature": {
         "uuid": "00002a6e-0000-1000-8000-00805f9b34fb",
@@ -60,6 +64,7 @@ CHARACTERISTICS = {
         "value": 0.0,
         "raw_value": 0.0,
         "action": None,
+        "gauge": Gauge(f'{SENSOR_NAME}/temperature', 'Temperature in Celsius'),
     },
     "co2_concentration": {
         "uuid": "00002b8c-0000-1000-8000-00805f9b34fb",
@@ -67,6 +72,7 @@ CHARACTERISTICS = {
         "value": 0.0,
         "raw_value": 0.0,
         "action": None,
+        "gauge": Gauge(f'{SENSOR_NAME}/co2_concentration', 'CO2 Concentration in ppm'),
     },
     "humidity": {
         "uuid": "00002a6f-0000-1000-8000-00805f9b34fb",
@@ -74,6 +80,7 @@ CHARACTERISTICS = {
         "value": 0.0,
         "raw_value": 0.0,
         "action": None,
+        "gauge": Gauge(f'{SENSOR_NAME}/humidity', 'Relative Humidity Percentage'),
     }
 }
 
@@ -108,20 +115,29 @@ async def connect_and_read():
                         char["raw_value"] = scaled_value
                         char["value"] = processed_value
                     else:
+                        char["raw_value"] = scaled_value
                         char["value"] = scaled_value
                 except Exception as e:
                     print(f"Error reading {name}: {e}")
     except BleakError as e:
         print(f"Connection failed: {e}")
         return False
+    except Exception as e:
+        print(f"Connection failed: {e}")
+        return False
     return True
 
-async def publish_mqtt_data(mqtt_client):
+async def publish_data(mqtt_client):
     try:
         if not mqtt_client.is_connected():
             print("MQTT client not connected. Attempting reconnect...")
             mqtt_client.reconnect()
             print("Reconnected to MQTT broker.")
+
+        # if not prom_thread.is_alive():
+        #     print("Prometheus server thread not alive. Restarting...")
+        #     prom_server, prom_thread = start_http_server(8000)
+        #     print("Prometheus server restarted.")
 
         for name, char in CHARACTERISTICS.items():
             val = char["value"]
@@ -135,16 +151,17 @@ async def publish_mqtt_data(mqtt_client):
             else:
                 print(f"Value for {name}: {val} ({raw_val:.1f}), publishing to {topic}")
             mqtt_client.publish(topic, char["value"])
-
+            char["gauge"].set(char["raw_value"])
     except Exception as e:
         print(f"Publishing data failed: {e}")
 
 async def main():
     mqtt_client = await setup_mqtt_client()
+    server, t = start_http_server(8000)
     while True:
         success = await connect_and_read()
         if (success):
-            await publish_mqtt_data(mqtt_client)
+            await publish_data(mqtt_client)
 
 if __name__ == "__main__":
     try:

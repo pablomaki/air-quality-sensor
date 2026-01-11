@@ -6,7 +6,7 @@ WORKDIR /app
 
 # Install dependencies
 RUN apt-get update && apt-get install -y bluetooth bluez
-RUN pip install paho-mqtt bleak
+RUN pip install paho-mqtt bleak prometheus-client
 
 # Expose necessary ports (MQTT usually uses 1883)
 EXPOSE 1883
