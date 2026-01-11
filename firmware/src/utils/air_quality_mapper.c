@@ -27,3 +27,31 @@ const char *air_quality_from_voc_index(int voc_index)
         return "Unknown";
     }
 }
+
+const char *air_quality_from_iaq_index(int iaq_index)
+{
+    if (iaq_index >= 0 && iaq_index < 51)
+    {
+        return "Excellent";
+    }
+    else if (iaq_index >= 51 && iaq_index < 101)
+    {
+        return "Good";
+    }
+    else if (iaq_index >= 101 && iaq_index < 151)
+    {
+        return "Fair";
+    }
+    else if (iaq_index >= 151 && iaq_index < 201)
+    {
+        return "Inferior";
+    }
+    else if (iaq_index >= 201 && iaq_index <= 500)
+    {
+        return "Poor";
+    }
+    else
+    {
+        return "Unknown";
+    }
+}

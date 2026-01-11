@@ -438,6 +438,20 @@ bool has_bonded_devices(void)
     return count > 0;
 }
 
+static void log_device_address(void)
+{
+    bt_addr_le_t addr;
+    size_t count = 1;
+
+    bt_id_get(&addr, &count);
+
+    char addr_str[BT_ADDR_LE_STR_LEN];
+    bt_addr_le_to_str(&addr, addr_str, sizeof(addr_str));
+
+    LOG_INF("Device advertising as: %s", addr_str);
+    LOG_INF("Device name: %s", CONFIG_BT_DEVICE_NAME);
+}
+
 int start_pairing()
 {
     LOG_INF("Starting BLE pairing mode.");
@@ -465,6 +479,8 @@ int start_pairing()
         LOG_ERR("Failed to start pairing advertisement (err %d).", rc);
         return rc;
     }
+
+    log_device_address();
 
     // Schedule pairing timeout
     rc = k_work_schedule(&pairing_timeout_work, K_MSEC(CONFIG_PAIRING_TIMEOUT));
@@ -554,6 +570,13 @@ void update_advertisement_data(void)
     if (rc != 0)
     {
         LOG_WRN("VOC index outside of the expected limits (err %d, value %d).", rc, (uint16_t)get_mean(VOC_INDEX));
+    }
+#endif
+#ifdef CONFIG_ENABLE_BME680
+    rc = bt_ess_set_iaq_index(get_mean(IAQ_INDEX));
+    if (rc != 0)
+    {
+        LOG_WRN("IAQ index outside of the expected limits (err %d, value %d).", rc, (uint16_t)get_mean(IAQ_INDEX));
     }
 #endif
 }

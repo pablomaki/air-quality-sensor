@@ -11,7 +11,7 @@ This repository contains the firmware, hardware design, and scripts for an indoo
   - **SGP40** VOC (Volatile Organic Compound) sensor
   - **SCD40/SCD41** Carbon Dioxide (CO2) sensor (includes temperature and humidity reading as well)
   - **BMP390** Pressure sensor
-  - **Coming soon: BME680** Gas, humidity, pressure and temperature sensor
+  - **BME680** Gas, humidity, pressure and temperature sensor
 - **Electronic paper display**: Support for an Electronic paper display for displaying the measured values.
 - **Wireless Communication**: Bluetooth Low Energy (BLE) for data transmission to mobile devices or cloud platforms.
 - **Battery powered**: Battery life sensor and measurement/advertisement frequency dependent, but the default configurations aim for 1+ month up time.
@@ -31,13 +31,13 @@ Refer to the README files in each subdirectory for more details.
 
 ## TODO
 - **Firmware**
-    - Add support for BME680 sensor.
+    -
 - **PCB**
-    - Add support for BME680 sensor.
+    -
 - **Scripts**
-    - Add logging the data to a database for grafana dashboard.
+    -
 - **Other**
-    - Design a custom enclosure for the sensor.
+    -
 
 ## License
 

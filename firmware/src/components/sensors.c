@@ -41,6 +41,12 @@ static const struct device *bmp390_dev_p;
 static struct sensor_value pressure, temperature_3;
 #endif
 
+#ifdef CONFIG_ENABLE_BME680
+#include <drivers/bme68x_iaq.h>
+static const struct device *bme680_dev_p;
+static struct sensor_value temperature_4, pressure_2, humidity_3, iaq_index, co2_concentration_e, voc_concentration_e, iaq_accuracy, co2_accuracy, voc_accuracy, gas_run_in, gas_stabilization_status;
+#endif
+
 int init_sensors(void)
 {
     int rc = 0;
@@ -102,6 +108,15 @@ int init_sensors(void)
     if (!device_is_ready(bmp390_dev_p))
     {
         LOG_ERR("Device bmp390 is not ready.");
+        return -ENXIO;
+    }
+#endif
+
+#ifdef CONFIG_ENABLE_BME680
+    bme680_dev_p = DEVICE_DT_GET_ANY(bosch_bme680);
+    if (!device_is_ready(bme680_dev_p))
+    {
+        LOG_ERR("Device bme680 is not ready.");
         return -ENXIO;
     }
 #endif
@@ -323,6 +338,108 @@ static int read_scd4x_data()
 }
 #endif
 
+#ifdef CONFIG_ENABLE_BME680
+static int read_bme680_data()
+{
+    int rc = 0;
+
+    rc = sensor_sample_fetch(bme680_dev_p);
+    if (rc != 0)
+    {
+        LOG_ERR("Failed to fetch sample from BME680 device (err %d).", rc);
+        set_value(IAQ_INDEX, -1.0f); // Error indicator
+        return rc;
+    }
+
+    rc = sensor_channel_get(bme680_dev_p, SENSOR_CHAN_AMBIENT_TEMP, &temperature_4);
+    if (rc != 0)
+    {
+        LOG_ERR("Failed to get temperature data (err %d).", rc);
+        return rc;
+    }
+    rc = sensor_channel_get(bme680_dev_p, SENSOR_CHAN_PRESS, &pressure_2);
+    if (rc != 0)
+    {
+        LOG_ERR("Failed to get pressure data (err %d).", rc);
+        set_value(IAQ_INDEX, -1.0f); // Error indicator
+        set_value(PRESSURE, -1.0f);  // Error indicator
+        return rc;
+    }
+    rc = sensor_channel_get(bme680_dev_p, SENSOR_CHAN_HUMIDITY, &humidity_3);
+    if (rc != 0)
+    {
+        LOG_ERR("Failed to get humidity data (err %d).", rc);
+        // return rc; // Non-critical
+    }
+    rc = sensor_channel_get(bme680_dev_p, SENSOR_CHAN_CO2, &co2_concentration_e);
+    if (rc != 0)
+    {
+        LOG_ERR("Failed to get co2 concentration equivalent data (err %d).", rc);
+        // return rc; // Non-critical
+    }
+    rc = sensor_channel_get(bme680_dev_p, SENSOR_CHAN_VOC, &voc_concentration_e);
+    if (rc != 0)
+    {
+        LOG_ERR("Failed to get VOC equivalent data (err %d).", rc);
+        // return rc; // Non-critical
+    }
+    rc = sensor_channel_get(bme680_dev_p, SENSOR_CHAN_IAQ, &iaq_index);
+    if (rc != 0)
+    {
+        LOG_ERR("Failed to get IAQ index data (err %d).", rc);
+        set_value(IAQ_INDEX, -1.0f); // Error indicator
+        set_value(PRESSURE, -1.0f);  // Error indicator
+        return rc;
+    }
+    rc = sensor_channel_get(bme680_dev_p, SENSOR_CHAN_IAQ_ACC, &iaq_accuracy);
+    if (rc != 0)
+    {
+        LOG_ERR("Failed to get IAQ index data (err %d).", rc);
+        // return rc; // Non-critical
+    }
+    rc = sensor_channel_get(bme680_dev_p, SENSOR_CHAN_CO2_ACC, &co2_accuracy);
+    if (rc != 0)
+    {
+        LOG_ERR("Failed to get IAQ index data (err %d).", rc);
+        // return rc; // Non-critical
+    }
+    rc = sensor_channel_get(bme680_dev_p, SENSOR_CHAN_VOC_ACC, &voc_accuracy);
+    if (rc != 0)
+    {
+        LOG_ERR("Failed to get IAQ index data (err %d).", rc);
+        // return rc; // Non-critical
+    }
+    rc = sensor_channel_get(bme680_dev_p, SENSOR_CHAN_GAS_RUN_IN, &gas_run_in);
+    if (rc != 0)
+    {
+        LOG_ERR("Failed to get IAQ index data (err %d).", rc);
+        // return rc; // Non-critical
+    }
+    rc = sensor_channel_get(bme680_dev_p, SENSOR_CHAN_GAS_STAB, &gas_stabilization_status);
+    if (rc != 0)
+    {
+        LOG_ERR("Failed to get IAQ index data (err %d).", rc);
+        // return rc; // Non-critical
+    }
+
+    // Save values
+    set_value(IAQ_INDEX, sensor_value_to_float(&iaq_index));
+    set_value(PRESSURE, sensor_value_to_float(&pressure_2));
+    LOG_INF("BME680 temperature: %d.%d °C", temperature_4.val1, temperature_4.val2);
+    LOG_INF("BME680 pressure: %d.%d hPa", pressure_2.val1 / 100, (pressure_2.val1 % 100) + pressure_2.val2 / 100);
+    LOG_INF("BME680 humidity: %d.%d %%RH", humidity_3.val1, humidity_3.val2);
+    LOG_INF("BME680 CO2 concentration: %d.%d ppm", co2_concentration_e.val1, co2_concentration_e.val2);
+    LOG_INF("BME680 VOC concentration: %d.%d ppb", voc_concentration_e.val1, voc_concentration_e.val2);
+    LOG_INF("BME680 IAQ index: (0 - 500): %d.%d", iaq_index.val1, iaq_index.val2);
+    LOG_INF("BME680 IAQ accuracy: %d.%d", iaq_accuracy.val1, iaq_accuracy.val2);
+    LOG_INF("BME680 CO2 accuracy: %d.%d", voc_accuracy.val1, voc_accuracy.val2);
+    LOG_INF("BME680 VOC accuracy: %d.%d", co2_accuracy.val1, co2_accuracy.val2);
+    LOG_INF("BME680 run in status: %d.%d", gas_run_in.val1, gas_run_in.val2);
+    LOG_INF("BME680 stabilization status: %d.%d", gas_stabilization_status.val1, gas_stabilization_status.val2);
+    return 0;
+}
+#endif
+
 int read_sensors(void)
 {
     int rc = 0;
@@ -360,6 +477,15 @@ int read_sensors(void)
     if (rc != 0)
     {
         LOG_ERR("Failed to read SGP40 data (err %d).", rc);
+        success = false;
+    }
+#endif
+
+#ifdef CONFIG_ENABLE_BME680
+    rc = read_bme680_data();
+    if (rc != 0)
+    {
+        LOG_ERR("Failed to read BME680 data (err %d).", rc);
         success = false;
     }
 #endif

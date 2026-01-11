@@ -13,6 +13,7 @@ typedef enum
     PRESSURE,
     CO2_CONCENTRATION,
     VOC_INDEX,
+    IAQ_INDEX,
     NUM_VARIABLES // Total number of variables
 } variable_t;
 
@@ -23,7 +24,6 @@ typedef struct
     size_t size;
     size_t index;
 } variable_buffer_t;
-
 
 /**
  * @brief Initialize all buffers

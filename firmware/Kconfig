@@ -78,6 +78,12 @@ config VOC_INDEX_SCALE
     help
       Scale factor for VOC index. 10 for 1 decimal place.
 
+config IAQ_INDEX_SCALE
+    int "IAQ index scale factor"
+    default 10
+    help
+      Scale factor for IAQ index. 10 for 1 decimal place.
+
 endmenu
 
 menu "Peripheral Configuration"
@@ -111,6 +117,12 @@ config ENABLE_BMP390
     default y
     help
       Enable or disable BMP390 pressure sensor.
+
+config ENABLE_BME680
+    bool "Enable BME680 sensor"
+    default y
+    help
+      Enable or disable BME680 sensor.
 
 config ENABLE_EPD
     bool "Enable e-paper display"

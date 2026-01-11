@@ -11,6 +11,7 @@ static int16_t humidity = 0;
 static int16_t pressure = 0;
 static int16_t co2_concentration = 0;
 static int16_t voc_index = 0;
+static int16_t iaq_index = 0;
 
 /** @brief Generic Read Attribute value helper.
  *
@@ -35,6 +36,8 @@ static ssize_t read_data(struct bt_conn *conn,
 // Custom VOC index UUID
 #define BT_UUID_VOC_INDEX_VAL BT_UUID_128_ENCODE(0x8caa4e2a, 0x31ef, 0x4e50, 0xa19d, 0xbdfd38918119)
 #define BT_UUID_VOC_INDEX BT_UUID_DECLARE_128(BT_UUID_VOC_INDEX_VAL)
+#define BT_UUID_IAQ_INDEX_VAL BT_UUID_128_ENCODE(0x57cc882c, 0xb1f9, 0x4d3e, 0xae15, 0xbb8dc0129c15)
+#define BT_UUID_IAQ_INDEX BT_UUID_DECLARE_128(BT_UUID_IAQ_INDEX_VAL)
 
 // Create service
 BT_GATT_SERVICE_DEFINE(ess, BT_GATT_PRIMARY_SERVICE(BT_UUID_ESS),
@@ -53,6 +56,10 @@ BT_GATT_SERVICE_DEFINE(ess, BT_GATT_PRIMARY_SERVICE(BT_UUID_ESS),
 
 #ifdef CONFIG_ENABLE_SGP40
                        BT_GATT_CHARACTERISTIC(BT_UUID_VOC_INDEX, BT_GATT_CHRC_READ | BT_GATT_CHRC_NOTIFY, BT_GATT_PERM_READ_ENCRYPT, read_data, NULL, &voc_index),
+#endif
+
+#ifdef CONFIG_ENABLE_BME680
+                       BT_GATT_CHARACTERISTIC(BT_UUID_IAQ_INDEX, BT_GATT_CHRC_READ | BT_GATT_CHRC_NOTIFY, BT_GATT_PERM_READ_ENCRYPT, read_data, NULL, &iaq_index),
 #endif
 );
 
@@ -79,6 +86,11 @@ float bt_ess_get_co2_concentration(void)
 float bt_ess_get_voc_index(void)
 {
     return (float)voc_index / CONFIG_VOC_INDEX_SCALE;
+}
+
+float bt_ess_get_iaq_index(void)
+{
+    return (float)iaq_index / CONFIG_IAQ_INDEX_SCALE;
 }
 
 int bt_ess_set_temperature(float new_temperature)
@@ -133,5 +145,16 @@ int bt_ess_set_voc_index(float new_voc_index)
         ret = -EINVAL;
     }
     voc_index = (uint16_t)(new_voc_index * CONFIG_VOC_INDEX_SCALE);
+    return ret;
+}
+
+int bt_ess_set_iaq_index(float new_iaq_index)
+{
+    int ret = 0;
+    if (new_iaq_index > 500 || new_iaq_index < 0)
+    {
+        ret = -EINVAL;
+    }
+    iaq_index = (uint16_t)(new_iaq_index * CONFIG_IAQ_INDEX_SCALE);
     return ret;
 }

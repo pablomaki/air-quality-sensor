@@ -41,6 +41,14 @@ float bt_ess_get_co2_concentration(void);
  */
 float bt_ess_get_voc_index(void);
 
+/** @brief Read IAQ index value.
+ *
+ * Read the characteristic value of the IAQ index
+ *
+ *  @return The IAQ index.
+ */
+float bt_ess_get_iaq_index(void);
+
 /** @brief Update temperature value.
  *
  * Update the characteristic value of the temperature
@@ -90,5 +98,15 @@ int bt_ess_set_co2_concentration(float new_co2_concentration);
  *  @return Zero in case of success and error code in case of error.
  */
 int bt_ess_set_voc_index(float new_voc_index);
+
+/** @brief Update IAQ index value.
+ *
+ * Update the characteristic value of the IAQ index
+ *
+ *  @param new_iaq_index The new IAQ index.
+ *
+ *  @return Zero in case of success and error code in case of error.
+ */
+int bt_ess_set_iaq_index(float new_iaq_index);
 
 #endif // ESS_H

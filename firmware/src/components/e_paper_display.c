@@ -173,8 +173,16 @@ int update_e_paper_display(void)
     }
 
     // Set VOC index air quality label
+    char *air_quality_string = "n/a";
+#ifdef CONFIG_ENABLE_SGP40
     float voc = get_latest(VOC_INDEX);
-    snprintf(label_buffer, sizeof(label_buffer), "%s", air_quality_from_voc_index((int)voc));
+    air_quality_string = air_quality_from_voc_index((int)voc);
+#endif
+#ifdef CONFIG_ENABLE_BME680
+    float iaq = get_latest(IAQ_INDEX);
+    air_quality_string = air_quality_from_iaq_index((int)iaq);
+#endif
+    snprintf(label_buffer, sizeof(label_buffer), "%s", air_quality_string);
     lv_label_set_text(voc_val_label, label_buffer);
 
     // Set battery percentage
