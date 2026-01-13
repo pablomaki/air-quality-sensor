@@ -15,6 +15,9 @@ PORT = int(os.getenv("PORT", "1883"))
 USERNAME = os.getenv("USERNAME", "admin")
 PASSWORD = os.getenv("PASSWORD", "1234")
 
+# Prometheus settings
+PROMETHEUS_PORT = int(os.getenv("PROMETHEUS_PORT", "8000"))
+
 # Characteristic specific optional functions for processing data
 def air_quality_from_voc_index(voc_index):
     """Convert VOC index to air quality level."""
@@ -48,7 +51,7 @@ def air_quality_from_iaq_index(voc_index):
         return "UNKNOWN"
 
 # BLE settings
-TARGET_ADDRESS = os.getenv("SENSOR_ADDRESS", "FF:33:0F:C1:C7:BF")
+TARGET_ADDRESS = os.getenv("TARGET_ADDRESS", "FF:33:0F:C1:C7:BF")
 CHARACTERISTICS = {
     "battery_level": {
         "uuid": "00002a19-0000-1000-8000-00805f9b34fb",
@@ -181,7 +184,7 @@ async def publish_data(mqtt_client):
 
 async def main():
     mqtt_client = await setup_mqtt_client()
-    server, t = start_http_server(8000)
+    server, t = start_http_server(PROMETHEUS_PORT)
     while True:
         success = await connect_and_read()
         if (success):
