@@ -69,7 +69,7 @@ CHARACTERISTICS = {
         "action": None,
         "gauge": Gauge(f'{SENSOR_NAME}/pressure', 'Atmospheric Pressure in hPa'),
     },
-    "voc_air_quality": {
+    "voc_index": {
         "uuid": "8caa4e2a-31ef-4e50-a19d-bdfd38918119",
         "scale": 0.1,
         "value": 0.0,
