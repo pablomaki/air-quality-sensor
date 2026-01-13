@@ -549,7 +549,7 @@ void update_advertisement_data(void)
     }
 #endif
 
-#ifdef CONFIG_ENABLE_BMP390
+#if defined(CONFIG_ENABLE_BMP390) || defined(CONFIG_ENABLE_BME680)
     rc = bt_ess_set_pressure(get_mean(PRESSURE));
     if (rc != 0)
     {
