@@ -38,35 +38,30 @@
 		reg = <0x44>;
 		repeatability = <2>;
 	};
-	// sgp40@59 {
-		//     status = "okay";
-		//     compatible = "sensirion,sgp40";
-		//     reg = <0x59>;
-		//     // enable-selftest;
-	// };
-	// bmp390@77 {
-		//     status = "okay";
-		//     compatible = "bosch,bmp390";
-		//     reg = <0x77>;
-		//     odr = "50";
-		//     osr-press = <2>;
-		//     osr-temp = <1>;
-		//     iir-filter = <1>;
-		//     mode = <1>;
-		//     enable-pressure;
-		//     enable-temp;
-	// };
-	scd412@62 {
+	sgp40@59 {
+		status = "okay";
+		compatible = "sensirion,sgp40";
+		reg = <0x59>;
+		// enable-selftest;
+	};
+	bmp390@77 {
+		status = "okay";
+		compatible = "bosch,bmp390";
+		reg = <0x77>;
+		odr = "50";
+		osr-press = <2>;
+		osr-temp = <1>;
+		iir-filter = <1>;
+		mode = <1>;
+		enable-pressure;
+		enable-temp;
+	};
+	scd41@62 {
 		status = "okay";
 		compatible = "sensirion,scd41";
 		reg = <0x62>;
 		mode = <2>;
 		// enable-selftest;
-	};
-	bme680@77 {
-		status = "okay";
-		compatible = "bosch,bme680";
-		reg = <0x77>;
 	};
 };
 
