@@ -5,6 +5,13 @@ import paho.mqtt.client as mqtt
 from paho.mqtt.client import CallbackAPIVersion
 from prometheus_client import start_http_server, Gauge
 import os
+from datetime import datetime
+
+# Helper function for timestamped prints
+def tprint(message):
+    """Print message with timestamp"""
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    print(f"[{timestamp}] {message}")
 
 # Configuration
 SENSOR_NAME = os.getenv("SENSOR_NAME", "air_quality_sensor_001")
@@ -113,9 +120,9 @@ CHARACTERISTICS = {
 
 def on_connect(client, userdata, flags, rc, properties):
     if (rc == 0):
-        print(f"Connected to MQTT broker with result code {rc}")
+        tprint(f"Connected to MQTT broker with result code {rc}")
     else:
-        print(f"Failed to connect, return code {rc}")
+        tprint(f"Failed to connect, return code {rc}")
 
 async def setup_mqtt_client():
     mqtt_client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
@@ -131,7 +138,7 @@ async def setup_mqtt_client():
 async def connect_and_read():
     try:
         async with BleakClient(TARGET_ADDRESS, timeout=600) as client:
-            print("Connected to device.")
+            tprint("Connected to device.")
             for name, char in CHARACTERISTICS.items():
                 try:
                     raw_value = await client.read_gatt_char(char["uuid"])
@@ -145,26 +152,26 @@ async def connect_and_read():
                         char["raw_value"] = scaled_value
                         char["value"] = scaled_value
                 except Exception as e:
-                    print(f"Error reading {name}: {e}")
+                    tprint(f"Error reading {name}: {e}")
     except BleakError as e:
-        print(f"Connection failed: {e}")
+        tprint(f"Connection failed: {e}")
         return False
     except Exception as e:
-        print(f"Connection failed: {e}")
+        tprint(f"Connection failed: {e}")
         return False
     return True
 
 async def publish_data(mqtt_client):
     try:
         if not mqtt_client.is_connected():
-            print("MQTT client not connected. Attempting reconnect...")
+            tprint("MQTT client not connected. Attempting reconnect...")
             mqtt_client.reconnect()
-            print("Reconnected to MQTT broker.")
+            tprint("Reconnected to MQTT broker.")
 
         # if not prom_thread.is_alive():
-        #     print("Prometheus server thread not alive. Restarting...")
+        #     tprint("Prometheus server thread not alive. Restarting...")
         #     prom_server, prom_thread = start_http_server(8000)
-        #     print("Prometheus server restarted.")
+        #     tprint("Prometheus server restarted.")
 
         for name, char in CHARACTERISTICS.items():
             val = char["value"]
@@ -172,15 +179,15 @@ async def publish_data(mqtt_client):
             topic = f"{SENSOR_NAME}/{name}"
             if isinstance(val, float) or isinstance(val, int):
                 if val == -1.0:
-                    print(f"Value for {name} is invalid, not publishing to {topic}")
+                    tprint(f"Value for {name} is invalid, not publishing to {topic}")
                     continue
-                print(f"Value for {name}: {val:.1f}, publishing to {topic}")
+                tprint(f"Value for {name}: {val:.1f}, publishing to {topic}")
             else:
-                print(f"Value for {name}: {val} ({raw_val:.1f}), publishing to {topic}")
+                tprint(f"Value for {name}: {val} ({raw_val:.1f}), publishing to {topic}")
             mqtt_client.publish(topic, char["value"])
             char["gauge"].set(char["raw_value"])
     except Exception as e:
-        print(f"Publishing data failed: {e}")
+        tprint(f"Publishing data failed: {e}")
 
 async def main():
     mqtt_client = await setup_mqtt_client()
@@ -194,4 +201,4 @@ if __name__ == "__main__":
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
-        print("Stopped by user.")
+        tprint("Stopped by user.")
