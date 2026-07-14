@@ -1,0 +1,36 @@
+// Devicetree overlay for the Seeed XIAO ESP32-C6 board.
+// i2c0 is already enabled with pinctrl by the board's default devicetree
+// (SDA=GPIO22, SCL=GPIO23, matching the XIAO Grove I2C header pins used by
+// the nRF52840 XIAO variants as well).
+
+&i2c0 {
+	sht4x@44 {
+		status = "okay";
+		compatible = "sensirion,sht4x";
+		reg = <0x44>;
+		repeatability = <2>;
+	};
+	sgp40@59 {
+		status = "okay";
+		compatible = "sensirion,sgp40";
+		reg = <0x59>;
+	};
+	bmp390@77 {
+		status = "okay";
+		compatible = "bosch,bmp390-custom";
+		reg = <0x77>;
+		odr = "50";
+		osr-press = <2>;
+		osr-temp = <1>;
+		iir-filter = <1>;
+		mode = <1>;
+		enable-pressure;
+		enable-temp;
+	};
+	scd41@62 {
+		status = "okay";
+		compatible = "sensirion,scd4x";
+		reg = <0x62>;
+		mode = <2>;
+	};
+};

@@ -656,6 +656,6 @@ static const struct sensor_driver_api scd4x_api = {
 DT_INST_FOREACH_STATUS_OKAY_VARGS(SCD4X_INIT, SCD4X_MODEL_SCD40);
 #undef DT_DRV_COMPAT
 
-#define DT_DRV_COMPAT sensirion_scd41
+#define DT_DRV_COMPAT sensirion_scd4x
 DT_INST_FOREACH_STATUS_OKAY_VARGS(SCD4X_INIT, SCD4X_MODEL_SCD41);
 #undef DT_DRV_COMPAT

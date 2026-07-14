@@ -406,6 +406,6 @@ static const struct sensor_driver_api bmp390_api = {
                                  CONFIG_SENSOR_INIT_PRIORITY,   \
                                  &bmp390_api);
 
-#define DT_DRV_COMPAT bosch_bmp390
+#define DT_DRV_COMPAT bosch_bmp390_custom
 DT_INST_FOREACH_STATUS_OKAY(BMP390_INST)
 #undef DT_DRV_COMPAT
