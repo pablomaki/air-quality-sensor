@@ -46,7 +46,7 @@
 	// };
 	// bmp390@77 {
 		//     status = "okay";
-		//     compatible = "bosch,bmp390-custom";
+		//     compatible = "bosch,bmp390";
 		//     reg = <0x77>;
 		//     odr = "50";
 		//     osr-press = <2>;
@@ -58,7 +58,7 @@
 	// };
 	scd412@62 {
 		status = "okay";
-		compatible = "sensirion,scd4x";
+		compatible = "sensirion,scd41";
 		reg = <0x62>;
 		mode = <2>;
 		// enable-selftest;

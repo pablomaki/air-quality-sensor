@@ -8,18 +8,11 @@
 #include <zephyr/pm/pm.h>
 #include <zephyr/pm/device.h>
 #include <stdint.h>
+#include <lvgl.h>
 
 #include <zephyr/logging/log.h>
 
 LOG_MODULE_REGISTER(e_paper_display);
-
-// This entire file depends on LVGL and the ssd1680 display alias, which are
-// only configured on boards with an e-paper display wired up. Keep the whole
-// implementation behind CONFIG_ENABLE_EPD so it compiles cleanly (without
-// requiring lvgl.h or the devicetree alias) on boards where it's disabled.
-#ifdef CONFIG_ENABLE_EPD
-
-#include <lvgl.h>
 
 LV_FONT_DECLARE(lv_font_montserrat_64);
 
@@ -241,32 +234,3 @@ int suspend_epd(void)
     }
     return rc;
 }
-
-#else
-
-int init_e_paper_display(void)
-{
-    return 0;
-}
-
-int display_notification(const char *message)
-{
-    return 0;
-}
-
-int update_e_paper_display(void)
-{
-    return 0;
-}
-
-int activate_epd(void)
-{
-    return 0;
-}
-
-int suspend_epd(void)
-{
-    return 0;
-}
-
-#endif // CONFIG_ENABLE_EPD

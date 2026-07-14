@@ -8,18 +8,6 @@
 #include <zephyr/bluetooth/uuid.h>
 #include <zephyr/logging/log.h>
 
-// Compatibility shims: these BT advertising macros were renamed in newer
-// mainline Zephyr releases (BT_LE_ADV_OPT_CONNECTABLE -> BT_LE_ADV_OPT_CONN,
-// BT_LE_ADV_CONN -> BT_LE_ADV_CONN_FAST_2). Keep both names working so this
-// file builds against the older NCS Zephyr fork (nRF52840 targets) and
-// current mainline Zephyr (ESP32 targets) alike.
-#ifndef BT_LE_ADV_OPT_CONNECTABLE
-#define BT_LE_ADV_OPT_CONNECTABLE BT_LE_ADV_OPT_CONN
-#endif
-#ifndef BT_LE_ADV_CONN
-#define BT_LE_ADV_CONN BT_LE_ADV_CONN_FAST_2
-#endif
-
 LOG_MODULE_REGISTER(bluetooth_handler);
 
 #define SCHEDULE_SUCCESS 0

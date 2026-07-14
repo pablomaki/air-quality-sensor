@@ -71,7 +71,7 @@ int init_sensors(void)
 #endif
 
 #ifdef CONFIG_ENABLE_SCD4X
-    scd4x_dev_p = DEVICE_DT_GET_ANY(sensirion_scd4x);
+    scd4x_dev_p = DEVICE_DT_GET_ANY(sensirion_scd41);
     if (!device_is_ready(scd4x_dev_p))
     {
         LOG_ERR("Device scd4x is not ready.");
@@ -104,7 +104,7 @@ int init_sensors(void)
 #endif
 
 #ifdef CONFIG_ENABLE_BMP390
-    bmp390_dev_p = DEVICE_DT_GET_ANY(bosch_bmp390_custom);
+    bmp390_dev_p = DEVICE_DT_GET_ANY(bosch_bmp390);
     if (!device_is_ready(bmp390_dev_p))
     {
         LOG_ERR("Device bmp390 is not ready.");

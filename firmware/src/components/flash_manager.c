@@ -6,11 +6,6 @@
 
 LOG_MODULE_REGISTER(flash_manager);
 
-// Not all boards have an external QSPI/SPI NOR flash chip wired up (e.g. the
-// XIAO BLE Sense's onboard P25Q16H). On boards without a "spi_flash0" alias
-// these become harmless no-ops instead of a hard compile/runtime failure.
-#if DT_NODE_EXISTS(DT_ALIAS(spi_flash0))
-
 static const struct device *qspi_dev;
 
 int init_flash_manager(void)
@@ -47,23 +42,3 @@ int suspend_flash(void)
     }
     return rc;
 }
-
-#else
-
-int init_flash_manager(void)
-{
-    LOG_INF("No external flash chip (spi_flash0) on this board, skipping.");
-    return 0;
-}
-
-int activate_flash(void)
-{
-    return 0;
-}
-
-int suspend_flash(void)
-{
-    return 0;
-}
-
-#endif

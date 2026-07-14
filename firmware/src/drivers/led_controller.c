@@ -4,6 +4,8 @@
 #include <zephyr/drivers/gpio.h>
 
 #define LED_RED_NODE DT_ALIAS(led0)
+#define LED_GREEN_NODE DT_ALIAS(led1)
+#define LED_BLUE_NODE DT_ALIAS(led2)
 #define LED_BLINK_INTERVAL 50 // Milliseconds
 
 LOG_MODULE_REGISTER(led_controller);
@@ -24,12 +26,8 @@ static led_blink_ctx_t blink_ctx;
 
 // GPIO specs from devicetree
 static const struct gpio_dt_spec led_red_spec = GPIO_DT_SPEC_GET(LED_RED_NODE, gpios);
-#if IS_ENABLED(CONFIG_LED_RGB)
-#define LED_GREEN_NODE DT_ALIAS(led1)
-#define LED_BLUE_NODE DT_ALIAS(led2)
 static const struct gpio_dt_spec led_green_spec = GPIO_DT_SPEC_GET(LED_GREEN_NODE, gpios);
 static const struct gpio_dt_spec led_blue_spec = GPIO_DT_SPEC_GET(LED_BLUE_NODE, gpios);
-#endif
 
 /**
  * @brief Handles LED blinking
@@ -53,11 +51,7 @@ static void blink_handler(struct k_timer *timer)
 
 int init_led_controller(void)
 {
-#if IS_ENABLED(CONFIG_LED_RGB)
     if (!gpio_is_ready_dt(&led_red_spec) || !gpio_is_ready_dt(&led_green_spec) || !gpio_is_ready_dt(&led_blue_spec))
-#else
-    if (!gpio_is_ready_dt(&led_red_spec))
-#endif
     {
         LOG_ERR("LED devices not ready.");
         return -ENXIO;
@@ -70,7 +64,6 @@ int init_led_controller(void)
         LOG_ERR("GPIO configuration for red led failed (err %d).", rc);
         return rc;
     }
-#if IS_ENABLED(CONFIG_LED_RGB)
     rc = gpio_pin_configure_dt(&led_green_spec, GPIO_OUTPUT_INACTIVE);
     if (rc != 0)
     {
@@ -83,7 +76,6 @@ int init_led_controller(void)
         LOG_ERR("GPIO configuration for blue led failed (err %d).", rc);
         return rc;
     }
-#endif
     k_timer_init(&blink_ctx.timer, blink_handler, NULL);
     return 0;
 }
@@ -102,12 +94,7 @@ void blink_led(led_color_t color, int count)
 
 void set_led(led_color_t color)
 {
-#if IS_ENABLED(CONFIG_LED_RGB)
     gpio_pin_set_dt(&led_red_spec, (color & LED_RED) ? LED_ON : LED_OFF);
     gpio_pin_set_dt(&led_green_spec, (color & LED_GREEN) ? LED_ON : LED_OFF);
     gpio_pin_set_dt(&led_blue_spec, (color & LED_BLUE) ? LED_ON : LED_OFF);
-#else
-    // Single monochrome LED: any non-off color turns it on.
-    gpio_pin_set_dt(&led_red_spec, (color != LED_OFF_COLOR) ? LED_ON : LED_OFF);
-#endif
 }

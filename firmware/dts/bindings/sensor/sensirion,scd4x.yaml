@@ -1,11 +1,7 @@
 # dts/bindings/sensor/sensirion,scd4x.yaml
 description: Sensirion SCD4x CO₂ sensor
 
-# Note: intentionally not "sensirion,scd41" - that compatible is now also
-# defined by mainline Zephyr's own upstream binding, and this project uses
-# its own custom driver/binding (src/drivers/scd4x.c), so a distinct name
-# avoids a devicetree binding collision when building against mainline Zephyr.
-compatible: "sensirion,scd4x"
+compatible: "sensirion,scd41"
 
 include: [sensor-device.yaml, i2c-device.yaml]
 

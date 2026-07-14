@@ -94,14 +94,6 @@ config ENABLE_EVENT_LED
     help
       Enable or disable the event LED.
 
-config LED_RGB
-    bool "Board has an RGB event LED"
-    default y
-    help
-      Enable if the board exposes led0/led1/led2 aliases (red/green/blue).
-      Disable for boards with a single monochrome LED (only led0), in which
-      case any non-off color is shown as that single LED turning on.
-
 config ENABLE_SHT4X
     bool "Enable SHT4X sensor"
     default y

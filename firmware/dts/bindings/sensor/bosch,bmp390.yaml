@@ -2,12 +2,7 @@
 description: |
     Bosch BMP390 pressure sensor accessed through I2C bus
 
-# Note: intentionally not "bosch,bmp390" - that compatible is now also
-# defined by mainline Zephyr's own upstream binding (bosch,bmp390-i2c.yaml),
-# and this project uses its own custom driver/binding (src/drivers/bmp390.c),
-# so a distinct name avoids a devicetree binding collision when building
-# against mainline Zephyr.
-compatible: "bosch,bmp390-custom"
+compatible: "bosch,bmp390"
 
 include: [sensor-device.yaml, i2c-device.yaml]  
 
