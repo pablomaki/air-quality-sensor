@@ -4,6 +4,24 @@ mainmenu "Air Quality Sensor Configuration"
 
 source "Kconfig.zephyr"
 
+# Matter over Thread support (see src/matter/). Only takes effect when
+# CONFIG_CHIP=y is set by a project configuration (e.g. prj_aqs_001_matter.conf).
+if NET_L2_OPENTHREAD
+
+choice OPENTHREAD_NORDIC_LIBRARY_CONFIGURATION
+    default OPENTHREAD_NORDIC_LIBRARY_MTD
+endchoice
+
+choice OPENTHREAD_DEVICE_TYPE
+    default OPENTHREAD_MTD
+endchoice
+
+endif # NET_L2_OPENTHREAD
+
+source "${ZEPHYR_CONNECTEDHOMEIP_MODULE_DIR}/config/nrfconnect/chip-module/Kconfig.features"
+source "${ZEPHYR_CONNECTEDHOMEIP_MODULE_DIR}/config/nrfconnect/chip-module/Kconfig.defaults"
+source "${ZEPHYR_NRF_MODULE_DIR}/samples/matter/common/src/Kconfig"
+
 menu "Application Configuration"
 
 menu "Timing Configuration"

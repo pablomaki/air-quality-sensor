@@ -12,6 +12,16 @@
 // You can also visit the nRF DeviceTree extension documentation at https: //docs.nordicsemi.com/bundle/nrf-connect-vscode/page/guides/ncs_configure_app.html#devicetree-support-in-the-extension
 
 / {
+	// XIAO BLE has no physical buttons. NCS's Matter common board helper
+	// (nrf/samples/matter/common/src/board/board_config.h) unconditionally
+	// computes NUMBER_OF_BUTTONS from DT_PATH(buttons) at compile time, so an
+	// (empty) buttons node is needed for it to compile - Board::Init() itself
+	// already no-ops correctly on boards without CONFIG_DK_LIBRARY (no real
+	// button behavior is implied by this node).
+	buttons: buttons {
+		compatible = "gpio-keys";
+	};
+
 	bq25100: bq25100{
 		compatible = "ti,bq25100";
 		enable-led-gpios = <&gpio0 17 GPIO_ACTIVE_LOW>;
