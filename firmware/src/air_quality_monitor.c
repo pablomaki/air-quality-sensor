@@ -1,5 +1,5 @@
 #include <air_quality_monitor.h>
-#include <components/bluetooth_handler.h>
+#include <components/matter_handler.h>
 #include <components/sensors.h>
 #include <utils/variable_buffer.h>
 #include <components/event_handler.h>
@@ -41,7 +41,7 @@ static struct k_sem advertising_sem;
 static struct k_work_delayable periodic_work;
 
 /**
- * @brief Update data to BLE service and start data advertisement
+ * @brief Update data to matter service and start data advertisement
  *
  * @return int, 0 if ok, non-zero if an error occured
  */
@@ -49,16 +49,8 @@ static int advertise_data(void)
 {
     int rc = 0;
     // Update and advertise data
-    LOG_INF("Update advertised data.");
-    update_advertisement_data();
-
-    LOG_INF("Begin advertising for connection.");
-    rc = start_advertise();
-    if (rc != 0)
-    {
-        LOG_ERR("Error advertising data (err %d).", rc);
-        return rc;
-    }
+    LOG_INF("Update cluster states.");
+    rc = update_cluster_states();
     return rc;
 }
 
@@ -98,7 +90,7 @@ static int64_t calculate_task_delay(int64_t start_time_ms)
 }
 
 /**
- * @brief Periodic task that takes care of reading sensor data and advertising it over BLE
+ * @brief Periodic task that takes care of reading sensor data and update matter cluster states
  *
  * @param work Address of work item.
  */
@@ -159,27 +151,6 @@ static void periodic_task(struct k_work *work)
     // Reset measurement counter
     measurement_counter = 0;
 
-    // Set state to advertising
-    set_state(ADVERTISING);
-
-    // Reset semaphore for next advertisement
-    k_sem_reset(&advertising_sem);
-
-    LOG_INF("Advertising data.");
-    rc = advertise_data();
-    if (rc != 0)
-    {
-        dispatch_event(PERIODIC_TASK_WARNING);
-    }
-
-    // Wait for advertisement to complete or timeout
-    rc = k_sem_take(&advertising_sem, K_MSEC(CONFIG_BLE_TIMEOUT + 1000)); // Add 1s buffer
-    if (rc != 0)
-    {
-        LOG_ERR("Advertising semaphore timeout (err %d).", rc);
-        dispatch_event(PERIODIC_TASK_WARNING);
-    }
-
     LOG_INF("Periodic task done, scheduling a new task.");
     int64_t delay = calculate_task_delay(start_time_ms);
     rc = schedule_work_task(delay);
@@ -191,59 +162,6 @@ static void periodic_task(struct k_work *work)
 
     LOG_INF("Task scheduled, going idle.");
     set_state(IDLE);
-}
-
-/**
- * @brief Callback for when BLE is done (data relayed or timeout)
- *
- * @param task_success True if BLE task terminated succesfully, false timeout.
- */
-static void ble_task_callback(bool task_success)
-{
-    if (task_success)
-    {
-        LOG_INF("BLE data transfer completed succesfully, entering idle state.");
-        dispatch_event(PERIODIC_TASK_SUCCESS);
-    }
-    else
-    {
-        LOG_INF("BLE data transfer unsuccesful, entering idle state.");
-        dispatch_event(PERIODIC_TASK_WARNING);
-    }
-
-    // Signal that pairing process is complete
-    k_sem_give(&advertising_sem);
-}
-
-/**
- * @brief Callback for when BLE conneciton is established
- *
- */
-static void ble_connected_callback(void)
-{
-    LOG_INF("BLE connection established.");
-    dispatch_event(BLE_CONNECTION_SUCCESS);
-}
-
-/**
- * @brief Callback for pairing mode completion
- *
- * @param task_success True if task completed succesfully, false if it timed out.
- */
-static void pairing_task_callback(bool task_success)
-{
-    if (!task_success)
-    {
-        LOG_INF("BLE pairing failed or timed out.");
-        dispatch_event(PAIRING_FAILURE);
-    }
-    else
-    {
-        LOG_INF("BLE pairing completed succesfully.");
-    }
-
-    // Signal that pairing process is complete
-    k_sem_give(&pairing_sem);
 }
 
 /**
@@ -286,23 +204,15 @@ int init_air_quality_monitor(void)
     LOG_INF("Event handler initialized succesfully.");
 
     // Initialize bluetooth
-    LOG_INF("Initializing BLE.");
-    rc = init_ble();
+    LOG_INF("Initializing matter.");
+    rc = init_matter();
     if (rc != 0)
     {
-        LOG_ERR("Error while initializing BLE (err %d).", rc);
+        LOG_ERR("Error while initializing matter (err %d).", rc);
         dispatch_event(INITIALIZATION_ERROR);
         set_state(ERROR);
         return rc;
     }
-
-    // Initialize advertising semaphore and register callbacks
-    k_sem_init(&advertising_sem, 0, 1);
-    register_ble_task_cb(ble_task_callback);
-    register_ble_connect_cb(ble_connected_callback);
-    register_pairing_result_cb(pairing_result_callback);
-    register_pairing_complete_cb(pairing_task_callback);
-    LOG_INF("BLE initialized succesfully. BLE device \"%s\" online.", CONFIG_BT_DEVICE_NAME);
 
     // Initialize sensors
     LOG_INF("Initializing the sensors.");

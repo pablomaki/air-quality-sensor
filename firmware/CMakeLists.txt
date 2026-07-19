@@ -29,10 +29,7 @@ if(CONFIG_CHIP)
     list(REMOVE_ITEM app_sources
         ${CMAKE_CURRENT_SOURCE_DIR}/src/main.c
         ${CMAKE_CURRENT_SOURCE_DIR}/src/air_quality_monitor.c
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/components/bluetooth_handler.c
     )
-    FILE(GLOB_RECURSE ble_service_sources src/ble_services/*.c)
-    list(REMOVE_ITEM app_sources ${ble_service_sources})
 endif()
 
 target_sources(app PRIVATE ${app_sources})
