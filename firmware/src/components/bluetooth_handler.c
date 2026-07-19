@@ -41,10 +41,7 @@ static const struct bt_data pairing_data[] = {
 static const struct bt_data adv_data[] = {
     BT_DATA_BYTES(BT_DATA_FLAGS, (BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR)), // Options
     BT_DATA_BYTES(BT_DATA_UUID16_ALL,
-#ifdef CONFIG_ENABLE_BATTERY_MONITOR
-                  BT_UUID_16_ENCODE(BT_UUID_BAS_VAL),
-#endif
-                  BT_UUID_16_ENCODE(BT_UUID_ESS_VAL))}; // Battery & Environmental sensing service
+                  BT_UUID_16_ENCODE(BT_UUID_ESS_VAL))}; // Environmental sensing service
 
 /**
  * @brief Work queue for handling pairing timeout
@@ -530,12 +527,6 @@ void update_advertisement_data(void)
     LOG_INF("Updating advertisement data.");
 
     int rc = 0;
-    rc = bt_bas_set_battery_level(get_mean(BATTERY_LEVEL));
-    if (rc != 0)
-    {
-        LOG_WRN("Battery level outside of the expected limits (err %d, value %d).", rc, (uint16_t)(BATTERY_LEVEL));
-    }
-
 #ifdef CONFIG_ENABLE_SHT4X
     rc = bt_ess_set_temperature(get_mean(TEMPERATURE));
     if (rc != 0)

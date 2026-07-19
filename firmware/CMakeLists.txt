@@ -23,7 +23,7 @@ if(CONFIG_CHIP)
     #
     # air_quality_monitor.c is also excluded for now - this first bring-up
     # task only proves the bare Matter+Thread commissioning pipeline works.
-    # Wiring sensors/display/battery into Matter attributes is a follow-up
+    # Wiring sensors into Matter attributes is a follow-up
     # task, at which point air_quality_monitor.c (or an equivalent) will be
     # driven from src/matter/app_task.cpp instead of src/main.c.
     list(REMOVE_ITEM app_sources

@@ -1,7 +1,6 @@
 #include <components/state_manager.h>
 #include <components/flash_manager.h>
 #include <components/sensors.h>
-#include <components/e_paper_display.h>
 
 #include <zephyr/logging/log.h>
 
@@ -25,15 +24,15 @@ typedef struct
 
 // By default suspend everything at the end
 action_fn_t initialize_enter[] = {};
-action_fn_t initialize_exit[] = {suspend_flash, suspend_sensors, suspend_epd};
+action_fn_t initialize_exit[] = {suspend_flash, suspend_sensors};
 state_actions_t initialize_actions = {
     .on_enter = {.actions = initialize_enter, .count = sizeof(initialize_enter) / sizeof(initialize_enter[0])},
     .on_exit = {.actions = initialize_exit, .count = sizeof(initialize_exit) / sizeof(initialize_exit[0])},
 };
 
 // By default suspend everything at the end
-action_fn_t startup_enter[] = {activate_epd};
-action_fn_t startup_exit[] = {suspend_epd};
+action_fn_t startup_enter[] = {};
+action_fn_t startup_exit[] = {};
 state_actions_t startup_actions = {
     .on_enter = {.actions = startup_enter, .count = sizeof(startup_enter) / sizeof(startup_enter[0])},
     .on_exit = {.actions = startup_exit, .count = sizeof(startup_exit) / sizeof(startup_exit[0])},
@@ -45,14 +44,6 @@ action_fn_t measuring_exit[] = {suspend_sensors};
 state_actions_t measuring_actions = {
     .on_enter = {.actions = measuring_enter, .count = sizeof(measuring_enter) / sizeof(measuring_enter[0])},
     .on_exit = {.actions = measuring_exit, .count = sizeof(measuring_exit) / sizeof(measuring_exit[0])},
-};
-
-// Activate e paper display and suspend when done
-action_fn_t updating_enter[] = {activate_epd};
-action_fn_t updating_exit[] = {suspend_epd};
-state_actions_t updating_actions = {
-    .on_enter = {.actions = updating_enter, .count = sizeof(updating_enter) / sizeof(updating_enter[0])},
-    .on_exit = {.actions = updating_exit, .count = sizeof(updating_exit) / sizeof(updating_exit[0])},
 };
 
 // Nothing to activate or suspend
@@ -72,7 +63,7 @@ state_actions_t idle_actions = {
 };
 
 // Suspend everything on error, no recovery
-action_fn_t error_enter[] = {suspend_flash, suspend_sensors, suspend_epd};
+action_fn_t error_enter[] = {suspend_flash, suspend_sensors};
 action_fn_t error_exit[] = {};
 state_actions_t error_actions = {
     .on_enter = {.actions = error_enter, .count = sizeof(error_enter) / sizeof(error_enter[0])},
@@ -115,9 +106,6 @@ static int enter_state(state_t state)
     case MEASURING:
         rc = execute(measuring_actions.on_enter);
         break;
-    case UPDATING:
-        rc = execute(updating_actions.on_enter);
-        break;
     case ADVERTISING:
         rc = execute(advertising_actions.on_enter);
         break;
@@ -155,9 +143,6 @@ static int exit_state(state_t state)
     case MEASURING:
         rc = execute(measuring_actions.on_exit);
         break;
-    case UPDATING:
-        rc = execute(updating_actions.on_exit);
-        break;
     case ADVERTISING:
         rc = execute(advertising_actions.on_exit);
         break;
@@ -186,8 +171,6 @@ const char *state_to_string(state_t state)
         return "STARTUP";
     case MEASURING:
         return "MEASURING";
-    case UPDATING:
-        return "UPDATING";
     case ADVERTISING:
         return "ADVERTISING";
     case IDLE:

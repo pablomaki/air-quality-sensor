@@ -11,7 +11,6 @@ typedef enum
     INITIALIZING,
     STARTUP,
     MEASURING,
-    UPDATING,
     ADVERTISING,
     IDLE,
     ERROR

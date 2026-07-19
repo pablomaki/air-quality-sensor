@@ -1,8 +1,6 @@
 #include <air_quality_monitor.h>
 #include <components/bluetooth_handler.h>
-#include <components/e_paper_display.h>
 #include <components/sensors.h>
-#include <components/battery_monitor.h>
 #include <utils/variable_buffer.h>
 #include <components/event_handler.h>
 #include <components/state_manager.h>
@@ -123,17 +121,6 @@ static void periodic_task(struct k_work *work)
     LOG_INF("Sensor warm up complete.");
 #endif
 
-#ifdef CONFIG_ENABLE_BATTERY_MONITOR
-    LOG_INF("Reading battery level.");
-    rc = read_battery_level();
-    if (rc != 0)
-    {
-        LOG_WRN("Failed to read battery percentage (err %d).", rc);
-        success = false;
-        dispatch_event(PERIODIC_TASK_WARNING);
-    }
-#endif
-
     LOG_INF("Reading sensors.");
     rc = read_sensors();
     if (rc != 0)
@@ -146,20 +133,6 @@ static void periodic_task(struct k_work *work)
     // Increment measurement counter and print progress in log
     measurement_counter++;
     LOG_INF("Periodic measurement %d/%d done.", measurement_counter, CONFIG_MEASUREMENTS_PER_INTERVAL);
-
-#ifdef CONFIG_ENABLE_EPD
-
-    // Set state to displaying
-    set_state(UPDATING);
-
-    LOG_INF("Updating displayed values.");
-    rc = update_e_paper_display();
-    if (rc != 0)
-    {
-        LOG_ERR("Error updating E-paper display (err %d).", rc);
-        dispatch_event(PERIODIC_TASK_WARNING);
-    }
-#endif
 
     // Stop the periodic task in short in case of not enough measurements made yet
     if (measurement_counter < CONFIG_MEASUREMENTS_PER_INTERVAL)
@@ -312,20 +285,6 @@ int init_air_quality_monitor(void)
     }
     LOG_INF("Event handler initialized succesfully.");
 
-#ifdef CONFIG_ENABLE_EPD
-    // Initialize E-paper display
-    LOG_INF("Initializing E-paper display.");
-    rc = init_e_paper_display();
-    if (rc != 0)
-    {
-        LOG_ERR("Error while initializing E-paper display (err %d).", rc);
-        dispatch_event(INITIALIZATION_ERROR);
-        set_state(ERROR);
-        return rc;
-    }
-    LOG_INF("E-paper display initialized succesfully.");
-#endif
-
     // Initialize bluetooth
     LOG_INF("Initializing BLE.");
     rc = init_ble();
@@ -367,20 +326,6 @@ int init_air_quality_monitor(void)
         return rc;
     }
     LOG_INF("Flash manager initialized succesfully.");
-
-#ifdef CONFIG_ENABLE_BATTERY_MONITOR
-    // Initialize battery monitor
-    LOG_INF("Initializing the battery monitor.");
-    rc = init_battery_monitor();
-    if (rc != 0)
-    {
-        LOG_ERR("Error while initializing the battery monitor (err %d).", rc);
-        dispatch_event(INITIALIZATION_ERROR);
-        set_state(ERROR);
-        return rc;
-    }
-    LOG_INF("Battery monitor initialized succesfully.");
-#endif
     dispatch_event(INITIALIZATION_SUCCESS);
 
     // Enter idle state

@@ -7,7 +7,6 @@
 // Define the variables that will be stored in buffers
 typedef enum
 {
-    BATTERY_LEVEL,
     TEMPERATURE,
     HUMIDITY,
     PRESSURE,

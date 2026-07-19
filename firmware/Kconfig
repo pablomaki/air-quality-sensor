@@ -142,18 +142,6 @@ config ENABLE_BME680
     help
       Enable or disable BME680 sensor.
 
-config ENABLE_EPD
-    bool "Enable e-paper display"
-    default y
-    help
-      Enable or disable the e-paper display screen.
-
-config ENABLE_BATTERY_MONITOR
-    bool "Enable battery monitor"
-    default y
-    help
-      Enable or disable battery voltage monitoring.
-
 endmenu
 
 menu "SCD4X Sensor Configuration"
@@ -172,27 +160,4 @@ config SCD4X_TEMPERATURE_OFFSET
       SCD41 temperature readings are not currently used.
 
 endmenu
-
-menu "Battery Monitor Configuration"
-
-config USE_FAST_CHARGING
-    bool "Use fast charging"
-    default y
-    help
-      Enable fast charging (100 mA) instead of slow charging (50 mA).
-
-config VOLTAGE_DIVIDER_R1
-    int "Voltage divider R1 (kohm)"
-    default 1031
-    help
-      R1 resistor value in kohm. Needs manual calibration for accurate readings.
-
-config VOLTAGE_DIVIDER_R2
-    int "Voltage divider R2 (kohm)"
-    default 510
-    help
-      R2 resistor value in kohm. Needs manual calibration for accurate readings.
-
-endmenu
-
 endmenu
