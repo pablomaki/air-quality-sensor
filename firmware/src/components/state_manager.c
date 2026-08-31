@@ -24,7 +24,7 @@ typedef struct
 
 // By default suspend everything at the end
 action_fn_t initialize_enter[] = {};
-action_fn_t initialize_exit[] = {suspend_flash, suspend_sensors};
+action_fn_t initialize_exit[] = {};
 state_actions_t initialize_actions = {
     .on_enter = {.actions = initialize_enter, .count = sizeof(initialize_enter) / sizeof(initialize_enter[0])},
     .on_exit = {.actions = initialize_exit, .count = sizeof(initialize_exit) / sizeof(initialize_exit[0])},
@@ -39,8 +39,8 @@ state_actions_t startup_actions = {
 };
 
 // Activate sensors and suspend when done
-action_fn_t measuring_enter[] = {activate_sensors};
-action_fn_t measuring_exit[] = {suspend_sensors};
+action_fn_t measuring_enter[] = {};
+action_fn_t measuring_exit[] = {};
 state_actions_t measuring_actions = {
     .on_enter = {.actions = measuring_enter, .count = sizeof(measuring_enter) / sizeof(measuring_enter[0])},
     .on_exit = {.actions = measuring_exit, .count = sizeof(measuring_exit) / sizeof(measuring_exit[0])},
@@ -63,7 +63,7 @@ state_actions_t idle_actions = {
 };
 
 // Suspend everything on error, no recovery
-action_fn_t error_enter[] = {suspend_flash, suspend_sensors};
+action_fn_t error_enter[] = {};
 action_fn_t error_exit[] = {};
 state_actions_t error_actions = {
     .on_enter = {.actions = error_enter, .count = sizeof(error_enter) / sizeof(error_enter[0])},

@@ -1,8 +1,13 @@
 #include <air_quality_monitor.h>
+#include <components/matter_handler.h>
 
 #include <zephyr/logging/log.h>
 
-LOG_MODULE_REGISTER(main);
+// Nordic's Matter common library (board.cpp, matter_init.cpp, etc. pulled in
+// via source_common.cmake) declares LOG_MODULE_DECLARE(app, ...) and expects
+// exactly one translation unit to register that module - normally their own
+// main.cpp/AppTask.cpp, which this project doesn't use.
+LOG_MODULE_REGISTER(app, CONFIG_CHIP_APP_LOG_LEVEL);
 
 int main(void)
 {
@@ -25,6 +30,10 @@ int main(void)
 		return rc;
 	}
 
-	LOG_INF("Initialization and  startup complete, exiting main.");
+	LOG_INF("Initialization and startup complete, dispatching Matter tasks.");
+
+	// Never returns - pumps board/LED/watchdog tasks posted via Nrf::PostTask.
+	matter_dispatch_tasks();
+
 	return 0;
 }

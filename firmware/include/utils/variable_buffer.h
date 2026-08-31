@@ -4,6 +4,10 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // Define the variables that will be stored in buffers
 typedef enum
 {
@@ -60,5 +64,9 @@ float get_mean(variable_t variable);
  * @return The latest value
  */
 float get_latest(variable_t variable);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // VARIABLE_BUFFERS_H

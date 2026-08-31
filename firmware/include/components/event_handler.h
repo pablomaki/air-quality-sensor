@@ -5,6 +5,10 @@
 
 #include <utils/variable_buffer.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * @brief Enumeration for events
  *
@@ -15,10 +19,10 @@ typedef enum
     INITIALIZATION_ERROR,
     STARTUP_SUCCESS,
     STARTUP_ERROR,
-    PERIODIC_TASK_SUCCESS,
-    PAIRING_SUCCESS,
-    PAIRING_FAILURE,
+    ADVERTISING_BLE,
     BLE_CONNECTION_SUCCESS,
+    PROVISIONING_SUCCESS,
+    PERIODIC_TASK_SUCCESS,
     PERIODIC_TASK_WARNING,
     PERIODIC_TASK_ERROR
 } event_t;
@@ -36,5 +40,9 @@ int init_event_handler(void);
  * @param event Event received
  */
 void dispatch_event(event_t event);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // EVENT_HANDLER_H

@@ -25,43 +25,33 @@ void dispatch_event(event_t event)
     switch (event)
     {
     case INITIALIZATION_SUCCESS:
-        // LED off
         blink_led(LED_GREEN, 3);
         break;
     case INITIALIZATION_ERROR:
-        // LED off
         blink_led(LED_RED, 3);
         break;
     case STARTUP_SUCCESS:
-        // LED off
         blink_led(LED_GREEN, 2);
         break;
     case STARTUP_ERROR:
-        // LED off
         blink_led(LED_RED, 2);
         break;
-    case PAIRING_SUCCESS:
-        // LED off
-        blink_led(LED_BLUE, 2);
-        break;
-    case PAIRING_FAILURE:
-        // LED off
-        blink_led(LED_YELLOW, 2);
-        break;
-    case PERIODIC_TASK_SUCCESS:
-        // LED off
-        blink_led(LED_GREEN, 1);
-        break;
-    case BLE_CONNECTION_SUCCESS:
-        // LED off
+    case ADVERTISING_BLE:
         blink_led(LED_BLUE, 1);
         break;
+    case BLE_CONNECTION_SUCCESS:
+        blink_led(LED_BLUE, 2);
+        break;
+    case PROVISIONING_SUCCESS:
+        blink_led(LED_CYAN, 1);
+        break;
+    case PERIODIC_TASK_SUCCESS:
+        blink_led(LED_GREEN, 1);
+        break;
     case PERIODIC_TASK_WARNING:
-        // Blinking blue light
         blink_led(LED_YELLOW, 1);
         break;
     case PERIODIC_TASK_ERROR:
-        // Blinking blue light
         blink_led(LED_RED, 1);
         break;
     default:

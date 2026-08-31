@@ -22,11 +22,6 @@ LOG_MODULE_REGISTER(air_quality_monitor);
 K_THREAD_STACK_DEFINE(periodic_task_stack, PERIODIC_TASK_THREAD_STACK_SIZE);
 static struct k_work_q periodic_task_work_q;
 
-/**
- * @brief Semaphore to synchronize pairing completion
- *
- */
-static struct k_sem pairing_sem;
 
 /**
  * @brief Semaphore to synchronize advertising completion
@@ -39,20 +34,6 @@ static struct k_sem advertising_sem;
  *
  */
 static struct k_work_delayable periodic_work;
-
-/**
- * @brief Update data to matter service and start data advertisement
- *
- * @return int, 0 if ok, non-zero if an error occured
- */
-static int advertise_data(void)
-{
-    int rc = 0;
-    // Update and advertise data
-    LOG_INF("Update cluster states.");
-    rc = update_cluster_states();
-    return rc;
-}
 
 /**
  * @brief Schedule the next work task
@@ -107,11 +88,6 @@ static void periodic_task(struct k_work *work)
 
     // Set state to measuring and idle idle some time for sensor warmup
     set_state(MEASURING);
-#ifdef CONFIG_ENABLE_SGP40
-    LOG_INF("Sensor warming up started, waiting for %d ms.", CONFIG_SENSOR_WARMUP_TIME_MS);
-    k_sleep(K_MSEC(CONFIG_SENSOR_WARMUP_TIME_MS));
-    LOG_INF("Sensor warm up complete.");
-#endif
 
     LOG_INF("Reading sensors.");
     rc = read_sensors();
@@ -151,6 +127,16 @@ static void periodic_task(struct k_work *work)
     // Reset measurement counter
     measurement_counter = 0;
 
+    // Set state to advertising
+    set_state(ADVERTISING);
+
+    LOG_INF("Advertising data.");
+    rc = update_cluster_states();
+    if (rc != 0)
+    {
+        dispatch_event(PERIODIC_TASK_WARNING);
+    }
+
     LOG_INF("Periodic task done, scheduling a new task.");
     int64_t delay = calculate_task_delay(start_time_ms);
     rc = schedule_work_task(delay);
@@ -162,26 +148,6 @@ static void periodic_task(struct k_work *work)
 
     LOG_INF("Task scheduled, going idle.");
     set_state(IDLE);
-}
-
-/**
- * @brief Callback for pairing result
- *
- * @param success True if a device was successfully paired, false if not
- */
-static void pairing_result_callback(bool success)
-{
-    // Check pairing results and decide next action
-    if (success)
-    {
-        LOG_INF("Device successfully paired.");
-        dispatch_event(PAIRING_SUCCESS);
-    }
-    else
-    {
-        LOG_INF("Device pairing failed.");
-        dispatch_event(PAIRING_FAILURE);
-    }
 }
 
 int init_air_quality_monitor(void)
@@ -250,50 +216,6 @@ int start_air_quality_monitor(void)
 
     // Enter idle state
     set_state(STARTUP);
-
-    // Initialize pairing and advertisement semaphores
-    k_sem_init(&pairing_sem, 0, 1);
-
-    // Start pairing mode
-    LOG_INF("Starting pairing, waiting for %d ms.", CONFIG_PAIRING_TIMEOUT);
-    display_notification("Pairing");
-
-    rc = start_pairing();
-    if (rc != 0)
-    {
-        LOG_ERR("Error while starting pairing mode (err %d).", rc);
-        dispatch_event(STARTUP_ERROR);
-        set_state(ERROR);
-        return rc;
-    }
-
-    // Wait for pairing to complete or timeout
-    rc = k_sem_take(&pairing_sem, K_MSEC(CONFIG_PAIRING_TIMEOUT + 1000)); // Add 1s buffer
-    if (rc != 0)
-    {
-        LOG_ERR("Pairing semaphore timeout (err %d).", rc);
-        dispatch_event(STARTUP_ERROR);
-        set_state(ERROR);
-        return rc;
-    }
-    display_notification("");
-
-    if (!has_bonded_devices())
-    {
-        LOG_ERR("No pairing occurred and no bonded devices exist.");
-        dispatch_event(STARTUP_ERROR);
-        set_state(ERROR);
-        return rc;
-    }
-
-    rc = setup_data_advertisement();
-    if (rc != 0)
-    {
-        LOG_ERR("Error while setting up normal advertisement (err %d).", rc);
-        dispatch_event(STARTUP_ERROR);
-        set_state(ERROR);
-        return rc;
-    }
 
     // Start periodic task work queue
     k_work_queue_start(&periodic_task_work_q, periodic_task_stack,

@@ -48,11 +48,20 @@ void emberAfClusterInitCallback(EndpointId endpoint, ClusterId clusterId) {
   case app::Clusters::GroupKeyManagement::Id:
     emberAfGroupKeyManagementClusterInitCallback(endpoint);
     break;
+  case app::Clusters::Identify::Id:
+    emberAfIdentifyClusterInitCallback(endpoint);
+    break;
   case app::Clusters::NetworkCommissioning::Id:
     emberAfNetworkCommissioningClusterInitCallback(endpoint);
     break;
   case app::Clusters::OperationalCredentials::Id:
     emberAfOperationalCredentialsClusterInitCallback(endpoint);
+    break;
+  case app::Clusters::RelativeHumidityMeasurement::Id:
+    emberAfRelativeHumidityMeasurementClusterInitCallback(endpoint);
+    break;
+  case app::Clusters::TemperatureMeasurement::Id:
+    emberAfTemperatureMeasurementClusterInitCallback(endpoint);
     break;
   default:
     // Unrecognized cluster ID
@@ -96,12 +105,27 @@ emberAfGroupKeyManagementClusterInitCallback(EndpointId endpoint) {
   (void)endpoint;
 }
 void __attribute__((weak))
+emberAfIdentifyClusterInitCallback(EndpointId endpoint) {
+  // To prevent warning
+  (void)endpoint;
+}
+void __attribute__((weak))
 emberAfNetworkCommissioningClusterInitCallback(EndpointId endpoint) {
   // To prevent warning
   (void)endpoint;
 }
 void __attribute__((weak))
 emberAfOperationalCredentialsClusterInitCallback(EndpointId endpoint) {
+  // To prevent warning
+  (void)endpoint;
+}
+void __attribute__((weak))
+emberAfRelativeHumidityMeasurementClusterInitCallback(EndpointId endpoint) {
+  // To prevent warning
+  (void)endpoint;
+}
+void __attribute__((weak))
+emberAfTemperatureMeasurementClusterInitCallback(EndpointId endpoint) {
   // To prevent warning
   (void)endpoint;
 }
