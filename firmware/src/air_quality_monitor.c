@@ -238,5 +238,7 @@ int start_air_quality_monitor(void)
     // Enter idle state
     set_state(IDLE);
 
+    matter_dispatch_tasks();
+
     return 0;
 }
