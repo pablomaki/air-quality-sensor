@@ -3,8 +3,6 @@
 #include <components/sensors.h>
 #include <utils/variable_buffer.h>
 #include <components/event_handler.h>
-#include <components/state_manager.h>
-#include <components/flash_manager.h>
 
 #include <zephyr/logging/log.h>
 
@@ -22,12 +20,6 @@ LOG_MODULE_REGISTER(air_quality_monitor);
 K_THREAD_STACK_DEFINE(periodic_task_stack, PERIODIC_TASK_THREAD_STACK_SIZE);
 static struct k_work_q periodic_task_work_q;
 
-
-/**
- * @brief Semaphore to synchronize advertising completion
- *
- */
-static struct k_sem advertising_sem;
 
 /**
  * @brief Work item for periodic task that reads sensor data and advertises it
@@ -86,9 +78,6 @@ static void periodic_task(struct k_work *work)
     // Log time for calculating correct time to sleep
     int64_t start_time_ms = k_uptime_get();
 
-    // Set state to measuring and idle idle some time for sensor warmup
-    set_state(MEASURING);
-
     LOG_INF("Reading sensors.");
     rc = read_sensors();
     if (rc != 0)
@@ -111,7 +100,6 @@ static void periodic_task(struct k_work *work)
         if (rc != 0)
         {
             dispatch_event(PERIODIC_TASK_ERROR);
-            set_state(ERROR);
         }
         LOG_INF("Task scheduled, entering idle state.");
         if (success)
@@ -119,16 +107,11 @@ static void periodic_task(struct k_work *work)
             dispatch_event(PERIODIC_TASK_SUCCESS);
         }
 
-        // Enter idle state
-        set_state(IDLE);
         return;
     }
 
     // Reset measurement counter
     measurement_counter = 0;
-
-    // Set state to advertising
-    set_state(ADVERTISING);
 
     LOG_INF("Advertising data.");
     rc = update_cluster_states();
@@ -143,19 +126,14 @@ static void periodic_task(struct k_work *work)
     if (rc != 0)
     {
         dispatch_event(PERIODIC_TASK_ERROR);
-        set_state(ERROR);
     }
 
-    LOG_INF("Task scheduled, going idle.");
-    set_state(IDLE);
+    LOG_INF("Next task scheduled.");
 }
 
 int init_air_quality_monitor(void)
 {
     int rc = 0;
-
-    // Set state correctly
-    set_state(INITIALIZING);
 
     // Initialize LED controller
     LOG_INF("Initializing event handler.");
@@ -164,7 +142,6 @@ int init_air_quality_monitor(void)
     {
         LOG_ERR("Error while initializing event handler (err %d).", rc);
         dispatch_event(INITIALIZATION_ERROR);
-        set_state(ERROR);
         return rc;
     }
     LOG_INF("Event handler initialized succesfully.");
@@ -176,7 +153,6 @@ int init_air_quality_monitor(void)
     {
         LOG_ERR("Error while initializing matter (err %d).", rc);
         dispatch_event(INITIALIZATION_ERROR);
-        set_state(ERROR);
         return rc;
     }
 
@@ -187,25 +163,10 @@ int init_air_quality_monitor(void)
     {
         LOG_ERR("Error while initializing sensors (err %d).", rc);
         dispatch_event(INITIALIZATION_ERROR);
-        set_state(ERROR);
         return rc;
     }
     LOG_INF("Sensors initialized succesfully.");
-
-    LOG_INF("Initializing flash manager.");
-    rc = init_flash_manager();
-    if (rc != 0)
-    {
-        LOG_ERR("Error while initializing flash manager (err %d).", rc);
-        dispatch_event(INITIALIZATION_ERROR);
-        set_state(ERROR);
-        return rc;
-    }
-    LOG_INF("Flash manager initialized succesfully.");
     dispatch_event(INITIALIZATION_SUCCESS);
-
-    // Enter idle state
-    set_state(IDLE);
 
     return 0;
 }
@@ -214,13 +175,9 @@ int start_air_quality_monitor(void)
 {
     int rc = 0;
 
-    // Enter idle state
-    set_state(STARTUP);
-
     // Start periodic task work queue
     k_work_queue_start(&periodic_task_work_q, periodic_task_stack,
                        PERIODIC_TASK_THREAD_STACK_SIZE, PERIODIC_TASK_THREAD_PRIORITY, NULL);
-    k_sem_init(&advertising_sem, 0, 1);
 
     // Initialize periodic task and time the first task in 10 seconds
     LOG_INF("Setting up the periodic task for measuring and advertising data.");
@@ -229,14 +186,10 @@ int start_air_quality_monitor(void)
     if (rc != 0)
     {
         dispatch_event(STARTUP_ERROR);
-        set_state(ERROR);
         return rc;
     }
     LOG_INF("Periodic task started succesfully.");
     dispatch_event(STARTUP_SUCCESS);
-
-    // Enter idle state
-    set_state(IDLE);
 
     matter_dispatch_tasks();
 
