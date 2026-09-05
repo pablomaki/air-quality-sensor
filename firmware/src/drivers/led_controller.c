@@ -3,9 +3,9 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/drivers/gpio.h>
 
-#define LED_RED_NODE DT_ALIAS(led0)
+#define LED_RED_NODE DT_ALIAS(led2)
 #define LED_GREEN_NODE DT_ALIAS(led1)
-#define LED_BLUE_NODE DT_ALIAS(led2)
+#define LED_BLUE_NODE DT_ALIAS(led0)
 #define LED_BLINK_INTERVAL 50 // Milliseconds
 
 LOG_MODULE_REGISTER(led_controller);

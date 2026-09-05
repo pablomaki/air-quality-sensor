@@ -51,12 +51,6 @@ int init_matter(void)
         return err.AsInteger();
     }
 
-    // TEMPORARY: CONFIG_CHIP_FACTORY_RESET_ERASE_SETTINGS=y skips the Thread-
-    // specific erase, so stale Thread credentials from earlier testing never
-    // got cleared by any of the automatic post-failure factory resets. Force
-    // it once here; remove after confirming a clean pairing attempt.
-    chip::DeviceLayer::ConnectivityMgr().ErasePersistentInfo();
-
     if (!Nrf::GetBoard().Init())
     {
         LOG_ERR("User interface initialization failed.");
@@ -84,8 +78,8 @@ int update_cluster_states(void)
     LOG_INF("Updating advertisement data.");
 
     int rc = 0;
-#ifdef CONFIG_ENABLE_SHT4X
-    float temperature = get_mean(TEMPERATURE);
+    static float temperature = 1.0; // get_mean(TEMPERATURE);
+    temperature = temperature + 1.0;
     chip::Protocols::InteractionModel::Status status =
         chip::app::Clusters::TemperatureMeasurement::Attributes::MeasuredValue::Set(
             kTemperatureSensorEndpointId, static_cast<int16_t>(temperature * 100));
@@ -93,14 +87,14 @@ int update_cluster_states(void)
     {
         LOG_ERR("Failed to update TemperatureMeasurement MeasuredValue: %d", static_cast<int>(status));
     }
-    float humidity = get_mean(HUMIDITY);
+    static float humidity = 1.0; // get_mean(HUMIDITY);
+    humidity = humidity + 1.0;
     status = chip::app::Clusters::RelativeHumidityMeasurement::Attributes::MeasuredValue::Set(
         kHumiditySensorEndpointId, static_cast<int16_t>(humidity * 100));
     if (status != chip::Protocols::InteractionModel::Status::Success)
     {
         LOG_ERR("Failed to update RelativeHumidityMeasurement MeasuredValue: %d", static_cast<int>(status));
     }
-#endif
 
 #if defined(CONFIG_ENABLE_BMP390) || defined(CONFIG_ENABLE_BME680)
     float pressure = get_mean(PRESSURE);

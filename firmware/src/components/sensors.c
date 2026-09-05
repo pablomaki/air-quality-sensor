@@ -26,7 +26,7 @@ static GasIndexAlgorithmParams voc_params;
 #endif
 
 #ifdef CONFIG_ENABLE_SCD4X
-#include <drivers/scd4x.h>
+#include <zephyr/drivers/sensor/scd4x.h>
 static const struct device *scd4x_dev_p;
 static struct sensor_value co2_concentration, temperature_2, humidity_2;
 static struct sensor_value asc_initial_period = {(2 * 24 * 60 * 60) / (CONFIG_ADVERTISEMENT_INTERVAL / CONFIG_MEASUREMENTS_PER_INTERVAL / 1000) / 12, 0};
@@ -36,7 +36,6 @@ static struct sensor_value temperature_offset = {CONFIG_SCD4X_TEMPERATURE_OFFSET
 #endif
 
 #ifdef CONFIG_ENABLE_BMP390
-#include <drivers/bmp390.h>
 static const struct device *bmp390_dev_p;
 static struct sensor_value pressure, temperature_3;
 #endif
@@ -89,7 +88,7 @@ int init_sensors(void)
         LOG_ERR("Failed to set scd4x asc standard period (err %d).", rc);
         return rc;
     }
-    rc = sensor_attr_set(scd4x_dev_p, SENSOR_CHAN_CO2, SENSOR_ATTR_SCD4X_ALTITUDE, &sensor_altitude);
+    rc = sensor_attr_set(scd4x_dev_p, SENSOR_CHAN_CO2, SENSOR_ATTR_SCD4X_SENSOR_ALTITUDE, &sensor_altitude);
     if (rc != 0)
     {
         LOG_ERR("Failed to set scd4x sensor altitude (err %d).", rc);

@@ -11,6 +11,7 @@ This firmware is designed to run on the Seeed XIAO NRF52840 board, which utilize
   - **SGP40** VOC (Volatile Organic Compound) sensor
   - **SCD40/SCD41** Carbon Dioxide (CO2) sensor (includes temperature and humidity reading as well)
   - **BMP390** Pressure sensor
+  - **BME680** Gas/IAQ sensor (requires the `bsec` west manifest group, see [Prerequisites](#prerequisites))
 - **BLE Communication**: Wireless data transfer to mobile devices or cloud platforms.
 - **Customizable Configuration**: Easily modify settings in [config.h](./include/config.h) to adapt to different use cases.
 
@@ -23,6 +24,14 @@ To build the project, ensure you have the following tools installed:
 - [Visual Studio Code](https://code.visualstudio.com/download)
 - [nRF Connect for Visual Studio Code](https://docs.nordicsemi.com/bundle/nrf-connect-vscode/page/get_started/install.html)
 - nRF Connect SDK and Toolchain version 2.9
+- The `bme68x` and `bsec` Bosch libraries (needed for `CONFIG_BME68X_IAQ`) belong to the
+  `bsec` west manifest group, which is disabled by default. Enable it and fetch the
+  sources before building:
+
+  ```
+  west config manifest.group-filter -- +bsec
+  west update bme68x bsec
+  ```
 
 ### Build Instructions
 
