@@ -30,7 +30,7 @@ static bool buffers_ready;
  * @ref ambient_valid before use. Set by whichever read populates them and
  * cleared when that read fails.
  */
-static struct sensor_value ambient_temperature, ambient_humidity;
+static __maybe_unused struct sensor_value ambient_temperature, ambient_humidity;
 static bool ambient_valid;
 
 /**
@@ -44,7 +44,7 @@ static bool ambient_valid;
  * as kPa and the BMP390 driver follows that, while the BME68x/BSEC driver
  * reports Pa - so each read converts to hPa where it knows its own unit.
  */
-static float ambient_pressure_hpa;
+static __maybe_unused float ambient_pressure_hpa;
 static bool ambient_pressure_valid;
 
 #ifdef CONFIG_ENABLE_SHT4X
