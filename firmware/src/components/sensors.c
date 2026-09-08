@@ -419,17 +419,35 @@ static int read_scd4x_data()
         set_value(CO2_CONCENTRATION, -1.0f); // Error indicator
         return rc;
     }
+    bool temperature_ok = true;
+    bool humidity_ok = true;
+
     rc = sensor_channel_get(scd4x_dev_p, SENSOR_CHAN_AMBIENT_TEMP, &temperature_2);
     if (rc != 0)
     {
         LOG_ERR("Failed to get temperature data (err %d).", rc);
-        // return rc; // Non-critical
+        temperature_ok = false; // Non-critical
     }
     rc = sensor_channel_get(scd4x_dev_p, SENSOR_CHAN_HUMIDITY, &humidity_2);
     if (rc != 0)
     {
         LOG_ERR("Failed to get humidity data (err %d).", rc);
-        // return rc; // Non-critical
+        humidity_ok = false; // Non-critical
+    }
+
+    // The SCD4x measures temperature and humidity as well, so use them when no
+    // better source has published values in this read cycle - otherwise an
+    // SCD4x-only build has no temperature or humidity at all. They are only a
+    // fallback because the SCD4x self-heats and so reads high, which is what
+    // CONFIG_SCD4X_TEMPERATURE_OFFSET compensates for; a dedicated sensor is
+    // preferred whenever one is present and working.
+    if (temperature_ok && humidity_ok && !ambient_valid)
+    {
+        ambient_temperature = temperature_2;
+        ambient_humidity = humidity_2;
+        ambient_valid = true;
+        set_value(TEMPERATURE, sensor_value_to_float(&temperature_2));
+        set_value(HUMIDITY, sensor_value_to_float(&humidity_2));
     }
 
     // Save values
@@ -555,8 +573,12 @@ int read_sensors(void)
     int rc = 0;
     bool success = true;
 
-    // Order matters: the SGP40 read consumes the ambient temperature/humidity
-    // published by the SHT4X read, so SHT4X has to run first.
+    // Order matters. The ambient temperature/humidity claim is reset here and
+    // then taken by the first sensor that reads them successfully, so the reads
+    // are sequenced best source first: SHT4X (dedicated part) ahead of SCD4X
+    // (self-heating fallback). The SGP40 read consumes whatever they published,
+    // so it has to come after both.
+    ambient_valid = false;
 
     if (!buffers_ready)
     {

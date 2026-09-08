@@ -10,7 +10,10 @@ int init_buffers(size_t size)
 {
 	for (int i = 0; i < NUM_VARIABLES; i++)
 	{
-		buffers[i].data = (float *)malloc(size * sizeof(float));
+		// calloc, not malloc: a buffer belonging to a variable that no enabled
+		// sensor ever writes was previously averaged and published as a
+		// reading straight out of uninitialized heap.
+		buffers[i].data = (float *)calloc(size, sizeof(float));
 		if (!buffers[i].data)
 		{
 			// Free already allocated buffers on failure
