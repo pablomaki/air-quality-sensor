@@ -111,6 +111,13 @@ int init_matter(void)
 
 int update_cluster_states(void)
 {
+    // This runs on the periodic-task workqueue thread, not on the CHIP event loop.
+    // Every data-model access below (attribute Set() and the cluster Instance
+    // setters) touches the attribute store and the reporting engine, which the CHIP
+    // thread uses concurrently, so the stack lock has to be held for all of it.
+    // RAII: released on every return path.
+    chip::DeviceLayer::StackLock stackLock;
+
     LOG_INF("Updating advertisement data.");
     int rc = 0;
 
