@@ -12,15 +12,25 @@
 
 LOG_MODULE_REGISTER(sensors);
 
+/**
+ * @brief Whether the sensor value buffers were allocated successfully.
+ *
+ * Without buffers there is nowhere to store readings, so reading is skipped
+ * entirely rather than dereferencing unallocated storage.
+ */
+static bool buffers_ready;
+
 #ifdef CONFIG_ENABLE_SHT4X
 #include <zephyr/drivers/sensor/sht4x.h>
 static const struct device *sht4x_dev_p;
+static bool sht4x_ready;
 static struct sensor_value temperature, humidity;
 #endif
 
 #ifdef CONFIG_ENABLE_SGP40
 #include <zephyr/drivers/sensor/sgp40.h>
 static const struct device *sgp40_dev_p;
+static bool sgp40_ready;
 static struct sensor_value voc_raw, voc_index;
 static GasIndexAlgorithmParams voc_params;
 #endif
@@ -28,6 +38,7 @@ static GasIndexAlgorithmParams voc_params;
 #ifdef CONFIG_ENABLE_SCD4X
 #include <zephyr/drivers/sensor/scd4x.h>
 static const struct device *scd4x_dev_p;
+static bool scd4x_ready;
 static struct sensor_value co2_concentration, temperature_2, humidity_2;
 static struct sensor_value asc_initial_period = {(2 * 24 * 60 * 60) / (CONFIG_ADVERTISEMENT_INTERVAL / CONFIG_MEASUREMENTS_PER_INTERVAL / 1000) / 12, 0};
 static struct sensor_value asc_standard_period = {(7 * 24 * 60 * 60) / (CONFIG_ADVERTISEMENT_INTERVAL / CONFIG_MEASUREMENTS_PER_INTERVAL / 1000) / 12, 0};
@@ -37,25 +48,38 @@ static struct sensor_value temperature_offset = {CONFIG_SCD4X_TEMPERATURE_OFFSET
 
 #ifdef CONFIG_ENABLE_BMP390
 static const struct device *bmp390_dev_p;
+static bool bmp390_ready;
 static struct sensor_value pressure, temperature_3;
 #endif
 
 #ifdef CONFIG_ENABLE_BME680
 #include <drivers/bme68x_iaq.h>
 static const struct device *bme680_dev_p;
+static bool bme680_ready;
 static struct sensor_value temperature_4, pressure_2, humidity_3, iaq_index, co2_concentration_e, voc_concentration_e, iaq_accuracy, co2_accuracy, voc_accuracy, gas_run_in, gas_stabilization_status;
 #endif
 
 int init_sensors(void)
 {
     int rc = 0;
+    int status = 0;
+
+    // A sensor that fails to come up is recorded as unavailable and skipped for
+    // the rest of this boot. Initialization deliberately continues so that one
+    // missing or misbehaving part cannot take down the whole device: the
+    // remaining sensors keep reporting and the node still joins Matter. The
+    // accumulated status is returned so the caller can raise an error event.
 
 #ifdef CONFIG_ENABLE_SHT4X
     sht4x_dev_p = DEVICE_DT_GET_ANY(sensirion_sht4x);
     if (!device_is_ready(sht4x_dev_p))
     {
-        LOG_ERR("Device sht4x is not ready.");
-        return -ENXIO;
+        LOG_ERR("Device sht4x is not ready, skipping it.");
+        status = -ENXIO;
+    }
+    else
+    {
+        sht4x_ready = true;
     }
 #endif
 
@@ -63,42 +87,53 @@ int init_sensors(void)
     sgp40_dev_p = DEVICE_DT_GET_ANY(sensirion_sgp40);
     if (!device_is_ready(sgp40_dev_p))
     {
-        LOG_ERR("Device sgp40 is not ready.");
-        return -ENXIO;
+        LOG_ERR("Device sgp40 is not ready, skipping it.");
+        status = -ENXIO;
     }
-    GasIndexAlgorithm_init_with_sampling_interval(&voc_params, GasIndexAlgorithm_ALGORITHM_TYPE_VOC, CONFIG_ADVERTISEMENT_INTERVAL / CONFIG_MEASUREMENTS_PER_INTERVAL / 1000);
+    else
+    {
+        GasIndexAlgorithm_init_with_sampling_interval(&voc_params, GasIndexAlgorithm_ALGORITHM_TYPE_VOC, CONFIG_ADVERTISEMENT_INTERVAL / CONFIG_MEASUREMENTS_PER_INTERVAL / 1000);
+        sgp40_ready = true;
+    }
 #endif
 
 #ifdef CONFIG_ENABLE_SCD4X
     scd4x_dev_p = DEVICE_DT_GET_ANY(sensirion_scd41);
     if (!device_is_ready(scd4x_dev_p))
     {
-        LOG_ERR("Device scd4x is not ready.");
-        return -ENXIO;
+        LOG_ERR("Device scd4x is not ready, skipping it.");
+        status = -ENXIO;
     }
-    rc = sensor_attr_set(scd4x_dev_p, SENSOR_CHAN_CO2, SENSOR_ATTR_SCD4X_SELF_CALIB_INITIAL_PERIOD, &asc_initial_period);
-    if (rc != 0)
+    else
     {
-        LOG_ERR("Failed to set scd4x asc initial period (err %d).", rc);
-        return rc;
-    }
-    rc = sensor_attr_set(scd4x_dev_p, SENSOR_CHAN_CO2, SENSOR_ATTR_SCD4X_SELF_CALIB_STANDARD_PERIOD, &asc_standard_period);
-    if (rc != 0)
-    {
-        LOG_ERR("Failed to set scd4x asc standard period (err %d).", rc);
-        return rc;
-    }
-    rc = sensor_attr_set(scd4x_dev_p, SENSOR_CHAN_CO2, SENSOR_ATTR_SCD4X_SENSOR_ALTITUDE, &sensor_altitude);
-    if (rc != 0)
-    {
-        LOG_ERR("Failed to set scd4x sensor altitude (err %d).", rc);
-        return rc;
-    }
-    rc = sensor_attr_set(scd4x_dev_p, SENSOR_CHAN_CO2, SENSOR_ATTR_SCD4X_TEMPERATURE_OFFSET, &temperature_offset);
-    if (rc != 0)
-    {
-        LOG_ERR("Failed to set scd4x sensor temperature offset (err %d).", rc);
-        return rc;
+        // The sensor is usable even if these tunings do not take, so a failure
+        // here is reported but does not disable the sensor.
+        scd4x_ready = true;
+
+        rc = sensor_attr_set(scd4x_dev_p, SENSOR_CHAN_CO2, SENSOR_ATTR_SCD4X_SELF_CALIB_INITIAL_PERIOD, &asc_initial_period);
+        if (rc != 0)
+        {
+            LOG_ERR("Failed to set scd4x asc initial period (err %d).", rc);
+            status = rc;
+        }
+        rc = sensor_attr_set(scd4x_dev_p, SENSOR_CHAN_CO2, SENSOR_ATTR_SCD4X_SELF_CALIB_STANDARD_PERIOD, &asc_standard_period);
+        if (rc != 0)
+        {
+            LOG_ERR("Failed to set scd4x asc standard period (err %d).", rc);
+            status = rc;
+        }
+        rc = sensor_attr_set(scd4x_dev_p, SENSOR_CHAN_CO2, SENSOR_ATTR_SCD4X_SENSOR_ALTITUDE, &sensor_altitude);
+        if (rc != 0)
+        {
+            LOG_ERR("Failed to set scd4x sensor altitude (err %d).", rc);
+            status = rc;
+        }
+        rc = sensor_attr_set(scd4x_dev_p, SENSOR_CHAN_CO2, SENSOR_ATTR_SCD4X_TEMPERATURE_OFFSET, &temperature_offset);
+        if (rc != 0)
+        {
+            LOG_ERR("Failed to set scd4x sensor temperature offset (err %d).", rc);
+            status = rc;
+        }
     }
 #endif
 
@@ -106,8 +141,12 @@ int init_sensors(void)
     bmp390_dev_p = DEVICE_DT_GET_ANY(bosch_bmp390);
     if (!device_is_ready(bmp390_dev_p))
     {
-        LOG_ERR("Device bmp390 is not ready.");
-        return -ENXIO;
+        LOG_ERR("Device bmp390 is not ready, skipping it.");
+        status = -ENXIO;
+    }
+    else
+    {
+        bmp390_ready = true;
     }
 #endif
 
@@ -115,8 +154,12 @@ int init_sensors(void)
     bme680_dev_p = DEVICE_DT_GET_ANY(bosch_bme680);
     if (!device_is_ready(bme680_dev_p))
     {
-        LOG_ERR("Device bme680 is not ready.");
-        return -ENXIO;
+        LOG_ERR("Device bme680 is not ready, skipping it.");
+        status = -ENXIO;
+    }
+    else
+    {
+        bme680_ready = true;
     }
 #endif
 
@@ -125,10 +168,14 @@ int init_sensors(void)
     if (rc != 0)
     {
         LOG_ERR("Failed to initialize sensor value buffers (err %d).", rc);
-        return -ENXIO;
+        status = -ENXIO;
+    }
+    else
+    {
+        buffers_ready = true;
     }
 
-    return 0;
+    return status;
 }
 
 #ifdef CONFIG_ENABLE_SHT4X
@@ -140,6 +187,14 @@ int init_sensors(void)
 static int read_sht4x_data()
 {
     int rc = 0;
+
+    if (!sht4x_ready)
+    {
+        set_value(TEMPERATURE, -1.0f); // Error indicator
+        set_value(HUMIDITY, -1.0f);    // Error indicator
+        return -ENODEV;
+    }
+
     rc = sensor_sample_fetch(sht4x_dev_p);
     if (rc != 0)
     {
@@ -184,6 +239,13 @@ static int read_sht4x_data()
 static int read_sgp40_data()
 {
     int rc = 0;
+
+    if (!sgp40_ready)
+    {
+        set_value(VOC_INDEX, -1.0f); // Error indicator
+        return -ENODEV;
+    }
+
     rc = sensor_attr_set(sgp40_dev_p, SENSOR_CHAN_GAS_RES, SENSOR_ATTR_SGP40_TEMPERATURE, &temperature);
     if (rc != 0)
     {
@@ -250,6 +312,13 @@ static int warm_up_sgp40()
 static int read_bmp390_data()
 {
     int rc = 0;
+
+    if (!bmp390_ready)
+    {
+        set_value(PRESSURE, -1.0f); // Error indicator
+        return -ENODEV;
+    }
+
     rc = sensor_sample_fetch(bmp390_dev_p);
     if (rc != 0)
     {
@@ -289,6 +358,12 @@ static int read_bmp390_data()
 static int read_scd4x_data()
 {
     int rc = 0;
+
+    if (!scd4x_ready)
+    {
+        set_value(CO2_CONCENTRATION, -1.0f); // Error indicator
+        return -ENODEV;
+    }
 
 #ifdef CONFIG_ENABLE_BMP390
     rc = sensor_attr_set(scd4x_dev_p, SENSOR_CHAN_CO2, SENSOR_ATTR_SCD4X_AMBIENT_PRESSURE, &pressure);
@@ -341,6 +416,13 @@ static int read_scd4x_data()
 static int read_bme680_data()
 {
     int rc = 0;
+
+    if (!bme680_ready)
+    {
+        set_value(IAQ_INDEX, -1.0f); // Error indicator
+        set_value(PRESSURE, -1.0f);  // Error indicator
+        return -ENODEV;
+    }
 
     rc = sensor_sample_fetch(bme680_dev_p);
     if (rc != 0)
@@ -442,7 +524,13 @@ static int read_bme680_data()
 int read_sensors(void)
 {
     int rc = 0;
-    int success = true;
+    bool success = true;
+
+    if (!buffers_ready)
+    {
+        LOG_ERR("Sensor value buffers unavailable, skipping the read.");
+        return -ENODEV;
+    }
 
 #ifdef CONFIG_ENABLE_SHT4X
     rc = read_sht4x_data();

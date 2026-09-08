@@ -134,6 +134,15 @@ static void periodic_task(struct k_work *work)
 int init_air_quality_monitor(void)
 {
     int rc = 0;
+    int status = 0;
+
+    // Initialization failures are reported through an error event but do not
+    // abort startup. Aborting used to leave the device in its worst possible
+    // state: Matter and Thread were already running, so the node joined the
+    // network and answered queries, while main() had returned before the task
+    // dispatch loop was ever entered - so nothing was ever measured or
+    // reported. A single loose sensor produced a device that looked healthy and
+    // silently did nothing.
 
     // Initialize LED controller
     LOG_INF("Initializing event handler.");
@@ -142,18 +151,21 @@ int init_air_quality_monitor(void)
     {
         LOG_ERR("Error while initializing event handler (err %d).", rc);
         dispatch_event(INITIALIZATION_ERROR);
-        return rc;
+        status = rc;
     }
-    LOG_INF("Event handler initialized succesfully.");
+    else
+    {
+        LOG_INF("Event handler initialized succesfully.");
+    }
 
-    // Initialize bluetooth
+    // Initialize matter
     LOG_INF("Initializing matter.");
     rc = init_matter();
     if (rc != 0)
     {
         LOG_ERR("Error while initializing matter (err %d).", rc);
         dispatch_event(INITIALIZATION_ERROR);
-        return rc;
+        status = rc;
     }
 
     // Initialize sensors
@@ -163,12 +175,19 @@ int init_air_quality_monitor(void)
     {
         LOG_ERR("Error while initializing sensors (err %d).", rc);
         dispatch_event(INITIALIZATION_ERROR);
-        return rc;
+        status = rc;
     }
-    LOG_INF("Sensors initialized succesfully.");
-    dispatch_event(INITIALIZATION_SUCCESS);
+    else
+    {
+        LOG_INF("Sensors initialized succesfully.");
+    }
 
-    return 0;
+    if (status == 0)
+    {
+        dispatch_event(INITIALIZATION_SUCCESS);
+    }
+
+    return status;
 }
 
 int start_air_quality_monitor(void)
@@ -185,13 +204,18 @@ int start_air_quality_monitor(void)
     rc = schedule_work_task(10000); // Start the first task in 10 seconds, some fuckery with timing and priorities here...
     if (rc != 0)
     {
+        // Measurements will not run, but the node must still stay addressable
+        // on the network, so fall through into the task dispatch loop.
+        LOG_ERR("Failed to schedule the periodic task (err %d).", rc);
         dispatch_event(STARTUP_ERROR);
-        return rc;
     }
-    LOG_INF("Periodic task started succesfully.");
-    dispatch_event(STARTUP_SUCCESS);
+    else
+    {
+        LOG_INF("Periodic task started succesfully.");
+        dispatch_event(STARTUP_SUCCESS);
+    }
 
-    matter_dispatch_tasks();
+    matter_dispatch_tasks(); // Never returns
 
-    return 0;
+    return rc;
 }

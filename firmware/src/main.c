@@ -9,22 +9,24 @@ int main(void)
 	LOG_INF("Initializing and starting the air quality monitor.");
 	int rc = 0;
 
-	// Initialize the air quality monitor
+	// Initialize the air quality monitor. A partial failure is reported by the
+	// error event dispatched inside the initialization; startup continues
+	// regardless so that whatever did come up stays operational and the device
+	// remains reachable over Matter.
 	rc = init_air_quality_monitor();
 	if (rc != 0)
 	{
-		LOG_ERR("Error while initializing the air quality monitor (err %d).", rc);
-		return rc;
+		LOG_ERR("Air quality monitor initialized with errors (err %d), continuing.", rc);
 	}
 
-	// Start the air quality monitor
+	// Start the air quality monitor. This enters the Matter task dispatch loop
+	// and does not return.
 	LOG_INF("Initialization complete, starting the monitoring.");
 	rc = start_air_quality_monitor();
 	if (rc != 0)
 	{
 		LOG_ERR("Error while starting the air quality monitor (err %d).", rc);
-		return rc;
 	}
 
-	return 0;
+	return rc;
 }
