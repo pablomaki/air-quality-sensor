@@ -31,8 +31,11 @@ void MatterGeneralDiagnosticsPluginServerInitCallback();
 void MatterAdministratorCommissioningPluginServerInitCallback();
 void MatterOperationalCredentialsPluginServerInitCallback();
 void MatterGroupKeyManagementPluginServerInitCallback();
+void MatterAirQualityPluginServerInitCallback();
 void MatterTemperatureMeasurementPluginServerInitCallback();
+void MatterPressureMeasurementPluginServerInitCallback();
 void MatterRelativeHumidityMeasurementPluginServerInitCallback();
+void MatterCarbonDioxideConcentrationMeasurementPluginServerInitCallback();
 
 #define MATTER_PLUGINS_INIT                                                    \
   MatterIdentifyPluginServerInitCallback();                                    \
@@ -47,5 +50,8 @@ void MatterRelativeHumidityMeasurementPluginServerInitCallback();
   MatterAdministratorCommissioningPluginServerInitCallback();                  \
   MatterOperationalCredentialsPluginServerInitCallback();                      \
   MatterGroupKeyManagementPluginServerInitCallback();                          \
+  MatterAirQualityPluginServerInitCallback();                                  \
   MatterTemperatureMeasurementPluginServerInitCallback();                      \
-  MatterRelativeHumidityMeasurementPluginServerInitCallback();
+  MatterPressureMeasurementPluginServerInitCallback();                         \
+  MatterRelativeHumidityMeasurementPluginServerInitCallback();                 \
+  MatterCarbonDioxideConcentrationMeasurementPluginServerInitCallback();

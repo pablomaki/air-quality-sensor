@@ -33,8 +33,14 @@ void emberAfClusterInitCallback(EndpointId endpoint, ClusterId clusterId) {
   case app::Clusters::AdministratorCommissioning::Id:
     emberAfAdministratorCommissioningClusterInitCallback(endpoint);
     break;
+  case app::Clusters::AirQuality::Id:
+    emberAfAirQualityClusterInitCallback(endpoint);
+    break;
   case app::Clusters::BasicInformation::Id:
     emberAfBasicInformationClusterInitCallback(endpoint);
+    break;
+  case app::Clusters::CarbonDioxideConcentrationMeasurement::Id:
+    emberAfCarbonDioxideConcentrationMeasurementClusterInitCallback(endpoint);
     break;
   case app::Clusters::Descriptor::Id:
     emberAfDescriptorClusterInitCallback(endpoint);
@@ -66,6 +72,9 @@ void emberAfClusterInitCallback(EndpointId endpoint, ClusterId clusterId) {
   case app::Clusters::PowerSource::Id:
     emberAfPowerSourceClusterInitCallback(endpoint);
     break;
+  case app::Clusters::PressureMeasurement::Id:
+    emberAfPressureMeasurementClusterInitCallback(endpoint);
+    break;
   case app::Clusters::RelativeHumidityMeasurement::Id:
     emberAfRelativeHumidityMeasurementClusterInitCallback(endpoint);
     break;
@@ -89,7 +98,18 @@ emberAfAdministratorCommissioningClusterInitCallback(EndpointId endpoint) {
   (void)endpoint;
 }
 void __attribute__((weak))
+emberAfAirQualityClusterInitCallback(EndpointId endpoint) {
+  // To prevent warning
+  (void)endpoint;
+}
+void __attribute__((weak))
 emberAfBasicInformationClusterInitCallback(EndpointId endpoint) {
+  // To prevent warning
+  (void)endpoint;
+}
+void __attribute__((weak))
+emberAfCarbonDioxideConcentrationMeasurementClusterInitCallback(
+    EndpointId endpoint) {
   // To prevent warning
   (void)endpoint;
 }
@@ -140,6 +160,11 @@ emberAfOperationalCredentialsClusterInitCallback(EndpointId endpoint) {
 }
 void __attribute__((weak))
 emberAfPowerSourceClusterInitCallback(EndpointId endpoint) {
+  // To prevent warning
+  (void)endpoint;
+}
+void __attribute__((weak))
+emberAfPressureMeasurementClusterInitCallback(EndpointId endpoint) {
   // To prevent warning
   (void)endpoint;
 }
