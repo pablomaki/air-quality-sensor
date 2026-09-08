@@ -126,12 +126,19 @@ int update_cluster_states(void)
     // temperature/humidity block and used from the pressure and air quality
     // blocks, so a pressure-only or BME680-only build did not compile.
 
+    // Every measured-value attribute used here is nullable, and null is the only
+    // honest way to say "no reading". Publishing a placeholder number instead
+    // makes an unavailable sensor indistinguishable from a working one.
+
 #if defined(CONFIG_ENABLE_SHT4X) || defined(CONFIG_ENABLE_SCD4X)
     {
-        float temperature = get_mean(TEMPERATURE);
+        float temperature = 0.0f;
         chip::Protocols::InteractionModel::Status status =
-            chip::app::Clusters::TemperatureMeasurement::Attributes::MeasuredValue::Set(
-                kTemperatureSensorEndpointId, static_cast<int16_t>(temperature * 100));
+            get_mean(TEMPERATURE, &temperature)
+                ? chip::app::Clusters::TemperatureMeasurement::Attributes::MeasuredValue::Set(
+                      kTemperatureSensorEndpointId, static_cast<int16_t>(temperature * 100))
+                : chip::app::Clusters::TemperatureMeasurement::Attributes::MeasuredValue::SetNull(
+                      kTemperatureSensorEndpointId);
         if (status != chip::Protocols::InteractionModel::Status::Success)
         {
             LOG_ERR("Failed to update TemperatureMeasurement MeasuredValue: %d", static_cast<int>(status));
@@ -139,10 +146,13 @@ int update_cluster_states(void)
         }
     }
     {
-        float humidity = get_mean(HUMIDITY);
+        float humidity = 0.0f;
         chip::Protocols::InteractionModel::Status status =
-            chip::app::Clusters::RelativeHumidityMeasurement::Attributes::MeasuredValue::Set(
-                kHumiditySensorEndpointId, static_cast<uint16_t>(humidity * 100));
+            get_mean(HUMIDITY, &humidity)
+                ? chip::app::Clusters::RelativeHumidityMeasurement::Attributes::MeasuredValue::Set(
+                      kHumiditySensorEndpointId, static_cast<uint16_t>(humidity * 100))
+                : chip::app::Clusters::RelativeHumidityMeasurement::Attributes::MeasuredValue::SetNull(
+                      kHumiditySensorEndpointId);
         if (status != chip::Protocols::InteractionModel::Status::Success)
         {
             LOG_ERR("Failed to update RelativeHumidityMeasurement MeasuredValue: %d", static_cast<int>(status));
@@ -153,10 +163,13 @@ int update_cluster_states(void)
 
 #if defined(CONFIG_ENABLE_BMP390) || defined(CONFIG_ENABLE_BME680)
     {
-        float pressure = get_mean(PRESSURE);
+        float pressure = 0.0f;
         chip::Protocols::InteractionModel::Status status =
-            chip::app::Clusters::PressureMeasurement::Attributes::MeasuredValue::Set(
-                kPressureSensorEndpointId, static_cast<int16_t>(pressure * 100));
+            get_mean(PRESSURE, &pressure)
+                ? chip::app::Clusters::PressureMeasurement::Attributes::MeasuredValue::Set(
+                      kPressureSensorEndpointId, static_cast<int16_t>(pressure * 100))
+                : chip::app::Clusters::PressureMeasurement::Attributes::MeasuredValue::SetNull(
+                      kPressureSensorEndpointId);
         if (status != chip::Protocols::InteractionModel::Status::Success)
         {
             LOG_ERR("Failed to update PressureMeasurement MeasuredValue: %d", static_cast<int>(status));
@@ -167,8 +180,11 @@ int update_cluster_states(void)
 
 #ifdef CONFIG_ENABLE_SCD4X
     {
-        float co2_concentration = get_mean(CO2_CONCENTRATION);
-        CHIP_ERROR err = sCarbonDioxideInstance.SetMeasuredValue(chip::app::DataModel::MakeNullable(co2_concentration));
+        float co2_concentration = 0.0f;
+        CHIP_ERROR err = get_mean(CO2_CONCENTRATION, &co2_concentration)
+                             ? sCarbonDioxideInstance.SetMeasuredValue(
+                                   chip::app::DataModel::MakeNullable(co2_concentration))
+                             : sCarbonDioxideInstance.SetMeasuredValue(chip::app::DataModel::NullNullable);
         if (err != CHIP_NO_ERROR)
         {
             LOG_ERR("Failed to update CarbonDioxideConcentrationMeasurement MeasuredValue: %" CHIP_ERROR_FORMAT, err.Format());
@@ -182,9 +198,15 @@ int update_cluster_states(void)
     // precedence is left for the air quality index rework.
 #ifdef CONFIG_ENABLE_SGP40
     {
-        float voc_index = get_mean(VOC_INDEX);
+        // AirQuality is an enum with no null state; kUnknown is how it says
+        // "no reading", and air_quality_enum_from_index() maps out-of-range
+        // input to exactly that.
+        float voc_index = 0.0f;
         chip::Protocols::InteractionModel::Status status =
-            sAirQualityInstance.UpdateAirQuality(air_quality_enum_from_index(static_cast<int>(voc_index)));
+            sAirQualityInstance.UpdateAirQuality(
+                get_mean(VOC_INDEX, &voc_index)
+                    ? air_quality_enum_from_index(static_cast<int>(voc_index))
+                    : chip::app::Clusters::AirQuality::AirQualityEnum::kUnknown);
         if (status != chip::Protocols::InteractionModel::Status::Success)
         {
             LOG_ERR("Failed to update AirQuality attribute: %d", static_cast<int>(status));
@@ -194,9 +216,12 @@ int update_cluster_states(void)
 #endif
 #ifdef CONFIG_ENABLE_BME680
     {
-        float iaq_index = get_mean(IAQ_INDEX);
+        float iaq_index = 0.0f;
         chip::Protocols::InteractionModel::Status status =
-            sAirQualityInstance.UpdateAirQuality(air_quality_enum_from_index(static_cast<int>(iaq_index)));
+            sAirQualityInstance.UpdateAirQuality(
+                get_mean(IAQ_INDEX, &iaq_index)
+                    ? air_quality_enum_from_index(static_cast<int>(iaq_index))
+                    : chip::app::Clusters::AirQuality::AirQualityEnum::kUnknown);
         if (status != chip::Protocols::InteractionModel::Status::Success)
         {
             LOG_ERR("Failed to update AirQuality attribute: %d", static_cast<int>(status));

@@ -203,8 +203,8 @@ static int read_sht4x_data()
     if (!sht4x_ready)
     {
         ambient_valid = false;
-        set_value(TEMPERATURE, -1.0f); // Error indicator
-        set_value(HUMIDITY, -1.0f);    // Error indicator
+        set_invalid(TEMPERATURE);
+        set_invalid(HUMIDITY);
         return -ENODEV;
     }
 
@@ -213,8 +213,8 @@ static int read_sht4x_data()
     {
         LOG_ERR("Failed to fetch sample from SHT4X device (err %d).", rc);
         ambient_valid = false;
-        set_value(TEMPERATURE, -1.0f); // Error indicator
-        set_value(HUMIDITY, -1.0f);    // Error indicator
+        set_invalid(TEMPERATURE);
+        set_invalid(HUMIDITY);
         return rc;
     }
 
@@ -223,8 +223,8 @@ static int read_sht4x_data()
     {
         LOG_ERR("Failed to get temperature data (err %d).", rc);
         ambient_valid = false;
-        set_value(TEMPERATURE, -1.0f); // Error indicator
-        set_value(HUMIDITY, -1.0f);    // Error indicator
+        set_invalid(TEMPERATURE);
+        set_invalid(HUMIDITY);
         return rc;
     }
     rc = sensor_channel_get(sht4x_dev_p, SENSOR_CHAN_HUMIDITY, &ambient_humidity);
@@ -232,8 +232,8 @@ static int read_sht4x_data()
     {
         LOG_ERR("Failed to get humidity data (err %d).", rc);
         ambient_valid = false;
-        set_value(TEMPERATURE, -1.0f); // Error indicator
-        set_value(HUMIDITY, -1.0f);    // Error indicator
+        set_invalid(TEMPERATURE);
+        set_invalid(HUMIDITY);
         return rc;
     }
 
@@ -259,7 +259,7 @@ static int read_sgp40_data()
 
     if (!sgp40_ready)
     {
-        set_value(VOC_INDEX, -1.0f); // Error indicator
+        set_invalid(VOC_INDEX);
         return -ENODEV;
     }
 
@@ -274,14 +274,14 @@ static int read_sgp40_data()
         if (rc != 0)
         {
             LOG_ERR("Failed to set temperature compensation (err %d).", rc);
-            set_value(VOC_INDEX, -1.0f); // Error indicator
+            set_invalid(VOC_INDEX);
             return rc;
         }
         rc = sensor_attr_set(sgp40_dev_p, SENSOR_CHAN_GAS_RES, SENSOR_ATTR_SGP40_HUMIDITY, &ambient_humidity);
         if (rc != 0)
         {
             LOG_ERR("Failed to set humidity compensation (err %d).", rc);
-            set_value(VOC_INDEX, -1.0f); // Error indicator
+            set_invalid(VOC_INDEX);
             return rc;
         }
     }
@@ -294,7 +294,7 @@ static int read_sgp40_data()
     if (rc != 0)
     {
         LOG_ERR("Failed to fetch sample from SGP40 device (err %d).", rc);
-        set_value(VOC_INDEX, -1.0f); // Error indicator
+        set_invalid(VOC_INDEX);
         return rc;
     }
 
@@ -302,7 +302,7 @@ static int read_sgp40_data()
     if (rc != 0)
     {
         LOG_ERR("Failed to get VOC idnex data (err %d).", rc);
-        set_value(VOC_INDEX, -1.0f); // Error indicator
+        set_invalid(VOC_INDEX);
         return rc;
     }
     GasIndexAlgorithm_process(&voc_params, voc_raw.val1, &voc_index.val1);
@@ -344,7 +344,7 @@ static int read_bmp390_data()
 
     if (!bmp390_ready)
     {
-        set_value(PRESSURE, -1.0f); // Error indicator
+        set_invalid(PRESSURE);
         return -ENODEV;
     }
 
@@ -352,7 +352,7 @@ static int read_bmp390_data()
     if (rc != 0)
     {
         LOG_ERR("Failed to fetch sample from BMP390 device (err %d).", rc);
-        set_value(PRESSURE, -1.0f); // Error indicator
+        set_invalid(PRESSURE);
         return rc;
     }
 
@@ -360,7 +360,7 @@ static int read_bmp390_data()
     if (rc != 0)
     {
         LOG_ERR("Failed to get pressure data (err %d).", rc);
-        set_value(PRESSURE, -1.0f); // Error indicator
+        set_invalid(PRESSURE);
         return rc;
     }
     rc = sensor_channel_get(bmp390_dev_p, SENSOR_CHAN_AMBIENT_TEMP, &temperature_3);
@@ -390,7 +390,7 @@ static int read_scd4x_data()
 
     if (!scd4x_ready)
     {
-        set_value(CO2_CONCENTRATION, -1.0f); // Error indicator
+        set_invalid(CO2_CONCENTRATION);
         return -ENODEV;
     }
 
@@ -399,7 +399,7 @@ static int read_scd4x_data()
     if (rc != 0)
     {
         LOG_ERR("Failed to set pressure compensation (err %d).", rc);
-        set_value(CO2_CONCENTRATION, -1.0f); // Error indicator
+        set_invalid(CO2_CONCENTRATION);
         return rc;
     }
 #endif
@@ -408,7 +408,7 @@ static int read_scd4x_data()
     if (rc != 0)
     {
         LOG_ERR("Failed to fetch sample from SCD4x device (err %d).", rc);
-        set_value(CO2_CONCENTRATION, -1.0f); // Error indicator
+        set_invalid(CO2_CONCENTRATION);
         return rc;
     }
 
@@ -416,7 +416,7 @@ static int read_scd4x_data()
     if (rc != 0)
     {
         LOG_ERR("Failed to get CO2 concentration data (err %d).", rc);
-        set_value(CO2_CONCENTRATION, -1.0f); // Error indicator
+        set_invalid(CO2_CONCENTRATION);
         return rc;
     }
     bool temperature_ok = true;
@@ -466,8 +466,8 @@ static int read_bme680_data()
 
     if (!bme680_ready)
     {
-        set_value(IAQ_INDEX, -1.0f); // Error indicator
-        set_value(PRESSURE, -1.0f);  // Error indicator
+        set_invalid(IAQ_INDEX);
+        set_invalid(PRESSURE);
         return -ENODEV;
     }
 
@@ -475,7 +475,7 @@ static int read_bme680_data()
     if (rc != 0)
     {
         LOG_ERR("Failed to fetch sample from BME680 device (err %d).", rc);
-        set_value(IAQ_INDEX, -1.0f); // Error indicator
+        set_invalid(IAQ_INDEX);
         return rc;
     }
 
@@ -489,8 +489,8 @@ static int read_bme680_data()
     if (rc != 0)
     {
         LOG_ERR("Failed to get pressure data (err %d).", rc);
-        set_value(IAQ_INDEX, -1.0f); // Error indicator
-        set_value(PRESSURE, -1.0f);  // Error indicator
+        set_invalid(IAQ_INDEX);
+        set_invalid(PRESSURE);
         return rc;
     }
     rc = sensor_channel_get(bme680_dev_p, SENSOR_CHAN_HUMIDITY, &humidity_3);
@@ -515,8 +515,8 @@ static int read_bme680_data()
     if (rc != 0)
     {
         LOG_ERR("Failed to get IAQ index data (err %d).", rc);
-        set_value(IAQ_INDEX, -1.0f); // Error indicator
-        set_value(PRESSURE, -1.0f);  // Error indicator
+        set_invalid(IAQ_INDEX);
+        set_invalid(PRESSURE);
         return rc;
     }
     rc = sensor_channel_get(bme680_dev_p, SENSOR_CHAN_IAQ_ACC, &iaq_accuracy);
