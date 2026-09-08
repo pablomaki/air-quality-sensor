@@ -121,63 +121,87 @@ int update_cluster_states(void)
     LOG_INF("Updating advertisement data.");
     int rc = 0;
 
+    // Each block below is its own scope so that `status` is declared by whichever
+    // blocks are actually compiled in. It used to be declared in the
+    // temperature/humidity block and used from the pressure and air quality
+    // blocks, so a pressure-only or BME680-only build did not compile.
+
 #if defined(CONFIG_ENABLE_SHT4X) || defined(CONFIG_ENABLE_SCD4X)
-    float temperature = get_mean(TEMPERATURE);
-    chip::Protocols::InteractionModel::Status status =
-        chip::app::Clusters::TemperatureMeasurement::Attributes::MeasuredValue::Set(
-            kTemperatureSensorEndpointId, static_cast<int16_t>(temperature * 100));
-    if (status != chip::Protocols::InteractionModel::Status::Success)
     {
-        LOG_ERR("Failed to update TemperatureMeasurement MeasuredValue: %d", static_cast<int>(status));
-        rc |= 1 << 0;
+        float temperature = get_mean(TEMPERATURE);
+        chip::Protocols::InteractionModel::Status status =
+            chip::app::Clusters::TemperatureMeasurement::Attributes::MeasuredValue::Set(
+                kTemperatureSensorEndpointId, static_cast<int16_t>(temperature * 100));
+        if (status != chip::Protocols::InteractionModel::Status::Success)
+        {
+            LOG_ERR("Failed to update TemperatureMeasurement MeasuredValue: %d", static_cast<int>(status));
+            rc |= 1 << 0;
+        }
     }
-    float humidity  = get_mean(HUMIDITY);
-    status = chip::app::Clusters::RelativeHumidityMeasurement::Attributes::MeasuredValue::Set(
-        kHumiditySensorEndpointId, static_cast<int16_t>(humidity * 100));
-    if (status != chip::Protocols::InteractionModel::Status::Success)
     {
-        LOG_ERR("Failed to update RelativeHumidityMeasurement MeasuredValue: %d", static_cast<int>(status));
-        rc |= 1 << 1;
+        float humidity = get_mean(HUMIDITY);
+        chip::Protocols::InteractionModel::Status status =
+            chip::app::Clusters::RelativeHumidityMeasurement::Attributes::MeasuredValue::Set(
+                kHumiditySensorEndpointId, static_cast<uint16_t>(humidity * 100));
+        if (status != chip::Protocols::InteractionModel::Status::Success)
+        {
+            LOG_ERR("Failed to update RelativeHumidityMeasurement MeasuredValue: %d", static_cast<int>(status));
+            rc |= 1 << 1;
+        }
     }
 #endif
 
 #if defined(CONFIG_ENABLE_BMP390) || defined(CONFIG_ENABLE_BME680)
-    float pressure  = get_mean(PRESSURE);
-    status = chip::app::Clusters::PressureMeasurement::Attributes::MeasuredValue::Set(
-        kPressureSensorEndpointId, static_cast<int16_t>(pressure * 100));
-    if (status != chip::Protocols::InteractionModel::Status::Success)
     {
-        LOG_ERR("Failed to update PressureMeasurement MeasuredValue: %d", static_cast<int>(status));
-        rc |= 1 << 2;
+        float pressure = get_mean(PRESSURE);
+        chip::Protocols::InteractionModel::Status status =
+            chip::app::Clusters::PressureMeasurement::Attributes::MeasuredValue::Set(
+                kPressureSensorEndpointId, static_cast<int16_t>(pressure * 100));
+        if (status != chip::Protocols::InteractionModel::Status::Success)
+        {
+            LOG_ERR("Failed to update PressureMeasurement MeasuredValue: %d", static_cast<int>(status));
+            rc |= 1 << 2;
+        }
     }
 #endif
 
 #ifdef CONFIG_ENABLE_SCD4X
-    float co2_concentration = get_mean(CO2_CONCENTRATION);
-    CHIP_ERROR err = sCarbonDioxideInstance.SetMeasuredValue(chip::app::DataModel::MakeNullable(co2_concentration));
-    if (err != CHIP_NO_ERROR)
     {
-        LOG_ERR("Failed to update CarbonDioxideConcentrationMeasurement MeasuredValue: %" CHIP_ERROR_FORMAT, err.Format());
-        rc |= 1 << 3;
+        float co2_concentration = get_mean(CO2_CONCENTRATION);
+        CHIP_ERROR err = sCarbonDioxideInstance.SetMeasuredValue(chip::app::DataModel::MakeNullable(co2_concentration));
+        if (err != CHIP_NO_ERROR)
+        {
+            LOG_ERR("Failed to update CarbonDioxideConcentrationMeasurement MeasuredValue: %" CHIP_ERROR_FORMAT, err.Format());
+            rc |= 1 << 3;
+        }
     }
 #endif
 
+    // Note: SGP40 and BME680 both drive the single AirQuality attribute, so in a
+    // build with both enabled the later one wins. Deciding which source takes
+    // precedence is left for the air quality index rework.
 #ifdef CONFIG_ENABLE_SGP40
-    float voc_index = get_mean(VOC_INDEX);
-    status = sAirQualityInstance.UpdateAirQuality(air_quality_enum_from_index(static_cast<int>(voc_index)));
-    if (status != chip::Protocols::InteractionModel::Status::Success)
     {
-        LOG_ERR("Failed to update AirQuality attribute: %d", static_cast<int>(status));
-        rc |= 1 << 4;
+        float voc_index = get_mean(VOC_INDEX);
+        chip::Protocols::InteractionModel::Status status =
+            sAirQualityInstance.UpdateAirQuality(air_quality_enum_from_index(static_cast<int>(voc_index)));
+        if (status != chip::Protocols::InteractionModel::Status::Success)
+        {
+            LOG_ERR("Failed to update AirQuality attribute: %d", static_cast<int>(status));
+            rc |= 1 << 4;
+        }
     }
 #endif
 #ifdef CONFIG_ENABLE_BME680
-    float iaq_index = get_mean(IAQ_INDEX);
-    status = sAirQualityInstance.UpdateAirQuality(air_quality_enum_from_index(static_cast<int>(iaq_index)));
-    if (status != chip::Protocols::InteractionModel::Status::Success)
     {
-        LOG_ERR("Failed to update AirQuality attribute: %d", static_cast<int>(status));
-        rc |= 1 << 5;
+        float iaq_index = get_mean(IAQ_INDEX);
+        chip::Protocols::InteractionModel::Status status =
+            sAirQualityInstance.UpdateAirQuality(air_quality_enum_from_index(static_cast<int>(iaq_index)));
+        if (status != chip::Protocols::InteractionModel::Status::Success)
+        {
+            LOG_ERR("Failed to update AirQuality attribute: %d", static_cast<int>(status));
+            rc |= 1 << 5;
+        }
     }
 #endif
     return rc;

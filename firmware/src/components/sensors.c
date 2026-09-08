@@ -20,11 +20,23 @@ LOG_MODULE_REGISTER(sensors);
  */
 static bool buffers_ready;
 
+/**
+ * @brief Ambient temperature and humidity used for cross-sensor compensation.
+ *
+ * The SGP40 needs ambient temperature and humidity to compensate its raw
+ * reading, but it cannot measure them itself. These are declared
+ * unconditionally, independent of which sensor supplies them, so that a build
+ * without a temperature/humidity sensor still compiles; consumers must check
+ * @ref ambient_valid before use. Set by whichever read populates them and
+ * cleared when that read fails.
+ */
+static struct sensor_value ambient_temperature, ambient_humidity;
+static bool ambient_valid;
+
 #ifdef CONFIG_ENABLE_SHT4X
 #include <zephyr/drivers/sensor/sht4x.h>
 static const struct device *sht4x_dev_p;
 static bool sht4x_ready;
-static struct sensor_value temperature, humidity;
 #endif
 
 #ifdef CONFIG_ENABLE_SGP40
@@ -190,6 +202,7 @@ static int read_sht4x_data()
 
     if (!sht4x_ready)
     {
+        ambient_valid = false;
         set_value(TEMPERATURE, -1.0f); // Error indicator
         set_value(HUMIDITY, -1.0f);    // Error indicator
         return -ENODEV;
@@ -199,33 +212,37 @@ static int read_sht4x_data()
     if (rc != 0)
     {
         LOG_ERR("Failed to fetch sample from SHT4X device (err %d).", rc);
+        ambient_valid = false;
         set_value(TEMPERATURE, -1.0f); // Error indicator
         set_value(HUMIDITY, -1.0f);    // Error indicator
         return rc;
     }
 
-    rc = sensor_channel_get(sht4x_dev_p, SENSOR_CHAN_AMBIENT_TEMP, &temperature);
+    rc = sensor_channel_get(sht4x_dev_p, SENSOR_CHAN_AMBIENT_TEMP, &ambient_temperature);
     if (rc != 0)
     {
         LOG_ERR("Failed to get temperature data (err %d).", rc);
+        ambient_valid = false;
         set_value(TEMPERATURE, -1.0f); // Error indicator
         set_value(HUMIDITY, -1.0f);    // Error indicator
         return rc;
     }
-    rc = sensor_channel_get(sht4x_dev_p, SENSOR_CHAN_HUMIDITY, &humidity);
+    rc = sensor_channel_get(sht4x_dev_p, SENSOR_CHAN_HUMIDITY, &ambient_humidity);
     if (rc != 0)
     {
         LOG_ERR("Failed to get humidity data (err %d).", rc);
+        ambient_valid = false;
         set_value(TEMPERATURE, -1.0f); // Error indicator
         set_value(HUMIDITY, -1.0f);    // Error indicator
         return rc;
     }
 
     // Save values
-    set_value(TEMPERATURE, sensor_value_to_float(&temperature));
-    set_value(HUMIDITY, sensor_value_to_float(&humidity));
-    LOG_INF("SHT4X temperature: %d.%d °C", temperature.val1, temperature.val2);
-    LOG_INF("SHT4X humidity: %d.%d %%RH", humidity.val1, humidity.val2);
+    ambient_valid = true;
+    set_value(TEMPERATURE, sensor_value_to_float(&ambient_temperature));
+    set_value(HUMIDITY, sensor_value_to_float(&ambient_humidity));
+    LOG_INF("SHT4X temperature: %d.%d °C", ambient_temperature.val1, ambient_temperature.val2);
+    LOG_INF("SHT4X humidity: %d.%d %%RH", ambient_humidity.val1, ambient_humidity.val2);
     return 0;
 }
 #endif
@@ -246,19 +263,31 @@ static int read_sgp40_data()
         return -ENODEV;
     }
 
-    rc = sensor_attr_set(sgp40_dev_p, SENSOR_CHAN_GAS_RES, SENSOR_ATTR_SGP40_TEMPERATURE, &temperature);
-    if (rc != 0)
+    // Temperature/humidity compensation is optional: without a source for them
+    // the driver falls back to its own defaults, which is far better than
+    // refusing to read or compensating against uninitialized values. This is
+    // also what makes an SGP40 build without a temperature/humidity sensor
+    // work at all - the values used here are not owned by this sensor.
+    if (ambient_valid)
     {
-        LOG_ERR("Failed to set temperature compensation (err %d).", rc);
-        set_value(VOC_INDEX, -1.0f); // Error indicator
-        return rc;
+        rc = sensor_attr_set(sgp40_dev_p, SENSOR_CHAN_GAS_RES, SENSOR_ATTR_SGP40_TEMPERATURE, &ambient_temperature);
+        if (rc != 0)
+        {
+            LOG_ERR("Failed to set temperature compensation (err %d).", rc);
+            set_value(VOC_INDEX, -1.0f); // Error indicator
+            return rc;
+        }
+        rc = sensor_attr_set(sgp40_dev_p, SENSOR_CHAN_GAS_RES, SENSOR_ATTR_SGP40_HUMIDITY, &ambient_humidity);
+        if (rc != 0)
+        {
+            LOG_ERR("Failed to set humidity compensation (err %d).", rc);
+            set_value(VOC_INDEX, -1.0f); // Error indicator
+            return rc;
+        }
     }
-    rc = sensor_attr_set(sgp40_dev_p, SENSOR_CHAN_GAS_RES, SENSOR_ATTR_SGP40_HUMIDITY, &humidity);
-    if (rc != 0)
+    else
     {
-        LOG_ERR("Failed to set humidity compensation (err %d).", rc);
-        set_value(VOC_INDEX, -1.0f); // Error indicator
-        return rc;
+        LOG_DBG("No ambient temperature/humidity available, SGP40 uses driver defaults.");
     }
 
     rc = sensor_sample_fetch(sgp40_dev_p);
@@ -525,6 +554,9 @@ int read_sensors(void)
 {
     int rc = 0;
     bool success = true;
+
+    // Order matters: the SGP40 read consumes the ambient temperature/humidity
+    // published by the SHT4X read, so SHT4X has to run first.
 
     if (!buffers_ready)
     {
