@@ -163,11 +163,18 @@ int update_cluster_states(void)
 
 #if defined(CONFIG_ENABLE_BMP390) || defined(CONFIG_ENABLE_BME680)
     {
-        float pressure = 0.0f;
+        // PressureMeasurement MeasuredValue is specified in units of 0.1 kPa,
+        // which is exactly 1 hPa - the unit the sensors module normalises to -
+        // so no scaling is applied here. The unit is fixed by the spec and
+        // cannot be selected; the optional ScaledValue/Scale attributes of the
+        // EXT feature are the only way to report at another resolution, and
+        // there is no reason to need them at this range: standard atmosphere is
+        // about 1013, far inside int16.
+        float pressure_hpa = 0.0f;
         chip::Protocols::InteractionModel::Status status =
-            get_mean(PRESSURE, &pressure)
+            get_mean(PRESSURE, &pressure_hpa)
                 ? chip::app::Clusters::PressureMeasurement::Attributes::MeasuredValue::Set(
-                      kPressureSensorEndpointId, static_cast<int16_t>(pressure * 100))
+                      kPressureSensorEndpointId, static_cast<int16_t>(pressure_hpa + 0.5f))
                 : chip::app::Clusters::PressureMeasurement::Attributes::MeasuredValue::SetNull(
                       kPressureSensorEndpointId);
         if (status != chip::Protocols::InteractionModel::Status::Success)

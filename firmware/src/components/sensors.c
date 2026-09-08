@@ -33,6 +33,20 @@ static bool buffers_ready;
 static struct sensor_value ambient_temperature, ambient_humidity;
 static bool ambient_valid;
 
+/**
+ * @brief Ambient pressure in hPa, for SCD4x CO2 compensation and for reporting.
+ *
+ * Everything internal is kept in hPa because that is the common denominator of
+ * the two consumers: SENSOR_ATTR_SCD4X_AMBIENT_PRESSURE is specified in hPa
+ * (and the driver rejects anything below 700), and Matter's
+ * PressureMeasurement MeasuredValue is in units of 0.1 kPa, which is exactly
+ * 1 hPa. The drivers do not agree on a unit - SENSOR_CHAN_PRESS is documented
+ * as kPa and the BMP390 driver follows that, while the BME68x/BSEC driver
+ * reports Pa - so each read converts to hPa where it knows its own unit.
+ */
+static float ambient_pressure_hpa;
+static bool ambient_pressure_valid;
+
 #ifdef CONFIG_ENABLE_SHT4X
 #include <zephyr/drivers/sensor/sht4x.h>
 static const struct device *sht4x_dev_p;
@@ -370,9 +384,11 @@ static int read_bmp390_data()
         // return rc; // Non-critical
     }
 
-    // Save values
-    set_value(PRESSURE, sensor_value_to_float(&pressure));
-    LOG_INF("BMP390 pressure: %d.%d hPa", pressure.val1 / 100, (pressure.val1 % 100) + pressure.val2 / 100);
+    // Save values. SENSOR_CHAN_PRESS is kPa, and everything downstream is hPa.
+    ambient_pressure_hpa = sensor_value_to_float(&pressure) * 10.0f;
+    ambient_pressure_valid = true;
+    set_value(PRESSURE, ambient_pressure_hpa);
+    LOG_INF("BMP390 pressure: %d hPa", (int)ambient_pressure_hpa);
     LOG_INF("BMP390 temperature: %d.%d °C", temperature_3.val1, temperature_3.val2);
     return 0;
 }
@@ -394,15 +410,23 @@ static int read_scd4x_data()
         return -ENODEV;
     }
 
-#ifdef CONFIG_ENABLE_BMP390
-    rc = sensor_attr_set(scd4x_dev_p, SENSOR_CHAN_CO2, SENSOR_ATTR_SCD4X_AMBIENT_PRESSURE, &pressure);
-    if (rc != 0)
+    // Pressure compensation is optional - without it the sensor falls back to
+    // the configured CONFIG_SCD4X_ALTITUDE - so a missing reading must not fail
+    // the CO2 read. The attribute is specified in hPa and the driver rejects
+    // val1 below 700; it used to be handed SENSOR_CHAN_PRESS in kPa (about
+    // 101), so it returned -EINVAL on every cycle and aborted the CO2 read
+    // outright whenever a pressure sensor was enabled alongside the SCD4x.
+    if (ambient_pressure_valid)
     {
-        LOG_ERR("Failed to set pressure compensation (err %d).", rc);
-        set_invalid(CO2_CONCENTRATION);
-        return rc;
+        struct sensor_value ambient_pressure = {(int32_t)(ambient_pressure_hpa + 0.5f), 0};
+
+        rc = sensor_attr_set(scd4x_dev_p, SENSOR_CHAN_CO2, SENSOR_ATTR_SCD4X_AMBIENT_PRESSURE, &ambient_pressure);
+        if (rc != 0)
+        {
+            LOG_WRN("Failed to set pressure compensation to %d hPa (err %d), continuing.",
+                    ambient_pressure.val1, rc);
+        }
     }
-#endif
 
     rc = sensor_sample_fetch(scd4x_dev_p);
     if (rc != 0)
@@ -464,10 +488,17 @@ static int read_bme680_data()
 {
     int rc = 0;
 
+    // A dedicated pressure sensor is the better source, so only report pressure
+    // when nothing else has claimed it in this read cycle.
+    const bool provide_pressure = !ambient_pressure_valid;
+
     if (!bme680_ready)
     {
         set_invalid(IAQ_INDEX);
-        set_invalid(PRESSURE);
+        if (provide_pressure)
+        {
+            set_invalid(PRESSURE);
+        }
         return -ENODEV;
     }
 
@@ -490,7 +521,10 @@ static int read_bme680_data()
     {
         LOG_ERR("Failed to get pressure data (err %d).", rc);
         set_invalid(IAQ_INDEX);
-        set_invalid(PRESSURE);
+        if (provide_pressure)
+        {
+            set_invalid(PRESSURE);
+        }
         return rc;
     }
     rc = sensor_channel_get(bme680_dev_p, SENSOR_CHAN_HUMIDITY, &humidity_3);
@@ -516,7 +550,10 @@ static int read_bme680_data()
     {
         LOG_ERR("Failed to get IAQ index data (err %d).", rc);
         set_invalid(IAQ_INDEX);
-        set_invalid(PRESSURE);
+        if (provide_pressure)
+        {
+            set_invalid(PRESSURE);
+        }
         return rc;
     }
     rc = sensor_channel_get(bme680_dev_p, SENSOR_CHAN_IAQ_ACC, &iaq_accuracy);
@@ -550,11 +587,19 @@ static int read_bme680_data()
         // return rc; // Non-critical
     }
 
-    // Save values
+    // Save values. The BME68x/BSEC driver reports pressure in Pa, unlike the
+    // rest of the Zephyr sensor API, and everything downstream is hPa.
+    const float pressure_hpa = sensor_value_to_float(&pressure_2) / 100.0f;
+
     set_value(IAQ_INDEX, sensor_value_to_float(&iaq_index));
-    set_value(PRESSURE, sensor_value_to_float(&pressure_2));
+    if (provide_pressure)
+    {
+        ambient_pressure_hpa = pressure_hpa;
+        ambient_pressure_valid = true;
+        set_value(PRESSURE, pressure_hpa);
+    }
     LOG_INF("BME680 temperature: %d.%d °C", temperature_4.val1, temperature_4.val2);
-    LOG_INF("BME680 pressure: %d.%d hPa", pressure_2.val1 / 100, (pressure_2.val1 % 100) + pressure_2.val2 / 100);
+    LOG_INF("BME680 pressure: %d hPa", (int)pressure_hpa);
     LOG_INF("BME680 humidity: %d.%d %%RH", humidity_3.val1, humidity_3.val2);
     LOG_INF("BME680 CO2 concentration: %d.%d ppm", co2_concentration_e.val1, co2_concentration_e.val2);
     LOG_INF("BME680 VOC concentration: %d.%d ppb", voc_concentration_e.val1, voc_concentration_e.val2);
@@ -573,12 +618,17 @@ int read_sensors(void)
     int rc = 0;
     bool success = true;
 
-    // Order matters. The ambient temperature/humidity claim is reset here and
-    // then taken by the first sensor that reads them successfully, so the reads
-    // are sequenced best source first: SHT4X (dedicated part) ahead of SCD4X
-    // (self-heating fallback). The SGP40 read consumes whatever they published,
-    // so it has to come after both.
+    // Order matters. The shared ambient values are claimed by the first sensor
+    // that reads them successfully in this cycle, so the reads below are
+    // sequenced best source first and consumers come after their producers:
+    //
+    //   SHT4X    - preferred temperature/humidity (dedicated part)
+    //   BMP390   - preferred pressure (dedicated part)
+    //   BME680   - fallback pressure
+    //   SCD4X    - consumes pressure; fallback temperature/humidity
+    //   SGP40    - consumes temperature/humidity
     ambient_valid = false;
+    ambient_pressure_valid = false;
 
     if (!buffers_ready)
     {
@@ -604,6 +654,15 @@ int read_sensors(void)
     }
 #endif
 
+#ifdef CONFIG_ENABLE_BME680
+    rc = read_bme680_data();
+    if (rc != 0)
+    {
+        LOG_ERR("Failed to read BME680 data (err %d).", rc);
+        success = false;
+    }
+#endif
+
 #ifdef CONFIG_ENABLE_SCD4X
     rc = read_scd4x_data();
     if (rc != 0)
@@ -622,13 +681,5 @@ int read_sensors(void)
     }
 #endif
 
-#ifdef CONFIG_ENABLE_BME680
-    rc = read_bme680_data();
-    if (rc != 0)
-    {
-        LOG_ERR("Failed to read BME680 data (err %d).", rc);
-        success = false;
-    }
-#endif
     return success ? 0 : -ENXIO;
 }
