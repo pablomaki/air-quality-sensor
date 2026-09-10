@@ -13,8 +13,19 @@ extern "C" {
 int init_matter(void);
 
 /**
- * @brief Update cluster states
- * @return int Zero for success, non-zero otherwise.
+ * @brief Update the Matter cluster attributes from the buffered sensor values
+ *
+ * Publishes the mean of the valid samples of each measured quantity. A quantity
+ * with no valid samples is reported as null, except AirQuality, which has no
+ * null state and is reported as kUnknown.
+ *
+ * Safe to call from any thread: the CHIP stack lock is held for the duration of
+ * the data model access.
+ *
+ * @note When both the SGP40 and the BME680 are enabled they drive the same
+ *       AirQuality attribute and the BME680 wins, as it is written last.
+ *
+ * @return int Zero for success, a bitmask of the failed updates otherwise.
  */
 int update_cluster_states(void);
 

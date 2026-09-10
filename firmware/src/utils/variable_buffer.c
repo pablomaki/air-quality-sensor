@@ -24,9 +24,6 @@ int init_buffers(size_t size)
 {
 	for (int i = 0; i < NUM_VARIABLES; i++)
 	{
-		// calloc, not malloc: every slot starts out invalid, so a variable that
-		// no enabled sensor ever writes reports as unavailable rather than
-		// averaging whatever the heap happened to contain.
 		buffers[i].data = (float *)calloc(size, sizeof(float));
 		buffers[i].valid = (bool *)calloc(size, sizeof(bool));
 		if (!buffers[i].data || !buffers[i].valid)
@@ -93,8 +90,6 @@ bool get_mean(variable_t variable, float *mean)
 		return false;
 	}
 
-	// Average only the valid samples: one failed read should cost that reading,
-	// not the whole interval.
 	for (size_t i = 0; i < buffer->size; i++)
 	{
 		if (buffer->valid[i])

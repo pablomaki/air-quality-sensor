@@ -33,8 +33,11 @@ typedef struct
 /**
  * @brief Initialize all buffers
  *
+ * Every slot starts out invalid, so a variable that no enabled sensor writes
+ * reports as unavailable rather than being averaged.
+ *
  * @param size Size of each buffer
- * @return 0 on success, -1 on failure
+ * @return 0 on success, negative errno on failure
  */
 int init_buffers(size_t size);
 
@@ -54,11 +57,10 @@ void set_value(variable_t variable, float value);
 /**
  * @brief Record a failed measurement in the buffer
  *
- * Occupies a slot so that the sample window still advances in step with the
- * measurement cadence, but marks it invalid so it is excluded from the mean.
- * Validity is tracked out of band because every quantity measured here has
- * plausible values that cannot be distinguished from an in-band error marker -
- * -1 degC is a real temperature.
+ * Occupies a slot so the sample window still advances with the measurement
+ * cadence, but marks it invalid so it is excluded from the mean. Validity is
+ * tracked out of band because every quantity measured here has plausible
+ * values that no in-band error marker could be distinguished from.
  *
  * @param variable The variable to mark as failed (e.g., TEMPERATURE)
  */
@@ -66,6 +68,9 @@ void set_invalid(variable_t variable);
 
 /**
  * @brief Get the mean of the valid values in a buffer
+ *
+ * Averages only the valid samples, so one failed read costs that reading
+ * rather than the whole interval.
  *
  * @param variable The variable to get (e.g., TEMPERATURE)
  * @param mean Set to the mean of the valid samples if any exist, untouched otherwise

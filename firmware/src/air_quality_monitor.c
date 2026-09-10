@@ -136,14 +136,6 @@ int init_air_quality_monitor(void)
     int rc = 0;
     int status = 0;
 
-    // Initialization failures are reported through an error event but do not
-    // abort startup. Aborting used to leave the device in its worst possible
-    // state: Matter and Thread were already running, so the node joined the
-    // network and answered queries, while main() had returned before the task
-    // dispatch loop was ever entered - so nothing was ever measured or
-    // reported. A single loose sensor produced a device that looked healthy and
-    // silently did nothing.
-
     // Initialize LED controller
     LOG_INF("Initializing event handler.");
     rc = init_event_handler();
@@ -204,8 +196,7 @@ int start_air_quality_monitor(void)
     rc = schedule_work_task(10000); // Start the first task in 10 seconds, some fuckery with timing and priorities here...
     if (rc != 0)
     {
-        // Measurements will not run, but the node must still stay addressable
-        // on the network, so fall through into the task dispatch loop.
+        // Fall through to the dispatch loop so the node stays addressable
         LOG_ERR("Failed to schedule the periodic task (err %d).", rc);
         dispatch_event(STARTUP_ERROR);
     }
