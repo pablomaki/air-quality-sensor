@@ -56,8 +56,14 @@ static GasIndexAlgorithmParams voc_params;
 static const struct device *scd4x_dev_p;
 static bool scd4x_ready;
 static struct sensor_value co2_concentration, temperature_2, humidity_2;
-static struct sensor_value asc_initial_period = {(2 * 24 * 60 * 60) / (CONFIG_ADVERTISEMENT_INTERVAL / CONFIG_MEASUREMENTS_PER_INTERVAL / 1000) / 12, 0};
-static struct sensor_value asc_standard_period = {(7 * 24 * 60 * 60) / (CONFIG_ADVERTISEMENT_INTERVAL / CONFIG_MEASUREMENTS_PER_INTERVAL / 1000) / 12, 0};
+/*
+ * Automatic self calibration periods are wall clock hours and must be integer
+ * multiples of 4, so they do not depend on how often the sensor is sampled.
+ */
+#define SCD4X_ASC_INITIAL_PERIOD_HOURS 48   /* 2 days */
+#define SCD4X_ASC_STANDARD_PERIOD_HOURS 168 /* 7 days */
+static struct sensor_value asc_initial_period = {SCD4X_ASC_INITIAL_PERIOD_HOURS, 0};
+static struct sensor_value asc_standard_period = {SCD4X_ASC_STANDARD_PERIOD_HOURS, 0};
 static struct sensor_value sensor_altitude = {CONFIG_SCD4X_ALTITUDE, 0};
 static struct sensor_value temperature_offset = {CONFIG_SCD4X_TEMPERATURE_OFFSET, 0};
 #endif
