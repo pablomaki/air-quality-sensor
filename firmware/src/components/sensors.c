@@ -108,7 +108,8 @@ int init_sensors(void)
     }
     else
     {
-        GasIndexAlgorithm_init_with_sampling_interval(&voc_params, GasIndexAlgorithm_ALGORITHM_TYPE_VOC, CONFIG_ADVERTISEMENT_INTERVAL / CONFIG_MEASUREMENTS_PER_INTERVAL / 1000);
+        GasIndexAlgorithm_init_with_sampling_interval(&voc_params, GasIndexAlgorithm_ALGORITHM_TYPE_VOC,
+                                                      CONFIG_SAMPLE_INTERVAL_MS / 1000.0f);
         sgp40_ready = true;
     }
 #endif
@@ -178,7 +179,7 @@ int init_sensors(void)
 #endif
 
     // Initialize the buffers for the sensor values
-    rc = init_buffers(CONFIG_MEASUREMENTS_PER_INTERVAL);
+    rc = init_buffers(CONFIG_SAMPLE_WINDOW);
     if (rc != 0)
     {
         LOG_ERR("Failed to initialize sensor value buffers (err %d).", rc);

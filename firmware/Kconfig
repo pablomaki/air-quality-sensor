@@ -26,17 +26,34 @@ menu "Application Configuration"
 
 menu "Timing Configuration"
 
-config ADVERTISEMENT_INTERVAL
-    int "Advertisement interval (milliseconds)"
-    default 300000
+config SAMPLE_INTERVAL_MS
+    int "Sensor sampling interval (milliseconds)"
+    range 1000 3600000
+    default 5000
     help
-      Interval between matter over Thread advertisements in milliseconds.
+      How often every enabled sensor is read. This is a property of the sensors
+      rather than of reporting: it also sets the sampling interval handed to the
+      Sensirion gas index algorithm, which is specified for 1 s and tested up to
+      10 s, and it is bounded below at 1000 ms so that the conversion to whole
+      seconds stays meaningful.
 
-config MEASUREMENTS_PER_INTERVAL
-    int "Measurements per interval"
+config REPORT_INTERVAL_MS
+    int "Matter reporting interval (milliseconds)"
+    range 1000 3600000
+    default 60000
+    help
+      How often the Matter cluster attributes are refreshed from the buffered
+      samples. Independent of the sampling interval. Note that when a controller
+      actually receives values is governed by its own subscription min/max
+      intervals, not by this value.
+
+config SAMPLE_WINDOW
+    int "Number of samples averaged into each reported value"
+    range 1 60
     default 5
     help
-      Number of sensor measurements to take per advertising interval.
+      Size of the per-quantity ring buffer. Only the valid samples in the window
+      are averaged.
 
 config SENSOR_WARMUP_TIME_MS
     int "Sensor warmup time (milliseconds)"

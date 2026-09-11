@@ -11,6 +11,9 @@ LOG_MODULE_REGISTER(air_quality_monitor);
 #define SCHEDULE_SUCCESS 0
 #define SCHEDULE_ALREADY_QUEUED 1
 
+/** @brief Delay before the first sample, to let Matter and Thread settle */
+#define STARTUP_DELAY_MS 10000
+
 /**
  * @brief Lower priority work queue for handling Periodic task progress
  *
@@ -22,21 +25,35 @@ static struct k_work_q periodic_task_work_q;
 
 
 /**
- * @brief Work item for periodic task that reads sensor data and advertises it
+ * @brief Work items for the two independent clocks
  *
+ * Sampling and reporting are scheduled separately: the sampling rate belongs to
+ * the sensors, the reporting rate to the application. Both run on the same work
+ * queue, so they are serialised against each other and the value buffers need no
+ * further locking.
  */
-static struct k_work_delayable periodic_work;
+static struct k_work_delayable sample_work;
+static struct k_work_delayable report_work;
 
 /**
- * @brief Schedule the next work task
+ * @brief Reschedule a work item, compensating for how long the work itself took
  *
- * @param delay Delay for launching the task
+ * @param work Work item to reschedule
+ * @param period_ms Nominal period of the work item
+ * @param start_time_ms Uptime at which this run started
  * @return int, 0 if ok, non-zero if an error occured
  */
-static int schedule_work_task(int64_t delay)
+static int reschedule(struct k_work_delayable *work, int64_t period_ms, int64_t start_time_ms)
 {
-    int rc = 0;
-    rc = k_work_schedule_for_queue(&periodic_task_work_q, &periodic_work, K_MSEC(delay));
+    int64_t delay = period_ms - (k_uptime_get() - start_time_ms);
+
+    if (delay < 0)
+    {
+        LOG_ERR("Missed deadline by %lld ms, scheduling immediately.", -delay);
+        delay = 0;
+    }
+
+    int rc = k_work_schedule_for_queue(&periodic_task_work_q, work, K_MSEC(delay));
     if (rc != SCHEDULE_SUCCESS && rc != SCHEDULE_ALREADY_QUEUED)
     {
         LOG_ERR("Error scheduling a task (err %d).", rc);
@@ -46,89 +63,50 @@ static int schedule_work_task(int64_t delay)
 }
 
 /**
- * @brief Calculate the delay for the next task
- *
- * @param start_time_ms Start time of the task
- * @return int64_t Delay in milliseconds
- */
-static int64_t calculate_task_delay(int64_t start_time_ms)
-{
-    int64_t delay = CONFIG_ADVERTISEMENT_INTERVAL / CONFIG_MEASUREMENTS_PER_INTERVAL - (k_uptime_get() - start_time_ms);
-    if (delay < 0)
-    {
-        LOG_ERR("Missed deadline, scheduling immediately. Delay was %lld ms.", delay);
-        delay = 0; // Prevent negative delay
-    }
-    return delay;
-}
-
-/**
- * @brief Periodic task that takes care of reading sensor data and update matter cluster states
+ * @brief Read every enabled sensor into the value buffers
  *
  * @param work Address of work item.
  */
-static void periodic_task(struct k_work *work)
+static void sample_task(struct k_work *work)
 {
-    static uint8_t measurement_counter = 0;
-    bool success = true;
-    int rc = 0;
-
-    LOG_INF("Periodic task begin.");
-
-    // Log time for calculating correct time to sleep
     int64_t start_time_ms = k_uptime_get();
+    bool success = true;
 
-    LOG_INF("Reading sensors.");
-    rc = read_sensors();
-    if (rc != 0)
+    if (read_sensors() != 0)
     {
-        LOG_WRN("Failed to read sensor data (err %d).", rc);
+        LOG_WRN("Failed to read some sensor data.");
         success = false;
         dispatch_event(PERIODIC_TASK_WARNING);
     }
 
-    // Increment measurement counter and print progress in log
-    measurement_counter++;
-    LOG_INF("Periodic measurement %d/%d done.", measurement_counter, CONFIG_MEASUREMENTS_PER_INTERVAL);
-
-    // Stop the periodic task in short in case of not enough measurements made yet
-    if (measurement_counter < CONFIG_MEASUREMENTS_PER_INTERVAL)
+    if (reschedule(&sample_work, CONFIG_SAMPLE_INTERVAL_MS, start_time_ms) != 0)
     {
-        LOG_INF("Periodic task done, scheduling a new task.");
-        int64_t delay = calculate_task_delay(start_time_ms);
-        rc = schedule_work_task(delay);
-        if (rc != 0)
-        {
-            dispatch_event(PERIODIC_TASK_ERROR);
-        }
-        LOG_INF("Task scheduled, entering idle state.");
-        if (success)
-        {
-            dispatch_event(PERIODIC_TASK_SUCCESS);
-        }
-
-        return;
+        dispatch_event(PERIODIC_TASK_ERROR);
     }
+    else if (success)
+    {
+        dispatch_event(PERIODIC_TASK_SUCCESS);
+    }
+}
 
-    // Reset measurement counter
-    measurement_counter = 0;
+/**
+ * @brief Publish the buffered values to the Matter data model
+ *
+ * @param work Address of work item.
+ */
+static void report_task(struct k_work *work)
+{
+    int64_t start_time_ms = k_uptime_get();
 
-    LOG_INF("Advertising data.");
-    rc = update_cluster_states();
-    if (rc != 0)
+    if (update_cluster_states() != 0)
     {
         dispatch_event(PERIODIC_TASK_WARNING);
     }
 
-    LOG_INF("Periodic task done, scheduling a new task.");
-    int64_t delay = calculate_task_delay(start_time_ms);
-    rc = schedule_work_task(delay);
-    if (rc != 0)
+    if (reschedule(&report_work, CONFIG_REPORT_INTERVAL_MS, start_time_ms) != 0)
     {
         dispatch_event(PERIODIC_TASK_ERROR);
     }
-
-    LOG_INF("Next task scheduled.");
 }
 
 int init_air_quality_monitor(void)
@@ -190,19 +168,28 @@ int start_air_quality_monitor(void)
     k_work_queue_start(&periodic_task_work_q, periodic_task_stack,
                        PERIODIC_TASK_THREAD_STACK_SIZE, PERIODIC_TASK_THREAD_PRIORITY, NULL);
 
-    // Initialize periodic task and time the first task in 10 seconds
-    LOG_INF("Setting up the periodic task for measuring and advertising data.");
-    k_work_init_delayable(&periodic_work, periodic_task);
-    rc = schedule_work_task(10000); // Start the first task in 10 seconds, some fuckery with timing and priorities here...
+    LOG_INF("Setting up the sampling and reporting tasks.");
+    k_work_init_delayable(&sample_work, sample_task);
+    k_work_init_delayable(&report_work, report_task);
+
+    int64_t now = k_uptime_get();
+
+    rc = reschedule(&sample_work, STARTUP_DELAY_MS, now);
+    if (rc == 0)
+    {
+        // Offset the first report so it publishes samples that already exist
+        rc = reschedule(&report_work, STARTUP_DELAY_MS + CONFIG_SAMPLE_INTERVAL_MS, now);
+    }
+
     if (rc != 0)
     {
         // Fall through to the dispatch loop so the node stays addressable
-        LOG_ERR("Failed to schedule the periodic task (err %d).", rc);
+        LOG_ERR("Failed to schedule the periodic tasks (err %d).", rc);
         dispatch_event(STARTUP_ERROR);
     }
     else
     {
-        LOG_INF("Periodic task started succesfully.");
+        LOG_INF("Sampling and reporting tasks started succesfully.");
         dispatch_event(STARTUP_SUCCESS);
     }
 
