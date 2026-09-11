@@ -308,23 +308,6 @@ static int read_sgp40_data()
     LOG_INF("SGP40 VOC index (0 - 500): %d.%d", voc_index.val1, voc_index.val2);
     return 0;
 }
-
-/**
- * @brief Warm up the SGP40 sensor by doing a mock measurement without using the result
- *
- * @return int, 0 if ok, non-zero if an error occured
- */
-static int warm_up_sgp40()
-{
-    int rc = 0;
-    rc = sensor_sample_fetch(sgp40_dev_p);
-    if (rc != 0)
-    {
-        LOG_ERR("Failed to fetch sample from SGP40 device (err %d).", rc);
-        return rc;
-    }
-    return 0;
-}
 #endif
 
 #ifdef CONFIG_ENABLE_BMP390
