@@ -12,6 +12,20 @@
 
 LOG_MODULE_REGISTER(sensors);
 
+/** @brief Upper bound on the averaging window, to bound the buffer memory */
+#define SAMPLE_WINDOW_MAX 60
+
+/**
+ * @brief Number of samples averaged into each reported value
+ *
+ * Derived rather than configured: one reporting period's worth of samples, so
+ * that every sample taken contributes to exactly one report and the two
+ * intervals cannot drift out of step. Clamped to at least one sample, and
+ * bounded above so that an extreme combination of intervals cannot size the
+ * buffers out of RAM.
+ */
+#define SAMPLE_WINDOW CLAMP(CONFIG_REPORT_INTERVAL_MS / CONFIG_SAMPLE_INTERVAL_MS, 1, SAMPLE_WINDOW_MAX)
+
 /** @brief Whether the sensor value buffers were allocated successfully */
 static bool buffers_ready;
 
@@ -179,7 +193,7 @@ int init_sensors(void)
 #endif
 
     // Initialize the buffers for the sensor values
-    rc = init_buffers(CONFIG_SAMPLE_WINDOW);
+    rc = init_buffers(SAMPLE_WINDOW);
     if (rc != 0)
     {
         LOG_ERR("Failed to initialize sensor value buffers (err %d).", rc);
@@ -188,6 +202,7 @@ int init_sensors(void)
     else
     {
         buffers_ready = true;
+        LOG_INF("Averaging %d sample(s) per report.", SAMPLE_WINDOW);
     }
 
     return status;

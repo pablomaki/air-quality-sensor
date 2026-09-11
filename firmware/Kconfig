@@ -43,17 +43,12 @@ config REPORT_INTERVAL_MS
     default 60000
     help
       How often the Matter cluster attributes are refreshed from the buffered
-      samples. Independent of the sampling interval. Note that when a controller
+      samples. Together with SAMPLE_INTERVAL_MS this also sets how many samples
+      are averaged into each reported value: one reporting period's worth, so
+      every sample contributes to exactly one report. Note that when a controller
       actually receives values is governed by its own subscription min/max
       intervals, not by this value.
 
-config SAMPLE_WINDOW
-    int "Number of samples averaged into each reported value"
-    range 1 60
-    default 5
-    help
-      Size of the per-quantity ring buffer. Only the valid samples in the window
-      are averaged.
 
 config SENSOR_WARMUP_TIME_MS
     int "Sensor warmup time (milliseconds)"
