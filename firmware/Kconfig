@@ -54,32 +54,42 @@ config ENABLE_EVENT_LED
     help
       Enable or disable the event LED.
 
+# Each sensor is gated on its devicetree node, so the board overlay is the single
+# source of truth for which parts exist. Adding the node enables both the Zephyr
+# driver (which defaults from the same symbol) and the application support; these
+# symbols only decide whether the application uses a part that is present.
+
 config ENABLE_SHT4X
     bool "Enable SHT4X sensor"
+    depends on DT_HAS_SENSIRION_SHT4X_ENABLED
     default y
     help
       Enable or disable SHT4X temperature/humidity sensor.
 
 config ENABLE_SGP40
     bool "Enable SGP40 sensor"
+    depends on DT_HAS_SENSIRION_SGP40_ENABLED
     default y
     help
       Enable or disable SGP40 VOC sensor.
 
 config ENABLE_SCD4X
     bool "Enable SCD4X sensor"
+    depends on DT_HAS_SENSIRION_SCD41_ENABLED || DT_HAS_SENSIRION_SCD40_ENABLED
     default y
     help
       Enable or disable SCD4X CO2 sensor.
 
 config ENABLE_BMP390
     bool "Enable BMP390 sensor"
+    depends on DT_HAS_BOSCH_BMP390_ENABLED
     default y
     help
       Enable or disable BMP390 pressure sensor.
 
 config ENABLE_BME680
     bool "Enable BME680 sensor"
+    depends on DT_HAS_BOSCH_BME680_ENABLED
     default y
     help
       Enable or disable BME680 sensor.
