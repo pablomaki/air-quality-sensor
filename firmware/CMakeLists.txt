@@ -5,19 +5,28 @@ cmake_minimum_required(VERSION 3.20.0)
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 project(air_quality_sensor)
 
-# Add the header files
-include_directories(
-    include 
+target_include_directories(app PRIVATE
+    include
     thirdparty/sensirion_gas_index_algorithm
 )
 
-FILE(GLOB_RECURSE app_sources
-    src/*.c
-    src/*.cpp
-    thirdparty/*.c
+# Listed explicitly rather than globbed: a glob is evaluated at configure time,
+# so new files are missed until something forces a re-run, and it silently
+# compiles anything that happens to sit under src/ - including the generated
+# sources under src/matter/default_zap/zap-generated, which ncs_configure_data_model()
+# already supplies to the matter-data-model target.
+target_sources(app PRIVATE
+    src/main.c
+    src/air_quality_monitor.c
+    src/components/event_handler.c
+    src/components/matter_handler.cpp
+    src/components/sensors.c
+    src/drivers/led_controller.c
+    src/utils/air_quality_mapper.c
+    src/utils/air_quality_mapper.cpp
+    src/utils/variable_buffer.c
+    thirdparty/sensirion_gas_index_algorithm/sensirion_gas_index_algorithm.c
 )
-
-target_sources(app PRIVATE ${app_sources})
 
 
 # Enable GNU STD support.
