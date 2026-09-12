@@ -1,0 +1,16 @@
+/*
+ * Variant: temperature, humidity and CO2.
+ *
+ * Populated: SHT41 + SCD41.
+ *
+ * Every sensor the board can carry is listed explicitly, so this file is the
+ * complete picture of the variant and does not depend on what the base board
+ * overlay happens to default to.
+ */
+
+&sht4x  { status = "okay"; };
+&scd41  { status = "okay"; };
+
+&sgp40  { status = "disabled"; };
+&bmp390 { status = "disabled"; };
+&bme680 { status = "disabled"; };
