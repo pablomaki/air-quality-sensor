@@ -153,10 +153,10 @@ int update_cluster_states(void)
     }
 #endif
 
-    // One writer for the air quality rating, from the best source fitted. The
-    // BME680 IAQ index is preferred over the SGP40 VOC index, and CO2 is used
-    // only when neither gas sensor is present, so that the mandatory attribute
-    // carries a rating instead of reading unknown.
+    // One writer for the air quality rating, from the best gas sensor fitted,
+    // preferring the BME680 IAQ index over the SGP40 VOC index. With neither the
+    // attribute stays kUnknown, which is a valid value and keeps the mandatory
+    // cluster of this endpoint's device type answering.
     {
         using chip::app::Clusters::AirQuality::AirQualityEnum;
         AirQualityEnum air_quality = AirQualityEnum::kUnknown;
