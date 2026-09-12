@@ -5,7 +5,6 @@
 
 #define LED_RED_NODE DT_ALIAS(led2)
 #define LED_GREEN_NODE DT_ALIAS(led1)
-#define LED_BLUE_NODE DT_ALIAS(led0)
 #define LED_BLINK_INTERVAL 50 // Milliseconds
 
 LOG_MODULE_REGISTER(led_controller);
@@ -27,7 +26,6 @@ static led_blink_ctx_t blink_ctx;
 // GPIO specs from devicetree
 static const struct gpio_dt_spec led_red_spec = GPIO_DT_SPEC_GET(LED_RED_NODE, gpios);
 static const struct gpio_dt_spec led_green_spec = GPIO_DT_SPEC_GET(LED_GREEN_NODE, gpios);
-static const struct gpio_dt_spec led_blue_spec = GPIO_DT_SPEC_GET(LED_BLUE_NODE, gpios);
 
 /**
  * @brief Handles LED blinking
@@ -51,7 +49,7 @@ static void blink_handler(struct k_timer *timer)
 
 int init_led_controller(void)
 {
-    if (!gpio_is_ready_dt(&led_red_spec) || !gpio_is_ready_dt(&led_green_spec) || !gpio_is_ready_dt(&led_blue_spec))
+    if (!gpio_is_ready_dt(&led_red_spec) || !gpio_is_ready_dt(&led_green_spec))
     {
         LOG_ERR("LED devices not ready.");
         return -ENXIO;
@@ -68,12 +66,6 @@ int init_led_controller(void)
     if (rc != 0)
     {
         LOG_ERR("GPIO configuration for green led failed (err %d).", rc);
-        return rc;
-    }
-    rc = gpio_pin_configure_dt(&led_blue_spec, GPIO_OUTPUT_INACTIVE);
-    if (rc != 0)
-    {
-        LOG_ERR("GPIO configuration for blue led failed (err %d).", rc);
         return rc;
     }
     k_timer_init(&blink_ctx.timer, blink_handler, NULL);
@@ -96,5 +88,4 @@ void set_led(led_color_t color)
 {
     gpio_pin_set_dt(&led_red_spec, (color & LED_RED) ? LED_ON : LED_OFF);
     gpio_pin_set_dt(&led_green_spec, (color & LED_GREEN) ? LED_ON : LED_OFF);
-    gpio_pin_set_dt(&led_blue_spec, (color & LED_BLUE) ? LED_ON : LED_OFF);
 }

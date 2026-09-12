@@ -36,15 +36,6 @@ void dispatch_event(event_t event)
     case STARTUP_ERROR:
         blink_led(LED_RED, 2);
         break;
-    case ADVERTISING_BLE:
-        blink_led(LED_BLUE, 1);
-        break;
-    case BLE_CONNECTION_SUCCESS:
-        blink_led(LED_BLUE, 2);
-        break;
-    case PROVISIONING_SUCCESS:
-        blink_led(LED_CYAN, 1);
-        break;
     case PERIODIC_TASK_SUCCESS:
         blink_led(LED_GREEN, 1);
         break;

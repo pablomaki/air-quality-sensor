@@ -41,26 +41,6 @@ static chip::app::Clusters::ConcentrationMeasurement::Instance<true, false, fals
     chip::app::Clusters::ConcentrationMeasurement::MeasurementUnitEnum::kPpm);
 #endif
 
-void handle_state_update()
-{
-    switch (Nrf::GetBoard().GetDeviceState())
-    {
-    case Nrf::DeviceState::DeviceAdvertisingBLE:
-        dispatch_event(ADVERTISING_BLE);
-        break;
-    case Nrf::DeviceState::DeviceDisconnected:
-        break;
-    case Nrf::DeviceState::DeviceConnectedBLE:
-        dispatch_event(BLE_CONNECTION_SUCCESS);
-        break;
-    case Nrf::DeviceState::DeviceProvisioned:
-        dispatch_event(PROVISIONING_SUCCESS);
-        break;
-    default:
-        break;
-    }
-}
-
 int init_matter(void)
 {
     int rc = 0;
