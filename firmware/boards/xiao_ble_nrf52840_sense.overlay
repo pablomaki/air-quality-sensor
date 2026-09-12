@@ -32,7 +32,7 @@
 		};
 
 		led0: led_0 {
-			gpios = <&gpio0 6 GPIO_ACTIVE_LOW>;
+			gpios = <&gpio0 6 GPIO_ACTIVE_HIGH>;
 			label = "Blue LED";
 		};
 	};
@@ -60,7 +60,7 @@
 	};
 
 	sgp40@59 {
-		status = "okay";
+		status = "disabled";
 		compatible = "sensirion,sgp40";
 		reg = <0x59>;
 		// enable-selftest;
@@ -77,7 +77,7 @@
 	// };
 
 	scd41@62 {
-		status = "okay";
+		status = "disabled";
 		compatible = "sensirion,scd41";
 		reg = <0x62>;
 		mode = <2>;
