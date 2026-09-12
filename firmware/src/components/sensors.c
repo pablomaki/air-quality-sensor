@@ -429,6 +429,13 @@ static int read_scd4x_data()
         set_invalid(CO2_CONCENTRATION);
         return rc;
     }
+    if (co2_concentration.val1 == 0)
+    {
+        LOG_WRN("SCD4X has no measurement ready yet, skipping this sample.");
+        set_invalid(CO2_CONCENTRATION);
+        return -EAGAIN;
+    }
+
     __maybe_unused bool temperature_ok = true;
     __maybe_unused bool humidity_ok = true;
 

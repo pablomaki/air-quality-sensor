@@ -79,7 +79,7 @@
 		status = "disabled";
 		compatible = "sensirion,scd41";
 		reg = <0x62>;
-		mode = <2>;
+		mode = <0>;
 	};
 	bme680: bme680@77 {
 		status = "disabled";
