@@ -1,49 +1,51 @@
 services:
-  aqs_ble_client_1:
-    image: aqs_ble_client:latest
-    container_name: aqs_ble_client_1
-    restart: always
-    network_mode: "host"  # Needed for BLE + MQTT on host network
-    privileged: true      # Grants access to BLE hardware (HCI interface)
-    build: .
-    environment:
-      - SENSOR_NAME=air_quality_sensor_001           # Sensor name for topic namespace
-      - BROKER=192.168.0.1                           # MQTT broker address
-      - PORT=1883                                    # MQTT broker port
-      - USERNAME=admin                               # MQTT username
-      - PASSWORD=1234                                # MQTT password
-      - TARGET_ADDRESS=12:34:56:78:9A:BC             # BLE address for the device
-      - PROMETHEUS_PORT=8000                         # Prometheus metrics port
-      - DBUS_SYSTEM_BUS_ADDRESS=unix:path=/var/run/dbus/system_bus_socket
+  # Owns the Matter fabric: commissions nodes, keeps CASE sessions and
+  # attribute subscriptions alive, and exposes them over a WebSocket API.
+  # Host networking is mandatory - Matter needs IPv6 and mDNS on the LAN to
+  # reach the sensors through the Thread border router.
+  matter-server:
+    image: ghcr.io/home-assistant-libs/python-matter-server:stable
+    container_name: matter-server
+    restart: unless-stopped
+    network_mode: host
+    security_opt:
+      - apparmor=unconfined
     volumes:
-      - /var/run/dbus:/var/run/dbus
-      - ../scripts:/app  # Mount Python code to container
-      - ../data:/data  # Mount data file to container
+      - ./matter-server-data:/data
+      # BlueZ, only needed to commission a factory-fresh sensor from this host.
+      # Joining an already-commissioned sensor as a second admin happens over
+      # the network and needs neither of these.
+      # - /run/dbus:/run/dbus:ro
+    command: --storage-path /data --paa-root-cert-dir /data/credentials
+    # Append to the command above to enable BLE commissioning: --bluetooth-adapter 0
     logging:
       options:
         max-size: "10m"
         max-file: "3"
 
-  aqs_ble_client_2:
-    image: aqs_ble_client:latest
-    container_name: aqs_ble_client_2
+  # One bridge serves every sensor on the fabric - they all live behind the
+  # same Matter server - so unlike the old BLE client there is no container
+  # per sensor. Sensors are told apart by the "sensor" metric label.
+  aqs_matter_client:
+    image: aqs_matter_client:latest
+    container_name: aqs_matter_client
     restart: always
-    network_mode: "host"  # Needed for BLE + MQTT on host network
-    privileged: true      # Grants access to BLE hardware (HCI interface)
+    network_mode: host
     build: .
+    depends_on:
+      - matter-server
     environment:
-      - SENSOR_NAME=air_quality_sensor_002           # Sensor name for topic namespace
-      - BROKER=192.168.0.1                           # MQTT broker address
+      - MATTER_SERVER_URL=ws://localhost:5580/ws
+      # Optional. Without it each sensor is named from its Matter NodeLabel,
+      # falling back to ProductName, then node_<id>.
+      - NODE_NAMES=1:air_quality_sensor_001,2:air_quality_sensor_002
+      - BROKER=192.168.0.1                           # MQTT broker, leave empty to disable MQTT
       - PORT=1883                                    # MQTT broker port
       - USERNAME=admin                               # MQTT username
       - PASSWORD=1234                                # MQTT password
-      - TARGET_ADDRESS=12:34:56:78:9A:BD             # BLE address for the device
-      - PROMETHEUS_PORT=8001                         # Prometheus metrics port
-      - DBUS_SYSTEM_BUS_ADDRESS=unix:path=/var/run/dbus/system_bus_socket
+      - PROMETHEUS_PORT=8000                         # Prometheus metrics port
     volumes:
-      - /var/run/dbus:/var/run/dbus
       - ../scripts:/app  # Mount Python code to container
-      - ../data:/data  # Mount data file to container
     logging:
       options:
         max-size: "10m"
