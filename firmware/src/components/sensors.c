@@ -79,7 +79,10 @@ static struct sensor_value co2_concentration, temperature_2, humidity_2;
 static struct sensor_value asc_initial_period = {SCD4X_ASC_INITIAL_PERIOD_HOURS, 0};
 static struct sensor_value asc_standard_period = {SCD4X_ASC_STANDARD_PERIOD_HOURS, 0};
 static struct sensor_value sensor_altitude = {CONFIG_SCD4X_ALTITUDE, 0};
-static struct sensor_value temperature_offset = {CONFIG_SCD4X_TEMPERATURE_OFFSET, 0};
+static struct sensor_value temperature_offset = {
+    CONFIG_SCD4X_TEMPERATURE_OFFSET_MILLI_C / 1000,
+    (CONFIG_SCD4X_TEMPERATURE_OFFSET_MILLI_C % 1000) * 1000,
+};
 #endif
 
 #ifdef CONFIG_ENABLE_BMP390
@@ -389,7 +392,7 @@ static int read_bmp390_data()
  * pressure reading must not fail the CO2 read.
  *
  * The SCD4x also measures temperature and humidity, but it self-heats and so
- * reads high - the reason CONFIG_SCD4X_TEMPERATURE_OFFSET exists. They are
+ * reads high - the reason CONFIG_SCD4X_TEMPERATURE_OFFSET_MILLI_C exists. They are
  * therefore only published in a build with no SHT4X.
  *
  * @return int, 0 if ok, non-zero if an error occured

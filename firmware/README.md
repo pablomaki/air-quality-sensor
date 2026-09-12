@@ -125,7 +125,7 @@ fresh the attributes are.
 | --- | --- |
 | `CONFIG_ENABLE_EVENT_LED` | Blink the RGB LED on application events |
 | `CONFIG_SCD4X_ALTITUDE` | Altitude in metres, used when no pressure sensor supplies compensation |
-| `CONFIG_SCD4X_TEMPERATURE_OFFSET` | Compensates the SCD4x self heating |
+| `CONFIG_SCD4X_TEMPERATURE_OFFSET_MILLI_C` | Compensates the SCD4x self heating, in milli-degrees Celsius (2.35 degrees = 2350) |
 
 ## Additional Resources
 

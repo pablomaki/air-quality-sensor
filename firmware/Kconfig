@@ -116,12 +116,15 @@ config SCD4X_ALTITUDE
     help
       Altitude in meters. Only used if pressure is not provided by other sensors.
 
-config SCD4X_TEMPERATURE_OFFSET
-    int "Temperature offset (Celsius)"
+config SCD4X_TEMPERATURE_OFFSET_MILLI_C
+    int "Temperature offset (milli-degrees Celsius)"
+    range 0 20000
     default 0
     help
-      Temperature offset in Celsius. Reported temperature = measured - offset.
-      SCD41 temperature readings are not currently used.
+      Compensates the SCD4x self heating: reported temperature = measured -
+      offset. Expressed in milli-degrees because Kconfig has no float type, so
+      2.35 degrees is 2350. The sensor resolves about 0.0027 degrees, and the
+      driver rejects anything outside 0 to 20 degrees.
 
 endmenu
 endmenu
