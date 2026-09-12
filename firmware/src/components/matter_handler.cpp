@@ -99,7 +99,7 @@ int update_cluster_states(void)
     int rc = 0;
     [[maybe_unused]] chip::Protocols::InteractionModel::Status status;
 
-#if defined(CONFIG_ENABLE_SHT4X) || defined(CONFIG_ENABLE_SCD4X)
+#if defined(CONFIG_ENABLE_SHT4X) || defined(CONFIG_ENABLE_SCD4X) || defined(CONFIG_ENABLE_BME680)
     float temperature = 0.0f;
     status = get_mean(TEMPERATURE, &temperature)
                  ? chip::app::Clusters::TemperatureMeasurement::Attributes::MeasuredValue::Set(

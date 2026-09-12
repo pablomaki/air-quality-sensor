@@ -393,7 +393,8 @@ static int read_bmp390_data()
  *
  * The SCD4x also measures temperature and humidity, but it self-heats and so
  * reads high - the reason CONFIG_SCD4X_TEMPERATURE_OFFSET_MILLI_C exists. They are
- * therefore only published in a build with no SHT4X.
+ * therefore only published when neither an SHT4X nor a BME680 is fitted, the
+ * BME680 being preferred because BSEC heat compensates its output.
  *
  * @return int, 0 if ok, non-zero if an error occured
  */
@@ -455,7 +456,7 @@ static int read_scd4x_data()
         humidity_ok = false; // Non-critical
     }
 
-#ifndef CONFIG_ENABLE_SHT4X
+#if !defined(CONFIG_ENABLE_SHT4X) && !defined(CONFIG_ENABLE_BME680)
     if (temperature_ok && humidity_ok)
     {
         ambient_temperature = temperature_2;
@@ -513,11 +514,13 @@ static int read_bme680_data()
 #endif
         return rc;
     }
+    __maybe_unused bool humidity_ok = true;
+
     rc = sensor_channel_get(bme680_dev_p, SENSOR_CHAN_HUMIDITY, &humidity_3);
     if (rc != 0)
     {
         LOG_ERR("Failed to get humidity data (err %d).", rc);
-        // return rc; // Non-critical
+        humidity_ok = false; // Non-critical
     }
     rc = sensor_channel_get(bme680_dev_p, SENSOR_CHAN_CO2, &co2_concentration_e);
     if (rc != 0)
@@ -574,6 +577,16 @@ static int read_bme680_data()
 
     // Save values
     set_value(IAQ_INDEX, sensor_value_to_float(&iaq_index));
+#ifndef CONFIG_ENABLE_SHT4X
+    if (humidity_ok)
+    {
+        ambient_temperature = temperature_4;
+        ambient_humidity = humidity_3;
+        ambient_valid = true;
+        set_value(TEMPERATURE, sensor_value_to_float(&temperature_4));
+        set_value(HUMIDITY, sensor_value_to_float(&humidity_3));
+    }
+#endif
 #ifndef CONFIG_ENABLE_BMP390
     sensor_value_from_float(&ambient_pressure, sensor_value_to_float(&pressure_2) / 100.0f); // Pa -> hPa
     ambient_pressure_valid = true;
