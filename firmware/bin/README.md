@@ -52,7 +52,9 @@ falls back to the driver's defaults, which costs some accuracy.
 **Fitted sensors:**
 - BME680, gas/IAQ and pressure
 
-**Reports:** pressure, and an air quality rating derived from the IAQ index.
+**Reports:** temperature, relative humidity, pressure, and an air quality rating
+derived from the IAQ index. The temperature and humidity come from BSEC's heat
+compensated outputs, which correct for the gas heater.
 
 **Configuration:** product name `Air Quality Sensor IAQ`. Requires the licensed
 Bosch BSEC library, so the `bsec` west manifest group has to be enabled before
@@ -64,8 +66,18 @@ The Matter data model is the same in every image: endpoint 1 temperature,
 2 humidity, 3 pressure, 4 air quality and CO2. A quantity that no fitted sensor
 measures is reported as `null` rather than as a placeholder value.
 
-Note that the BME680 measures temperature and humidity but the firmware does not
-currently publish them, so those endpoints read `null` in `aqs_003`.
+| | aqs_001 | aqs_002 | aqs_003 |
+| --- | --- | --- | --- |
+| Temperature | SHT41 | `null` | BME680 |
+| Humidity | SHT41 | `null` | BME680 |
+| Pressure | `null` | `null` | BME680 |
+| CO2 | SCD41 | `null` | `null` |
+| Air quality | from CO2 | from VOC | from IAQ |
+
+Temperature and humidity are taken from the best fitted source, preferring a
+dedicated SHT41, then the BME680, then the SCD41. The BME680 also estimates CO2
+and VOC from its gas resistance, but those are not published, since they are not
+comparable with a real CO2 measurement.
 
 ## Installation Instructions
 
