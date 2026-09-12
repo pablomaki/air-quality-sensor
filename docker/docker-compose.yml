@@ -12,10 +12,11 @@ services:
       - apparmor=unconfined
     volumes:
       - ./matter-server-data:/data
-      # BlueZ, only needed to commission a factory-fresh sensor from this host.
-      # Joining an already-commissioned sensor as a second admin happens over
-      # the network and needs neither of these.
-      # - /run/dbus:/run/dbus:ro
+      # Mandatory. The Matter SDK resolves and advertises mDNS through the
+      # host's Avahi daemon over D-Bus, so without this nothing can be
+      # discovered and commissioning fails. BlueZ is reached the same way when
+      # commissioning a factory-fresh sensor over Bluetooth.
+      - /run/dbus:/run/dbus:ro
     command: --storage-path /data --paa-root-cert-dir /data/credentials
     # Append to the command above to enable BLE commissioning: --bluetooth-adapter 0
     logging:

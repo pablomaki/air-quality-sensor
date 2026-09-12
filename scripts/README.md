@@ -83,6 +83,17 @@ ip -6 route show | grep -i fd
 Containers speaking Matter must use host networking; IPv6 and mDNS do not
 survive Docker's default bridge.
 
+Matter discovers devices over mDNS, and its Linux implementation does that
+through the host's Avahi daemon rather than resolving on its own. Avahi has to
+be installed and running, and its D-Bus socket has to be visible to the Matter
+server container - which is what the `/run/dbus` mount in the compose file is
+for:
+
+```bash
+sudo apt install avahi-daemon
+sudo systemctl enable --now avahi-daemon
+```
+
 ## Adding a sensor to this host's fabric
 
 If the sensor is already in Apple Home, open pairing mode there rather than
@@ -109,6 +120,41 @@ the code from the sensor's onboarding label:
 ```bash
 docker exec -it aqs_matter_client python aqs_matter_commission.py --ble 1234-567-8901
 ```
+
+## Troubleshooting commissioning
+
+`Commission with code failed` means the Matter server never completed the
+pairing. The reason is in its own log, which is far more specific than the
+helper's error:
+
+```bash
+docker compose logs --tail=100 matter-server
+```
+
+The usual causes, all of which the helper cannot distinguish between:
+
+- **The device was never discovered.** Check that Avahi is running on the host
+  and that the Matter server container has `/run/dbus` mounted. Confirm the
+  sensor is actually advertising while pairing mode is open:
+
+  ```bash
+  avahi-browse -rt _matterc._udp
+  ```
+
+  An empty result means either pairing mode is closed or the border router is
+  not relaying the Thread mesh's mDNS onto the LAN.
+
+- **The device was discovered but could not be reached.** This is the IPv6 route
+  described above: without it the host resolves the sensor's address and then
+  cannot route to it. Verify with `ip -6 route show | grep -i fd`, and ping the
+  address `avahi-browse` reported.
+
+- **The commissioning window expired.** It is open for a limited time, and the
+  code changes every time it is reopened. Open pairing mode in the Home app
+  immediately before running the helper, not minutes ahead.
+
+- **The fabric limit was reached.** The firmware allows five, so this only
+  happens after repeated failed attempts have left stale fabrics behind.
 
 ## Running outside Docker
 
