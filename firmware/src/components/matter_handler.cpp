@@ -24,14 +24,18 @@ constexpr uint8_t kHumiditySensorEndpointId = 0x02;
 constexpr uint8_t kPressureSensorEndpointId = 0x03;
 constexpr uint8_t kAirQualitySensorEndpointId = 0x04;
 
-#if defined(CONFIG_ENABLE_SGP40) || defined(CONFIG_ENABLE_BME680)
 // AirQuality is an enum attribute, not a scaled measurement, so it can only be
 // updated through the cluster's delegate Instance, never a raw Attributes::Set().
+//
+// Declared unconditionally: AirQuality is the mandatory cluster of the Air
+// Quality Sensor device type on this endpoint, and all of its attributes are ZAP
+// callback attributes served by this Instance. Without it nothing answers a
+// read, so a controller finds the endpoint's mandatory cluster broken and
+// discards the whole endpoint, taking the concentration measurements with it.
 using chip::app::Clusters::AirQuality::Feature;
 static chip::app::Clusters::AirQuality::Instance sAirQualityInstance(
     kAirQualitySensorEndpointId,
     chip::BitMask<Feature>(Feature::kFair, Feature::kModerate, Feature::kVeryPoor, Feature::kExtremelyPoor));
-#endif
 
 #ifdef CONFIG_ENABLE_SCD4X
 // Concentration measurement clusters also use a delegate Instance, never a raw Attributes::Set().
@@ -72,13 +76,11 @@ int init_matter(void)
         return err.AsInteger();
     }
 
-#if defined(CONFIG_ENABLE_SGP40) || defined(CONFIG_ENABLE_BME680)
     if (sAirQualityInstance.Init() != CHIP_NO_ERROR)
     {
         LOG_ERR("Failed to initialize AirQuality cluster instance");
         return CHIP_ERROR_INCORRECT_STATE.AsInteger();
     }
-#endif
 #ifdef CONFIG_ENABLE_SCD4X
     if (sCarbonDioxideInstance.Init() != CHIP_NO_ERROR)
     {
@@ -151,29 +153,35 @@ int update_cluster_states(void)
     }
 #endif
 
-#ifdef CONFIG_ENABLE_SGP40
-    float voc_index = 0.0f;
-    status = sAirQualityInstance.UpdateAirQuality(
-        get_mean(VOC_INDEX, &voc_index) ? air_quality_enum_from_index(static_cast<int>(voc_index))
-                                        : chip::app::Clusters::AirQuality::AirQualityEnum::kUnknown);
-    if (status != chip::Protocols::InteractionModel::Status::Success)
+    // One writer for the air quality rating, from the best source fitted. The
+    // BME680 IAQ index is preferred over the SGP40 VOC index, and CO2 is used
+    // only when neither gas sensor is present, so that the mandatory attribute
+    // carries a rating instead of reading unknown.
     {
-        LOG_ERR("Failed to update AirQuality attribute: %d", static_cast<int>(status));
-        rc |= 1 << 4;
-    }
+        using chip::app::Clusters::AirQuality::AirQualityEnum;
+        AirQualityEnum air_quality = AirQualityEnum::kUnknown;
+
+#if defined(CONFIG_ENABLE_BME680)
+        float iaq_index = 0.0f;
+        if (get_mean(IAQ_INDEX, &iaq_index))
+        {
+            air_quality = air_quality_enum_from_index(static_cast<int>(iaq_index));
+        }
+#elif defined(CONFIG_ENABLE_SGP40)
+        float voc_index = 0.0f;
+        if (get_mean(VOC_INDEX, &voc_index))
+        {
+            air_quality = air_quality_enum_from_index(static_cast<int>(voc_index));
+        }
 #endif
 
-#ifdef CONFIG_ENABLE_BME680
-    float iaq_index = 0.0f;
-    status = sAirQualityInstance.UpdateAirQuality(
-        get_mean(IAQ_INDEX, &iaq_index) ? air_quality_enum_from_index(static_cast<int>(iaq_index))
-                                        : chip::app::Clusters::AirQuality::AirQualityEnum::kUnknown);
-    if (status != chip::Protocols::InteractionModel::Status::Success)
-    {
-        LOG_ERR("Failed to update AirQuality attribute: %d", static_cast<int>(status));
-        rc |= 1 << 5;
+        status = sAirQualityInstance.UpdateAirQuality(air_quality);
+        if (status != chip::Protocols::InteractionModel::Status::Success)
+        {
+            LOG_ERR("Failed to update AirQuality attribute: %d", static_cast<int>(status));
+            rc |= 1 << 4;
+        }
     }
-#endif
     return rc;
 }
 
