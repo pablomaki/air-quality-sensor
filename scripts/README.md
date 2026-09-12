@@ -18,6 +18,7 @@ no local API for accessory state, so the data has to come from the device.
   a [python-matter-server](https://github.com/home-assistant-libs/python-matter-server)
   instance, exposes them as Prometheus metrics and publishes them to MQTT.
 - **aqs_matter_commission.py**: Joins a sensor to this host's Matter fabric.
+- **aqs_matter_nodes.py**: Lists the nodes on the fabric and removes unwanted ones.
 
 Both scripts are run by the containers defined in [docker/](../docker/); see that
 directory's README for the deployment.
@@ -120,6 +121,26 @@ the code from the sensor's onboarding label:
 ```bash
 docker exec -it aqs_matter_client python aqs_matter_commission.py --ble 1234-567-8901
 ```
+
+## Managing the fabric
+
+List what the Matter server currently holds:
+
+```bash
+docker exec -it aqs_matter_client python aqs_matter_nodes.py list
+```
+
+A failed commissioning attempt leaves a node entry behind that will always read
+as unreachable, because no device was ever paired to it. Remove those:
+
+```bash
+docker exec -it aqs_matter_client python aqs_matter_nodes.py remove 1 2
+```
+
+Removing a node that is genuinely paired also tells the device to drop this
+fabric, so it stops reporting here; it stays in any other controller's fabric,
+such as Apple Home. Removing a leftover entry only clears the server's own
+storage, since there is no device on the other end to inform.
 
 ## Troubleshooting commissioning
 
