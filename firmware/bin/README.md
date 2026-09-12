@@ -24,8 +24,9 @@ The script writes each image here, named after its variant.
 - SHT41, temperature and humidity
 - SCD41, carbon dioxide
 
-**Reports:** temperature, relative humidity, CO2 concentration, and an air
-quality rating derived from the CO2 concentration.
+**Reports:** temperature, relative humidity and CO2 concentration. The air
+quality attribute reads `Unknown`, since rating the air needs a VOC or IAQ
+sensor and this variant has neither.
 
 **Configuration:** sampling every 10 s, Matter attributes refreshed every 60 s,
 product name `Air Quality Sensor TH-CO2`.
@@ -72,12 +73,16 @@ measures is reported as `null` rather than as a placeholder value.
 | Humidity | SHT41 | `null` | BME680 |
 | Pressure | `null` | `null` | BME680 |
 | CO2 | SCD41 | `null` | `null` |
-| Air quality | from CO2 | from VOC | from IAQ |
+| Air quality | `Unknown` | from VOC | from IAQ |
 
 Temperature and humidity are taken from the best fitted source, preferring a
-dedicated SHT41, then the BME680, then the SCD41. The BME680 also estimates CO2
-and VOC from its gas resistance, but those are not published, since they are not
-comparable with a real CO2 measurement.
+dedicated SHT41, then the BME680, then the SCD41.
+
+The air quality rating comes from a gas sensor only. A CO2 concentration on its
+own says how well a room is ventilated, not what is in the air, so `aqs_001`
+reports the CO2 value and leaves the rating `Unknown`. The BME680 likewise
+estimates CO2 and VOC from its gas resistance, but those are not published, since
+they are not comparable with a real CO2 measurement.
 
 ## Installation Instructions
 
