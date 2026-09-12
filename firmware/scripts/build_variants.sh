@@ -83,6 +83,7 @@ PY
     [ -d "$tc" ] || die "toolchain $bundle not installed"
     [ -d "$ncs" ] || die "$NCS_VERSION not installed at $ncs"
 
+    export NCS_DIR="$ncs"
     export ZEPHYR_BASE="$ncs/zephyr"
     export ZEPHYR_TOOLCHAIN_VARIANT=zephyr
     export ZEPHYR_SDK_INSTALL_DIR="$tc/opt/zephyr-sdk"
@@ -117,6 +118,29 @@ PY
     echo "toolchain $bundle for $NCS_VERSION"
 }
 
+# The BSEC sources live in a west manifest group that is disabled by default, and
+# their absence otherwise surfaces as a bare "cannot find source file" from CMake.
+check_bsec() {
+    local conf="$1"
+    [ -f "$conf" ] || return 0
+    grep -q "^CONFIG_BME68X_IAQ=y" "$conf" || return 0
+
+    local ncs="${NCS_DIR:-${ZEPHYR_BASE%/zephyr}}"
+    [ -f "$ncs/modules/lib/bme68x/src/bme68x/bme68x.c" ] && return 0
+
+    cat >&2 <<EOF
+error: this variant needs the Bosch BSEC libraries, which are not fetched.
+       They belong to the 'bsec' west manifest group, disabled by default:
+
+           cd $ncs
+           west config manifest.group-filter -- +bsec
+           west update bme68x bsec
+
+       Note that BSEC is licensed software from Bosch.
+EOF
+    exit 1
+}
+
 variants=("$@")
 if [ ${#variants[@]} -eq 0 ]; then
     for overlay in variants/*.overlay; do
@@ -136,6 +160,8 @@ for variant in "${variants[@]}"; do
     [ -f "$overlay" ] || die "$overlay does not exist"
 
     build_dir="build_${variant#aqs_}"
+    check_bsec "variants/$variant.conf"
+
     args=(-DEXTRA_DTC_OVERLAY_FILE="$overlay")
     [ -f "variants/$variant.conf" ] && args+=(-DEXTRA_CONF_FILE="variants/$variant.conf")
 
