@@ -21,6 +21,8 @@ so the node can be commissioned into any Matter ecosystem.
   over Thread. Bluetooth LE is used only for commissioning.
 - **Configurable sampling and reporting**: Independent intervals, see
   [Configuration](#configuration).
+- **Per-board identity from one binary**: The onboarding values compiled into the
+  image are only fallbacks, see [Device identity](#device-identity).
 
 ### Matter data model
 
@@ -36,6 +38,29 @@ separate sensors:
 
 A quantity with no valid reading is reported as `null` rather than as a placeholder
 value, so an unavailable sensor is distinguishable from a working one.
+
+### Device identity
+
+Factory data is disabled, so serial number, unique ID and setup discriminator would
+otherwise come from the image and be identical on every board flashed with it - two
+units would then present themselves to a controller as the same device. Instead
+`src/components/device_identity.cpp` derives all three from the SoC's factory
+programmed device ID on every boot and persists them:
+
+| Value | Derivation |
+| --- | --- |
+| Serial number | `AQS-` followed by the device ID in hex |
+| Unique ID | Salted SHA-256 of the device ID, so it is not the serial number restated |
+| Setup discriminator | 12 bits of that same hash |
+
+The derivation is deterministic, so a board keeps its identity across a factory reset
+and a controller recognises a recommissioned unit as the same device. The setup
+*passcode* is still shared, because a per-board one needs a SPAKE2+ verifier generated
+on the device, which belongs with real factory data.
+
+Because the discriminator now differs per board, the pairing code does too. Read it
+from the log at startup, where the stack prints the QR code payload and the manual
+pairing code - see [Viewing the log output](#viewing-the-log-output).
 
 ## Building and Running
 

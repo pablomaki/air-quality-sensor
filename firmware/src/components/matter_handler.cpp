@@ -1,4 +1,5 @@
 #include <components/matter_handler.h>
+#include <components/device_identity.h>
 #include <utils/variable_buffer.h>
 #include <components/event_handler.h>
 
@@ -54,6 +55,15 @@ int init_matter(void)
     {
         LOG_ERR("Failed to prepare Matter server: %d", err.AsInteger());
         return err.AsInteger();
+    }
+
+    // Between PrepareServer() and StartServer(): the configuration manager is up,
+    // and nothing has advertised the compiled-in identity yet.
+    rc = apply_device_identity();
+    if (rc != 0)
+    {
+        LOG_ERR("Failed to apply the device identity (err %d).", rc);
+        return rc;
     }
 
     if (!Nrf::GetBoard().Init())

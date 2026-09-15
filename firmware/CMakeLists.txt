@@ -18,6 +18,7 @@ target_include_directories(app PRIVATE
 target_sources(app PRIVATE
     src/main.c
     src/air_quality_monitor.c
+    src/components/device_identity.cpp
     src/components/event_handler.c
     src/components/matter_handler.cpp
     src/components/sensors.c
