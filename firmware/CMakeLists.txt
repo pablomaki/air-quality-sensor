@@ -20,6 +20,7 @@ target_sources(app PRIVATE
     src/air_quality_monitor.c
     src/components/device_identity.cpp
     src/components/event_handler.c
+    src/components/factory_reset.cpp
     src/components/matter_handler.cpp
     src/components/sensors.c
     src/drivers/led_controller.c

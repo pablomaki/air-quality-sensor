@@ -3,6 +3,10 @@
 
 #include <zephyr/kernel.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define LED_OFF 0
 #define LED_ON 1
 
@@ -39,5 +43,9 @@ void blink_led(led_color_t color, int count);
  * @param color Color to set LED to
  */
 void set_led(led_color_t color);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // LED_CONTROLLER_H

@@ -23,6 +23,8 @@ so the node can be commissioned into any Matter ecosystem.
   [Configuration](#configuration).
 - **Per-board identity from one binary**: The onboarding values compiled into the
   image are only fallbacks, see [Device identity](#device-identity).
+- **Factory reset without a button**: Power cycle the device five times in a row,
+  see [Factory reset](#factory-reset).
 
 ### Matter data model
 
@@ -61,6 +63,22 @@ on the device, which belongs with real factory data.
 Because the discriminator now differs per board, the pairing code does too. Read it
 from the log at startup, where the stack prints the QR code payload and the manual
 pairing code - see [Viewing the log output](#viewing-the-log-output).
+
+### Factory reset
+
+A commissioned device stops advertising over Bluetooth LE, so if its fabric ever
+becomes unusable it cannot be recommissioned without first being erased. The assembled
+board carries no button, and flashing a `.uf2` does not help: the image is written to
+the application partition only, leaving the settings partition that holds the
+commissioning state untouched.
+
+**Power cycle the device five times in a row**, leaving it powered for less than five
+seconds each time. The LED blinks once per counted cycle. On the fifth the device
+withdraws its records from the border router, erases the settings partition and
+reboots uncommissioned, ready to be commissioned again.
+
+Staying powered past the window drops the count, so ordinary restarts never accumulate.
+Both numbers are configurable, see [Other settings](#other-settings).
 
 ## Building and Running
 
@@ -149,6 +167,8 @@ fresh the attributes are.
 | Symbol | Meaning |
 | --- | --- |
 | `CONFIG_ENABLE_EVENT_LED` | Blink the RGB LED on application events |
+| `CONFIG_FACTORY_RESET_POWER_CYCLES` | Power cycles in succession that trigger a factory reset |
+| `CONFIG_FACTORY_RESET_POWER_CYCLE_WINDOW_MS` | How long the device must stay up before the count is dropped |
 | `CONFIG_SCD4X_ALTITUDE` | Altitude in metres, used when no pressure sensor supplies compensation |
 | `CONFIG_SCD4X_TEMPERATURE_OFFSET_MILLI_C` | Compensates the SCD4x self heating, in milli-degrees Celsius (2.35 degrees = 2350) |
 

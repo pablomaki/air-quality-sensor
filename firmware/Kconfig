@@ -58,6 +58,30 @@ config SENSOR_WARMUP_TIME_MS
 
 endmenu
 
+menu "Factory Reset Configuration"
+
+config FACTORY_RESET_POWER_CYCLES
+    int "Power cycles in succession that trigger a factory reset"
+    range 3 10
+    default 5
+    help
+      The assembled board exposes no button, so the power supply is the only
+      control a sealed unit offers. Power cycling the device this many times,
+      each within FACTORY_RESET_POWER_CYCLE_WINDOW_MS of the previous boot,
+      erases the settings partition and leaves the device uncommissioned. The
+      lower bound keeps a couple of genuine restarts from reaching the count.
+
+config FACTORY_RESET_POWER_CYCLE_WINDOW_MS
+    int "Window for a power cycle to count towards a reset (milliseconds)"
+    range 1000 30000
+    default 5000
+    help
+      How long the device has to stay up before the boot count is dropped. Long
+      enough to power cycle deliberately, short enough that restarts spread over
+      an ordinary working session never accumulate.
+
+endmenu
+
 menu "Peripheral Configuration"
 
 config ENABLE_EVENT_LED

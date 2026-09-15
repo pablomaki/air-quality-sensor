@@ -3,6 +3,7 @@
 #include <components/sensors.h>
 #include <utils/variable_buffer.h>
 #include <components/event_handler.h>
+#include <components/factory_reset.h>
 
 #include <zephyr/logging/log.h>
 
@@ -128,6 +129,17 @@ int init_air_quality_monitor(void)
         LOG_INF("Event handler initialized succesfully.");
     }
 
+    // Counted before Matter starts, so a requested reset is known by the time the
+    // server is up to carry it out.
+    LOG_INF("Checking the power cycle factory reset gesture.");
+    rc = init_factory_reset();
+    if (rc != 0)
+    {
+        LOG_ERR("Error while initializing the factory reset trigger (err %d).", rc);
+        dispatch_event(INITIALIZATION_ERROR);
+        status = rc;
+    }
+
     // Initialize matter
     LOG_INF("Initializing matter.");
     rc = init_matter();
@@ -136,6 +148,12 @@ int init_air_quality_monitor(void)
         LOG_ERR("Error while initializing matter (err %d).", rc);
         dispatch_event(INITIALIZATION_ERROR);
         status = rc;
+    }
+    else
+    {
+        // Needs a running Matter server: the reset withdraws the device's SRP
+        // records from the border router before it erases storage.
+        run_pending_factory_reset();
     }
 
     // Initialize sensors
