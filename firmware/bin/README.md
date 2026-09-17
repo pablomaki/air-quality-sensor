@@ -61,19 +61,41 @@ compensated outputs, which correct for the gas heater.
 Bosch BSEC library, so the `bsec` west manifest group has to be enabled before
 building.
 
+### aqs_004.uf2 - CO2 plus Bosch IAQ
+
+**Board:** XIAO BLE Sense (`xiao_ble/nrf52840/sense`)
+
+**Fitted sensors:**
+- SCD41, carbon dioxide
+- BME680, gas/IAQ and pressure
+
+**Reports:** everything the data model carries - temperature, relative humidity,
+pressure, CO2 concentration and an air quality rating from the IAQ index. The
+temperature and humidity come from the BME680's heat compensated outputs, and
+the CO2 from the SCD41, whose own gas estimate is not used.
+
+The BME680 is read before the SCD41, so its pressure reading feeds the SCD41's
+pressure compensation, which is more accurate than the configured altitude.
+
+**Configuration:** product name `Air Quality Sensor CO2-IAQ`. Requires the
+licensed Bosch BSEC library, as `aqs_003` does.
+
+Not built yet: run `./scripts/build_variants.sh aqs_004` to produce it. It is the
+heaviest of the variants, so check the flash figure in the build output.
+
 ## Endpoints without a source
 
 The Matter data model is the same in every image: endpoint 1 temperature,
 2 humidity, 3 pressure, 4 air quality and CO2. A quantity that no fitted sensor
 measures is reported as `null` rather than as a placeholder value.
 
-| | aqs_001 | aqs_002 | aqs_003 |
-| --- | --- | --- | --- |
-| Temperature | SHT41 | `null` | BME680 |
-| Humidity | SHT41 | `null` | BME680 |
-| Pressure | `null` | `null` | BME680 |
-| CO2 | SCD41 | `null` | `null` |
-| Air quality | `Unknown` | from VOC | from IAQ |
+| | aqs_001 | aqs_002 | aqs_003 | aqs_004 |
+| --- | --- | --- | --- | --- |
+| Temperature | SHT41 | `null` | BME680 | BME680 |
+| Humidity | SHT41 | `null` | BME680 | BME680 |
+| Pressure | `null` | `null` | BME680 | BME680 |
+| CO2 | SCD41 | `null` | `null` | SCD41 |
+| Air quality | `Unknown` | from VOC | from IAQ | from IAQ |
 
 Temperature and humidity are taken from the best fitted source, preferring a
 dedicated SHT41, then the BME680, then the SCD41.

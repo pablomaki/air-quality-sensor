@@ -1,0 +1,12 @@
+/*
+ * Variant: CO2 plus Bosch IAQ.
+ *
+ * Populated: SCD41 + BME680.
+ */
+
+&scd41  { status = "okay"; };
+&bme680 { status = "okay"; };
+
+&sht4x  { status = "disabled"; };
+&sgp40  { status = "disabled"; };
+&bmp390 { status = "disabled"; };
