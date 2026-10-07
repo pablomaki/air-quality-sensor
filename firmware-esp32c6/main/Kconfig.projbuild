@@ -1,0 +1,161 @@
+menu "Air Quality Sensor"
+
+config AQS_PRODUCT_NAME
+    string "Product name"
+    default "Air Quality Sensor"
+    help
+      ProductName reported in the Matter Basic Information cluster. Set per
+      variant, alongside a variant specific DEVICE_PRODUCT_ID.
+
+menu "Timing Configuration"
+
+config SAMPLE_INTERVAL_MS
+    int "Sensor sampling interval (milliseconds)"
+    range 1000 3600000
+    default 5000
+    help
+      How often every enabled sensor is read. This is a property of the sensors
+      rather than of reporting: it also sets the sampling interval handed to the
+      Sensirion gas index algorithm, which is specified for 1 s and tested up to
+      10 s, and it is bounded below at 1000 ms so that the conversion to whole
+      seconds stays meaningful.
+
+config REPORT_INTERVAL_MS
+    int "Matter reporting interval (milliseconds)"
+    range 1000 3600000
+    default 60000
+    help
+      How often the Matter cluster attributes are refreshed from the buffered
+      samples. Together with SAMPLE_INTERVAL_MS this also sets how many samples
+      are averaged into each reported value: one reporting period's worth, so
+      every sample contributes to exactly one report. Note that when a controller
+      actually receives values is governed by its own subscription min/max
+      intervals, not by this value.
+
+config SENSOR_WARMUP_TIME_MS
+    int "Sensor warmup time (milliseconds)"
+    default 5000
+    help
+      Warmup time for sensors in milliseconds. Required by SGP40 for consistent readings.
+
+endmenu
+
+menu "Factory Reset Configuration"
+
+config FACTORY_RESET_POWER_CYCLES
+    int "Power cycles in succession that trigger a factory reset"
+    range 3 10
+    default 5
+    help
+      The power supply is the only control a sealed unit offers. Power cycling
+      the device this many times, each within
+      FACTORY_RESET_POWER_CYCLE_WINDOW_MS of the previous boot, erases the
+      Matter configuration and leaves the device uncommissioned. The lower bound
+      keeps a couple of genuine restarts from reaching the count.
+
+config FACTORY_RESET_POWER_CYCLE_WINDOW_MS
+    int "Window for a power cycle to count towards a reset (milliseconds)"
+    range 1000 30000
+    default 5000
+    help
+      How long the device has to stay up before the boot count is dropped. Long
+      enough to power cycle deliberately, short enough that restarts spread over
+      an ordinary working session never accumulate.
+
+config FACTORY_RESET_BUTTON_HOLD_MS
+    int "BOOT button hold time that triggers a factory reset (milliseconds)"
+    range 2000 30000
+    default 5000
+    help
+      Holding the XIAO's BOOT button this long factory resets the device, the
+      same as the power cycle gesture. The button only acts as a boot strap
+      while the device comes out of reset, so it is free to read afterwards.
+
+endmenu
+
+menu "Peripheral Configuration"
+
+config ENABLE_EVENT_LED
+    bool "Enable event LED"
+    default y
+    help
+      Blink the onboard user LED on initialization, startup and sampling events.
+
+# Selected per variant in variants/<name>.defaults. Unlike the nRF build there
+# is no devicetree to derive them from, so these are the single source of truth
+# for which parts are fitted.
+
+config ENABLE_SHT4X
+    bool "Enable SHT4X sensor"
+    help
+      Enable the SHT4X temperature/humidity sensor at I2C address 0x44.
+
+config ENABLE_SGP40
+    bool "Enable SGP40 sensor"
+    help
+      Enable the SGP40 VOC sensor at I2C address 0x59.
+
+config ENABLE_SCD4X
+    bool "Enable SCD4X sensor"
+    help
+      Enable the SCD4X CO2 sensor at I2C address 0x62.
+
+config ENABLE_BMP390
+    bool "Enable BMP390 sensor"
+    depends on !ENABLE_BME680
+    help
+      Enable the BMP390 pressure sensor at I2C address 0x77. Shares its address
+      with the BME680, so the two cannot be fitted together.
+
+config ENABLE_BME680
+    bool "Enable BME680 sensor"
+    help
+      Enable the BME680 at I2C address 0x77, processed by the Bosch BSEC library
+      into an IAQ index. Needs the BSEC release pointed to by BSEC_DIR at build time.
+
+endmenu
+
+menu "SCD4X Sensor Configuration"
+    depends on ENABLE_SCD4X
+
+config SCD4X_ALTITUDE
+    int "Altitude (meters)"
+    default 10
+    help
+      Altitude in meters. Only used if pressure is not provided by other sensors.
+
+config SCD4X_TEMPERATURE_OFFSET_MILLI_C
+    int "Temperature offset (milli-degrees Celsius)"
+    range 0 20000
+    default 0
+    help
+      Compensates the SCD4x self heating: reported temperature = measured -
+      offset. Expressed in milli-degrees because Kconfig has no float type, so
+      2.35 degrees is 2350. The sensor resolves about 0.0027 degrees, and the
+      sensor rejects anything outside 0 to 20 degrees.
+
+endmenu
+
+menu "BME680 Sensor Configuration"
+    depends on ENABLE_BME680
+
+config BME680_TEMPERATURE_OFFSET_CENTI_C
+    int "Temperature offset (centi-degrees Celsius)"
+    range 0 1000
+    default 100
+    help
+      Heat from the board raises the temperature the BME680 sees. BSEC subtracts
+      this offset and corrects humidity to match. 100 is 1.0 degrees, the same
+      default as the nRF build's BME68X_IAQ_TEMPERATURE_OFFSET.
+
+config BME680_STATE_SAVE_INTERVAL_MINUTES
+    int "BSEC state save interval (minutes)"
+    range 10 1440
+    default 60
+    help
+      How often the BSEC calibration state is persisted, so a restart resumes
+      with a calibrated IAQ instead of starting over.
+
+endmenu
+
+endmenu

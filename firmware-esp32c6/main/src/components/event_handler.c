@@ -1,0 +1,53 @@
+#include <components/event_handler.h>
+#include <drivers/led_controller.h>
+
+#include <esp_log.h>
+
+static const char *TAG __attribute__((unused)) = "event_handler";
+
+int init_event_handler(void)
+{
+    int rc = 0;
+#ifdef CONFIG_ENABLE_EVENT_LED
+    rc = init_led_controller();
+    if (rc != 0)
+    {
+        ESP_LOGE(TAG, "LED setup failed (err %d).", rc);
+        return rc;
+    }
+#endif
+    return 0;
+}
+
+void dispatch_event(event_t event)
+{
+#ifdef CONFIG_ENABLE_EVENT_LED
+    switch (event)
+    {
+    case INITIALIZATION_SUCCESS:
+        blink_led(LED_GREEN, 3);
+        break;
+    case INITIALIZATION_ERROR:
+        blink_led(LED_RED, 3);
+        break;
+    case STARTUP_SUCCESS:
+        blink_led(LED_GREEN, 2);
+        break;
+    case STARTUP_ERROR:
+        blink_led(LED_RED, 2);
+        break;
+    case PERIODIC_TASK_SUCCESS:
+        blink_led(LED_GREEN, 1);
+        break;
+    case PERIODIC_TASK_WARNING:
+        blink_led(LED_YELLOW, 1);
+        break;
+    case PERIODIC_TASK_ERROR:
+        blink_led(LED_RED, 1);
+        break;
+    default:
+        break;
+    }
+#endif
+    return;
+}

@@ -1,0 +1,10 @@
+# Variant: temperature, humidity and CO2 (SHT41 + SCD41).
+CONFIG_DEVICE_PRODUCT_ID=0x8001
+CONFIG_AQS_PRODUCT_NAME="Air Quality Sensor TH-CO2"
+CONFIG_ENABLE_SHT4X=y
+CONFIG_ENABLE_SCD4X=y
+
+# Metres above sea level, used for CO2 compensation when no pressure sensor is
+# fitted to supply it.
+CONFIG_SCD4X_ALTITUDE=10
+CONFIG_SCD4X_TEMPERATURE_OFFSET_MILLI_C=500
