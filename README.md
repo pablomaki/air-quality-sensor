@@ -13,19 +13,19 @@ This repository contains the firmware, hardware design, and scripts for an indoo
   - **BMP390** Pressure sensor
   - **BME680** Gas, humidity, pressure and temperature sensor
 - **Electronic paper display**: Support for an Electronic paper display for displaying the measured values.
-- **Wireless Communication**: Bluetooth Low Energy (BLE) for data transmission to mobile devices or cloud platforms.
+- **Wireless Communication**: Matter over Thread, so the sensor works with any Matter controller (Apple Home, Google Home, Home Assistant). Bluetooth Low Energy is used only for commissioning.
 - **Battery powered**: Battery life sensor and measurement/advertisement frequency dependent, but the default configurations aim for 1+ month up time.
-- **Dockerized data receiver**: Simple script for BLE sensor reading and publishing the data to MQTT serverfor smart home integration ([MQTTThing](https://github.com/arachnetech/homebridge-mqttthing)).
+- **Dockerized data receiver**: Joins the sensor's Matter fabric as a second administrator, alongside the smart home controller, and republishes the measurements to Prometheus and to an MQTT server ([MQTTThing](https://github.com/arachnetech/homebridge-mqttthing)).
 
 ![Air Quality Sensor](images/pcb.jpg)
 
 ## Structure
 
-- **docker/**: Contains Docker configuration files for setting up the BLE sensor reader.
+- **docker/**: Contains Docker configuration files for setting up the Matter sensor reader.
 - **firmware/**: Contains the firmware source code and build files for the air quality sensor.
 - **pcb/**: Contains the design files for the air quality sensor PCB.
 - **enclosure/**: Contains the design files for the air quality sensor enclosure.
-- **scripts/**: Contains utility scripts for interacting with the air quality sensor used by the docker image for reading the sensor data output.
+- **scripts/**: Contains utility scripts for reading the air quality sensor over Matter and forwarding the data to Prometheus and MQTT, used by the docker image.
 
 Refer to the README files in each subdirectory for more details.
 

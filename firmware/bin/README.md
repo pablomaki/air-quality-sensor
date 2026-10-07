@@ -1,36 +1,110 @@
 # Firmware binaries
-Pre-compiled firmware binaries for selected sensor configurations
+
+Pre-compiled firmware images for the sensor configurations defined in
+`firmware/variants/`. Each image is a Matter over Thread device, commissioned
+over Bluetooth LE and reporting over Thread.
+
+Rebuild them with:
+
+```sh
+cd firmware
+./scripts/build_variants.sh            # all variants
+./scripts/build_variants.sh aqs_001    # just one
+```
+
+The script writes each image here, named after its variant.
 
 ## Files
 
-### aqs_001.uf2
+### aqs_001.uf2 - temperature, humidity and CO2
 
-**Board**:
-- XIAO BLE Sense (nrf52840)
+**Board:** XIAO BLE Sense (`xiao_ble/nrf52840/sense`)
 
-**Enabled sensors:**
-- SHT41, temperature and humidity sensor
-- SCD41, carbon dioxide sensor
-- SGP40, VOC sensor
-- BMP390, pressure sensor
+**Fitted sensors:**
+- SHT41, temperature and humidity
+- SCD41, carbon dioxide
 
-**Configurations:**
-- Sensor name: `air_quality_sensor_001`
-- Measurement interval: 5 minutes
+**Reports:** temperature, relative humidity and CO2 concentration. The air
+quality attribute reads `Unknown`, since rating the air needs a VOC or IAQ
+sensor and this variant has neither.
 
-### aqs_002.uf2
+**Configuration:** sampling every 10 s, Matter attributes refreshed every 60 s,
+product name `Air Quality Sensor TH-CO2`.
 
-**Board**:
-- XIAO BLE (nrf52840)
+### aqs_002.uf2 - VOC only
 
-**Enabled sensors:**
-- SHT41, temperature and humidity sensor
-- SCD41, carbon dioxide sensor
-- BME680, IAQ index and pressure sensor
+**Board:** XIAO BLE Sense (`xiao_ble/nrf52840/sense`)
 
-**Configurations:**
-- Sensor name: `air_quality_sensor_002`
-- Measurement interval: 5 minutes
+**Fitted sensors:**
+- SGP40, volatile organic compounds
+
+**Reports:** an air quality rating derived from the VOC index.
+
+**Configuration:** sampling every 5 s to suit the Sensirion gas index algorithm,
+Matter attributes refreshed every 60 s, product name `Air Quality Sensor VOC`.
+
+Without a temperature and humidity sensor the SGP40 cannot be compensated and
+falls back to the driver's defaults, which costs some accuracy.
+
+### aqs_003.uf2 - Bosch IAQ
+
+**Board:** XIAO BLE Sense (`xiao_ble/nrf52840/sense`)
+
+**Fitted sensors:**
+- BME680, gas/IAQ and pressure
+
+**Reports:** temperature, relative humidity, pressure, and an air quality rating
+derived from the IAQ index. The temperature and humidity come from BSEC's heat
+compensated outputs, which correct for the gas heater.
+
+**Configuration:** product name `Air Quality Sensor IAQ`. Requires the licensed
+Bosch BSEC library, so the `bsec` west manifest group has to be enabled before
+building.
+
+### aqs_004.uf2 - CO2 plus Bosch IAQ
+
+**Board:** XIAO BLE Sense (`xiao_ble/nrf52840/sense`)
+
+**Fitted sensors:**
+- SCD41, carbon dioxide
+- BME680, gas/IAQ and pressure
+
+**Reports:** everything the data model carries - temperature, relative humidity,
+pressure, CO2 concentration and an air quality rating from the IAQ index. The
+temperature and humidity come from the BME680's heat compensated outputs, and
+the CO2 from the SCD41, whose own gas estimate is not used.
+
+The BME680 is read before the SCD41, so its pressure reading feeds the SCD41's
+pressure compensation, which is more accurate than the configured altitude.
+
+**Configuration:** product name `Air Quality Sensor CO2-IAQ`. Requires the
+licensed Bosch BSEC library, as `aqs_003` does.
+
+Not built yet: run `./scripts/build_variants.sh aqs_004` to produce it. It is the
+heaviest of the variants, so check the flash figure in the build output.
+
+## Endpoints without a source
+
+The Matter data model is the same in every image: endpoint 1 temperature,
+2 humidity, 3 pressure, 4 air quality and CO2. A quantity that no fitted sensor
+measures is reported as `null` rather than as a placeholder value.
+
+| | aqs_001 | aqs_002 | aqs_003 | aqs_004 |
+| --- | --- | --- | --- | --- |
+| Temperature | SHT41 | `null` | BME680 | BME680 |
+| Humidity | SHT41 | `null` | BME680 | BME680 |
+| Pressure | `null` | `null` | BME680 | BME680 |
+| CO2 | SCD41 | `null` | `null` | SCD41 |
+| Air quality | `Unknown` | from VOC | from IAQ | from IAQ |
+
+Temperature and humidity are taken from the best fitted source, preferring a
+dedicated SHT41, then the BME680, then the SCD41.
+
+The air quality rating comes from a gas sensor only. A CO2 concentration on its
+own says how well a room is ventilated, not what is in the air, so `aqs_001`
+reports the CO2 value and leaves the rating `Unknown`. The BME680 likewise
+estimates CO2 and VOC from its gas resistance, but those are not published, since
+they are not comparable with a real CO2 measurement.
 
 ## Installation Instructions
 
@@ -43,4 +117,5 @@ Pre-compiled firmware binaries for selected sensor configurations
    - Device will automatically reboot with new firmware
 
 3. **Verify Installation:**
-   - Check serial output for sensor initialization and output values
+   - Connect to the USB CDC ACM console that enumerates after reboot
+     (`/dev/ttyACM*`) and check the sensor initialization and measurement output

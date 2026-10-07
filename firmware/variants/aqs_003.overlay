@@ -1,0 +1,15 @@
+/*
+ * Variant: Bosch IAQ.
+ *
+ * Populated: BME680.
+ *
+ * Note that the BME680 and the BMP390 share address 0x77, so they can never be
+ * enabled together.
+ */
+
+&bme680 { status = "okay"; };
+
+&sht4x  { status = "disabled"; };
+&sgp40  { status = "disabled"; };
+&scd41  { status = "disabled"; };
+&bmp390 { status = "disabled"; };

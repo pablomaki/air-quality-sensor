@@ -8,3 +8,4 @@ This directory contains the PCB design files for the air quality sensor.
 - **air-quality-sensor-pcb.kicad_prl**: Project-related layout file.
 - **air-quality-sensor-pcb.kicad_pro**: KiCad project file.
 - **air-quality-sensor-pcb.kicad_sch**: The schematic file for the PCB design.
+- **gerber.zip**: Gerber files for ordering the PCB.

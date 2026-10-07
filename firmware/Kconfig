@@ -4,33 +4,51 @@ mainmenu "Air Quality Sensor Configuration"
 
 source "Kconfig.zephyr"
 
+# Matter over Thread support (see src/matter/) - the only supported
+# communication stack, enabled via CONFIG_CHIP=y in prj.conf.
+if NET_L2_OPENTHREAD
+
+choice OPENTHREAD_NORDIC_LIBRARY_CONFIGURATION
+    default OPENTHREAD_NORDIC_LIBRARY_MTD
+endchoice
+
+choice OPENTHREAD_DEVICE_TYPE
+    default OPENTHREAD_MTD
+endchoice
+
+endif # NET_L2_OPENTHREAD
+
+source "${ZEPHYR_CONNECTEDHOMEIP_MODULE_DIR}/config/nrfconnect/chip-module/Kconfig.features"
+source "${ZEPHYR_CONNECTEDHOMEIP_MODULE_DIR}/config/nrfconnect/chip-module/Kconfig.defaults"
+source "${ZEPHYR_NRF_MODULE_DIR}/samples/matter/common/src/Kconfig"
+
 menu "Application Configuration"
 
 menu "Timing Configuration"
 
-config ADVERTISEMENT_INTERVAL
-    int "Advertisement interval (milliseconds)"
-    default 300000
-    help
-      Interval between BLE advertisements in milliseconds.
-
-config BLE_TIMEOUT
-    int "BLE timeout (milliseconds)"
-    default 10000
-    help
-      Timeout for BLE operations in milliseconds.
-
-config PAIRING_TIMEOUT
-    int "Pairing timeout (milliseconds)"
+config SAMPLE_INTERVAL_MS
+    int "Sensor sampling interval (milliseconds)"
+    range 1000 3600000
     default 5000
     help
-      Timeout for pairing mode during device startup in milliseconds.
+      How often every enabled sensor is read. This is a property of the sensors
+      rather than of reporting: it also sets the sampling interval handed to the
+      Sensirion gas index algorithm, which is specified for 1 s and tested up to
+      10 s, and it is bounded below at 1000 ms so that the conversion to whole
+      seconds stays meaningful.
 
-config MEASUREMENTS_PER_INTERVAL
-    int "Measurements per interval"
-    default 5
+config REPORT_INTERVAL_MS
+    int "Matter reporting interval (milliseconds)"
+    range 1000 3600000
+    default 60000
     help
-      Number of sensor measurements to take per advertising interval.
+      How often the Matter cluster attributes are refreshed from the buffered
+      samples. Together with SAMPLE_INTERVAL_MS this also sets how many samples
+      are averaged into each reported value: one reporting period's worth, so
+      every sample contributes to exactly one report. Note that when a controller
+      actually receives values is governed by its own subscription min/max
+      intervals, not by this value.
+
 
 config SENSOR_WARMUP_TIME_MS
     int "Sensor warmup time (milliseconds)"
@@ -40,49 +58,27 @@ config SENSOR_WARMUP_TIME_MS
 
 endmenu
 
-menu "Bluetooth Configuration"
+menu "Factory Reset Configuration"
 
-config ENABLE_CONN_FILTER_LIST
-    bool "Enable connection filter list"
-    default n
+config FACTORY_RESET_POWER_CYCLES
+    int "Power cycles in succession that trigger a factory reset"
+    range 3 10
+    default 5
     help
-      Use filter list for BLE connections (feature not finished).
+      The assembled board exposes no button, so the power supply is the only
+      control a sealed unit offers. Power cycling the device this many times,
+      each within FACTORY_RESET_POWER_CYCLE_WINDOW_MS of the previous boot,
+      erases the settings partition and leaves the device uncommissioned. The
+      lower bound keeps a couple of genuine restarts from reaching the count.
 
-config TEMPERATURE_SCALE
-    int "Temperature scale factor"
-    default 100
+config FACTORY_RESET_POWER_CYCLE_WINDOW_MS
+    int "Window for a power cycle to count towards a reset (milliseconds)"
+    range 1000 30000
+    default 5000
     help
-      Scale factor for temperature values. 100 for 2 decimal places.
-
-config HUMIDITY_SCALE
-    int "Humidity scale factor"
-    default 100
-    help
-      Scale factor for humidity values. 100 for 2 decimal places.
-
-config PRESSURE_SCALE
-    int "Pressure scale factor"
-    default 1
-    help
-      Pressure scale factor divided by 10. Use 1 for 0.1 scale factor.
-
-config CO2_CONCENTRATION_SCALE
-    int "CO2 concentration scale factor"
-    default 10
-    help
-      Scale factor for CO2 concentration. 10 for 1 decimal place.
-
-config VOC_INDEX_SCALE
-    int "VOC index scale factor"
-    default 10
-    help
-      Scale factor for VOC index. 10 for 1 decimal place.
-
-config IAQ_INDEX_SCALE
-    int "IAQ index scale factor"
-    default 10
-    help
-      Scale factor for IAQ index. 10 for 1 decimal place.
+      How long the device has to stay up before the boot count is dropped. Long
+      enough to power cycle deliberately, short enough that restarts spread over
+      an ordinary working session never accumulate.
 
 endmenu
 
@@ -94,47 +90,45 @@ config ENABLE_EVENT_LED
     help
       Enable or disable the event LED.
 
+# Each sensor is gated on its devicetree node, so the board overlay is the single
+# source of truth for which parts exist. Adding the node enables both the Zephyr
+# driver (which defaults from the same symbol) and the application support; these
+# symbols only decide whether the application uses a part that is present.
+
 config ENABLE_SHT4X
     bool "Enable SHT4X sensor"
+    depends on DT_HAS_SENSIRION_SHT4X_ENABLED
     default y
     help
       Enable or disable SHT4X temperature/humidity sensor.
 
 config ENABLE_SGP40
     bool "Enable SGP40 sensor"
+    depends on DT_HAS_SENSIRION_SGP40_ENABLED
     default y
     help
       Enable or disable SGP40 VOC sensor.
 
 config ENABLE_SCD4X
     bool "Enable SCD4X sensor"
+    depends on DT_HAS_SENSIRION_SCD41_ENABLED || DT_HAS_SENSIRION_SCD40_ENABLED
     default y
     help
       Enable or disable SCD4X CO2 sensor.
 
 config ENABLE_BMP390
     bool "Enable BMP390 sensor"
+    depends on DT_HAS_BOSCH_BMP390_ENABLED
     default y
     help
       Enable or disable BMP390 pressure sensor.
 
 config ENABLE_BME680
     bool "Enable BME680 sensor"
+    depends on DT_HAS_BOSCH_BME680_ENABLED
     default y
     help
       Enable or disable BME680 sensor.
-
-config ENABLE_EPD
-    bool "Enable e-paper display"
-    default y
-    help
-      Enable or disable the e-paper display screen.
-
-config ENABLE_BATTERY_MONITOR
-    bool "Enable battery monitor"
-    default y
-    help
-      Enable or disable battery voltage monitoring.
 
 endmenu
 
@@ -146,35 +140,15 @@ config SCD4X_ALTITUDE
     help
       Altitude in meters. Only used if pressure is not provided by other sensors.
 
-config SCD4X_TEMPERATURE_OFFSET
-    int "Temperature offset (Celsius)"
+config SCD4X_TEMPERATURE_OFFSET_MILLI_C
+    int "Temperature offset (milli-degrees Celsius)"
+    range 0 20000
     default 0
     help
-      Temperature offset in Celsius. Reported temperature = measured - offset.
-      SCD41 temperature readings are not currently used.
+      Compensates the SCD4x self heating: reported temperature = measured -
+      offset. Expressed in milli-degrees because Kconfig has no float type, so
+      2.35 degrees is 2350. The sensor resolves about 0.0027 degrees, and the
+      driver rejects anything outside 0 to 20 degrees.
 
 endmenu
-
-menu "Battery Monitor Configuration"
-
-config USE_FAST_CHARGING
-    bool "Use fast charging"
-    default y
-    help
-      Enable fast charging (100 mA) instead of slow charging (50 mA).
-
-config VOLTAGE_DIVIDER_R1
-    int "Voltage divider R1 (kohm)"
-    default 1031
-    help
-      R1 resistor value in kohm. Needs manual calibration for accurate readings.
-
-config VOLTAGE_DIVIDER_R2
-    int "Voltage divider R2 (kohm)"
-    default 510
-    help
-      R2 resistor value in kohm. Needs manual calibration for accurate readings.
-
-endmenu
-
 endmenu

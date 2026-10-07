@@ -3,6 +3,10 @@
 
 #include <zephyr/kernel.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define LED_OFF 0
 #define LED_ON 1
 
@@ -15,15 +19,11 @@ typedef enum
     LED_OFF_COLOR = 0,
     LED_RED = BIT(0),
     LED_GREEN = BIT(1),
-    LED_BLUE = BIT(2),
     LED_YELLOW = LED_RED | LED_GREEN,
-    LED_CYAN = LED_GREEN | LED_BLUE,
-    LED_MAGENTA = LED_RED | LED_BLUE,
-    LED_WHITE = LED_RED | LED_GREEN | LED_BLUE
 } led_color_t;
 
 /**
- * @brief Initialize all LED devices
+ * @brief Initialize green and red LED devices, blue is left for matter
  *
  * @return int, 0 if ok, non-zero if an error occured
  */
@@ -43,5 +43,9 @@ void blink_led(led_color_t color, int count);
  * @param color Color to set LED to
  */
 void set_led(led_color_t color);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // LED_CONTROLLER_H

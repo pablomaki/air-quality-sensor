@@ -1,0 +1,127 @@
+# SKETCH — firmware/Kconfig (root menu) and per-module fragments
+
+menu "Air Quality Sensor"
+
+#
+# --- Reporting / cadence ------------------------------------------------------
+#
+config AQS_REPORT_INTERVAL_S
+	int "Default reporting interval [s]"
+	range 1 3600
+	default 60
+	help
+	  How often the aggregated state is pushed into the Matter data model.
+	  This is only the DEFAULT; the effective value lives in settings
+	  (aqs/report_interval) and is runtime-settable. Note that when a
+	  controller actually receives values is governed by its subscription
+	  min/max intervals, not by this symbol.
+
+config AQS_SAMPLE_INTERVAL_MS
+	int "Default sensor sampling interval [ms]"
+	default 5000
+	help
+	  Floored per sensor by that part's minimum measurement period.
+
+config AQS_REPORT_ON_CHANGE
+	bool "Publish immediately when a value moves more than its delta"
+	default y
+	help
+	  Event-driven publishing between periodic ticks. Also the power-friendly
+	  mode for a future battery build (long interval + change-triggered).
+
+#
+# --- Sensors: hardware presence comes from devicetree, policy from here -------
+#
+menu "Sensors"
+
+config AQS_SENSOR_SIM
+	bool "Simulated sensor (synthetic values, no hardware)"
+	default y if BOARD_NATIVE_SIM
+	help
+	  Exercises the full pipeline (sampling -> filtering -> Matter) on a bare
+	  DK. Build this first; keep it working forever as a smoke test.
+
+config AQS_SENSOR_SCD4X
+	bool "Sensirion SCD4x CO2"
+	depends on DT_HAS_SENSIRION_SCD4X_ENABLED
+	default y
+
+config AQS_SENSOR_SEN5X
+	bool "Sensirion SEN5x PM / VOC / NOx"
+	depends on DT_HAS_SENSIRION_SEN5X_ENABLED
+	default y
+
+config AQS_SENSOR_BME68X
+	bool "Bosch BME680/688 T/RH/P (+gas)"
+	depends on DT_HAS_BOSCH_BME680_ENABLED
+	default y
+
+config AQS_SENSOR_SHT4X
+	bool "Sensirion SHT4x T/RH"
+	depends on DT_HAS_SENSIRION_SHT4X_ENABLED
+	default y
+
+endmenu # Sensors
+
+#
+# --- Processing ---------------------------------------------------------------
+#
+config AQS_FILTER_WINDOW
+	int "Samples per quantity in the smoothing window"
+	default 5
+
+config AQS_STALE_AFTER_PERIODS
+	int "Mark a value STALE after this many missed sample periods"
+	default 3
+
+config AQS_GAS_INDEX_ALGORITHM
+	bool "Sensirion VOC/NOx gas index algorithm"
+	default y if AQS_SENSOR_SGP4X || AQS_SENSOR_SEN5X
+
+#
+# --- RTOS resources (one place, so the RAM budget is auditable) ---------------
+#
+menu "Threads and stacks"
+
+config AQS_SENSOR_WQ_STACK_SIZE
+	int "Sensor workqueue stack"
+	default 3072
+
+config AQS_SENSOR_WQ_PRIO
+	int "Sensor workqueue priority (preemptible)"
+	default 10
+
+config AQS_TELEMETRY_STACK_SIZE
+	int "Telemetry (aggregate + report) thread stack"
+	default 2048
+
+config AQS_TELEMETRY_PRIO
+	int "Telemetry thread priority"
+	default 7
+
+endmenu # Threads and stacks
+
+#
+# --- Diagnostics -------------------------------------------------------------
+#
+config AQS_SHELL
+	bool "aqs shell commands"
+	depends on SHELL
+	default y if !AQS_RELEASE
+
+config AQS_WATCHDOG
+	bool "Hardware watchdog with per-thread heartbeats"
+	depends on WATCHDOG
+	default y if AQS_RELEASE
+
+module = AQS_SENSING
+module-str = aqs sensing
+source "subsys/logging/Kconfig.template.log_config"
+
+module = AQS_MATTER
+module-str = aqs matter
+source "subsys/logging/Kconfig.template.log_config"
+
+endmenu # Air Quality Sensor
+
+source "Kconfig.zephyr"

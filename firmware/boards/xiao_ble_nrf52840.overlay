@@ -12,59 +12,75 @@
 // You can also visit the nRF DeviceTree extension documentation at https: //docs.nordicsemi.com/bundle/nrf-connect-vscode/page/guides/ncs_configure_app.html#devicetree-support-in-the-extension
 
 / {
-	bq25100: bq25100{
-		compatible = "ti,bq25100";
-		enable-led-gpios = <&gpio0 17 GPIO_ACTIVE_LOW>;
-		enable-read-gpios = <&gpio0 14 GPIO_ACTIVE_LOW>;
-		charge-current-select-gpios = <&gpio0 13 GPIO_ACTIVE_LOW>;
-	};
-};
+	// XIAO BLE has no physical buttons. NCS's Matter common board helper
+	// (nrf/samples/matter/common/src/board/board_config.h) unconditionally
+	// computes NUMBER_OF_BUTTONS from DT_PATH(buttons) at compile time, so an
+	// (empty) buttons node is needed for it to compile - Board::Init() itself
+	// already no-ops correctly on boards without CONFIG_DK_LIBRARY (no real
+	// button behavior is implied by this node).
+	leds {
+		compatible = "gpio-leds";
 
-/ {
-	vbatt: vbatt {
-		compatible = "voltage-divider";
-		io-channels = <&adc 7>;
-		output-ohms = <510000>;
-		full-ohms = <(1031000 + 510000)>;
+		led2: led_2 {
+			gpios = <&gpio0 26 GPIO_ACTIVE_LOW>;
+			label = "Red LED";
+		};
+
+		led1: led_1 {
+			gpios = <&gpio0 30 GPIO_ACTIVE_LOW>;
+			label = "Green LED";
+		};
+
+		led0: led_0 {
+			gpios = <&gpio0 6 GPIO_ACTIVE_HIGH>;
+			label = "Blue LED";
+		};
+	};
+
+	buttons {
+		compatible = "gpio-keys";
+
+		button0: button_0 {
+			gpios = <&gpio1 14 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
+			label = "Push button switch 0";
+			zephyr,code = <INPUT_KEY_0>;
+		};
 	};
 };
 
 &i2c1 {
 	status = "okay";
 	clock-frequency = <I2C_BITRATE_FAST>;
-	sht4x@44 {
-		status = "okay";
+	sht4x: sht4x@44 {
+		status = "disabled";
 		compatible = "sensirion,sht4x";
 		reg = <0x44>;
 		repeatability = <2>;
 	};
-	// sgp40@59 {
-		//     status = "okay";
-		//     compatible = "sensirion,sgp40";
-		//     reg = <0x59>;
-		//     // enable-selftest;
-	// };
-	// bmp390@77 {
-		//     status = "okay";
-		//     compatible = "bosch,bmp390";
-		//     reg = <0x77>;
-		//     odr = "50";
-		//     osr-press = <2>;
-		//     osr-temp = <1>;
-		//     iir-filter = <1>;
-		//     mode = <1>;
-		//     enable-pressure;
-		//     enable-temp;
-	// };
-	scd412@62 {
-		status = "okay";
+	sgp40: sgp40@59 {
+		    status = "disabled";
+		    compatible = "sensirion,sgp40";
+		    reg = <0x59>;
+	};
+
+	bmp390: bmp390@77 {
+		status = "disabled";
+		compatible = "bosch,bmp390";
+		reg = <0x77>;
+		odr = "12.5";
+		osr-press = <8>;
+		osr-temp = <1>;
+		iir-filter = <1>;
+	};
+
+	scd41: scd41@62 {
+		status = "disabled";
 		compatible = "sensirion,scd41";
 		reg = <0x62>;
-		mode = <2>;
-		// enable-selftest;
+		mode = <0>;
 	};
-	bme680@77 {
-		status = "okay";
+	bme680: bme680@77 {
+		status = "disabled";
 		compatible = "bosch,bme680";
 		reg = <0x77>;
 	};
@@ -75,68 +91,14 @@
 	pinctrl-1 = <&qspi_default>;
 };
 
-&spi2 {
-	status = "okay";
-	cs-gpios = <&gpio0 29 GPIO_ACTIVE_LOW>;
-};
-
-/{
-	mipi_dbi {
-		compatible = "zephyr,mipi-dbi-spi";
-		spi-dev = <&spi2>;
-		dc-gpios = <&gpio0 28 GPIO_ACTIVE_HIGH>;
-		reset-gpios = <&gpio0 3 GPIO_ACTIVE_LOW>;
-		#address-cells = <1>;
-		#size-cells = <0>;
-
-		ssd16xx: ssd16xxfb@0 {
-			compatible = "solomon,ssd1680";
-			mipi-max-frequency = <4000000>;
-			reg = <0>;
-			width = <250>;
-			height = <136>;
-			rotation = <90>;
-			busy-gpios = <&gpio0 2 GPIO_ACTIVE_HIGH>;
-
-			partial {
-				// gdv = [ 15  ];
-				// sdv = [ 41 a8 32  ];
-				// vcom = <0xa8>;
-				border-waveform = <0x05>;
-				dummy-line = <0x1a>;
-				gate-line-width = <0x08>;
-				lut = [ 00 40 00 00 00 00 00 00 00 00 00 00 80 80 00 00 00 00 00 00 00 00 00 00 40 40 00 00 00 00 00 00 00 00 00 00 00 80 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 0A 00 00 00 00 00 02 01 00 00 00 00 00 00 01 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 22 22 22 22 22 22 00 00 00  ];
-			};
-		};
-	};
-};
-
 / {
 	aliases {
-		ssd1680 = &ssd16xx;
 		spi-flash0 = &p25q16h;
-	};
-	chosen {
-		zephyr_display = &ssd16xx; // or your display node label
 	};
 };
 
 &spi3 {
 	status = "disabled";
-};
-
-&adc {
-	#address-cells = <1>;
-	#size-cells = <0>;
-
-	channel@7 {
-		reg = <7>;
-		zephyr,gain = "ADC_GAIN_1_6";
-		zephyr,reference = "ADC_REF_INTERNAL";
-		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
-		zephyr,input-positive = <NRF_SAADC_AIN7>; /* P0.31 */
-		zephyr,resolution = <12>;
-	};
 };
 
 &uart0 {

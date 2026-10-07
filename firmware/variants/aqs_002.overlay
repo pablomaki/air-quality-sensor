@@ -1,0 +1,16 @@
+/*
+ * Variant: VOC only.
+ *
+ * Populated: SGP40.
+ *
+ * The SGP40 cannot measure temperature or humidity itself, so without a
+ * dedicated part its driver falls back to its own compensation defaults. The
+ * reading still works, just less accurately.
+ */
+
+&sgp40  { status = "okay"; };
+
+&sht4x  { status = "disabled"; };
+&scd41  { status = "disabled"; };
+&bmp390 { status = "disabled"; };
+&bme680 { status = "disabled"; };
