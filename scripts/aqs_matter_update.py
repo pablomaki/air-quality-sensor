@@ -16,6 +16,10 @@ import aiohttp
 
 MATTER_SERVER_URL = os.getenv("MATTER_SERVER_URL", "ws://localhost:5580/ws")
 
+# Basic Information cluster (0x0028) attributes of the running firmware
+SOFTWARE_VERSION_PATH = "0/40/9"
+SOFTWARE_VERSION_STRING_PATH = "0/40/10"
+
 
 def parse_args():
     """Parse the subcommand and its arguments from the command line."""
@@ -26,6 +30,7 @@ def parse_args():
 
     check = commands.add_parser("check", help="Show the update offered to a node, if any")
     check.add_argument("node_id", type=int, help="Node id to check")
+    check.set_defaults(version=None)
 
     update = commands.add_parser("update", help="Install an update on a node")
     update.add_argument("node_id", type=int, help="Node id to update")
@@ -52,13 +57,20 @@ async def run(args):
         async with session.ws_connect(args.url, heartbeat=30) as ws:
             await ws.receive_json()
 
+            node = await request(ws, "get_node", {"node_id": args.node_id})
+            current = node["attributes"].get(SOFTWARE_VERSION_PATH)
+            current_string = node["attributes"].get(SOFTWARE_VERSION_STRING_PATH)
+            print(f"Node {args.node_id}: running version {current_string} ({current}).")
+
+            # The server offers the highest local image without comparing it to the
+            # running version, so the comparison is made here.
             offered = await request(ws, "check_node_update", {"node_id": args.node_id})
-            if offered is None:
-                print(f"No update available for node {args.node_id}.")
+            if offered is None or (args.version is None and offered["software_version"] <= current):
+                print("Up to date.")
                 return
             print(
-                f"Node {args.node_id}: version {offered['software_version_string']} "
-                f"({offered['software_version']}) available from {offered['update_source']}."
+                f"Version {offered['software_version_string']} ({offered['software_version']}) "
+                f"available from {offered['update_source']}."
             )
             if args.command == "check":
                 return
