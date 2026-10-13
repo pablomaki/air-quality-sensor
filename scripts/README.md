@@ -19,6 +19,11 @@ no local API for accessory state, so the data has to come from the device.
   instance, exposes them as Prometheus metrics and publishes them to MQTT.
 - **aqs_matter_commission.py**: Joins a sensor to this host's Matter fabric.
 - **aqs_matter_nodes.py**: Lists the nodes on the fabric and removes unwanted ones.
+- **aqs_matter_update.py**: Checks for and installs firmware updates over Matter
+  OTA. The Matter server is the OTA provider: copy a variant's
+  `<variant>-<version>.ota` and `.json` from `firmware-esp32c6/bin/<variant>/`
+  into `docker/matter-server-data/updates/` and restart the `matter-server`
+  container, which only reads the manifests at startup.
 
 Both scripts are run by the containers defined in [docker/](../docker/); see that
 directory's README for the deployment.

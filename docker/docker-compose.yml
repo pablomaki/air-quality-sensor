@@ -17,7 +17,10 @@ services:
       # discovered and commissioning fails. BlueZ is reached the same way when
       # commissioning a factory-fresh sensor over Bluetooth.
       - /run/dbus:/run/dbus:ro
-    command: --storage-path /data --paa-root-cert-dir /data/credentials
+    # --ota-provider-dir makes the server the sensors' OTA provider: the images
+    # and manifests copied to ./matter-server-data/updates are offered to the
+    # matching variant, see scripts/aqs_matter_update.py.
+    command: --storage-path /data --paa-root-cert-dir /data/credentials --ota-provider-dir /data/updates
     # Append to the command above to enable BLE commissioning: --bluetooth-adapter 0
     logging:
       options:

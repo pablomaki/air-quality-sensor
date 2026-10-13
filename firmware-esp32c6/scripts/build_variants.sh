@@ -4,7 +4,9 @@
 # bin/<variant>/:
 #   factory.bin  merged image for the first USB flash, at offset 0x0
 #   app.bin      signed application image
-#   app.ota      Matter OTA image, served by the OTA provider
+#   <variant>-<version>.ota and .json
+#                Matter OTA image and its manifest, both copied into the Matter
+#                server's OTA provider directory to offer the update
 #
 # Builds run one at a time and pinned to a few cores on purpose: the Matter GN
 # step spawns a nested ninja that does not inherit the outer -j. Unpinned this
@@ -105,6 +107,6 @@ for variant in "${variants[@]}"; do
     idf.py -B "$build_dir" -DSDKCONFIG="$build_dir/sdkconfig" merge-bin -o "$FIRMWARE_DIR/$out_dir/factory.bin"
 
     cp "$build_dir/air_quality_sensor.bin" "$out_dir/app.bin"
-    cp "$build_dir/air_quality_sensor-ota.bin" "$out_dir/app.ota"
+    python3 scripts/ota_manifest.py "$variant" "$build_dir" "$out_dir"
     echo "=== $variant: $(stat -c %s "$out_dir/app.bin") bytes, images in $out_dir ==="
 done
