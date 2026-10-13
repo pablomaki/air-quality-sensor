@@ -7,8 +7,8 @@ endif()
 # The software version is what Matter OTA compares: an update is only offered
 # and accepted when PROJECT_VER_NUMBER is higher than the running one, so bump
 # both together for every release.
-set(PROJECT_VER "1.0.1")
-set(PROJECT_VER_NUMBER 2)
+set(PROJECT_VER "1.1.0")
+set(PROJECT_VER_NUMBER 4)
 
 set(ESP_MATTER_PATH $ENV{ESP_MATTER_PATH})
 set(MATTER_SDK_PATH ${ESP_MATTER_PATH}/connectedhomeip/connectedhomeip)

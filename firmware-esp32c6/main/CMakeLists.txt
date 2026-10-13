@@ -9,6 +9,7 @@ set(srcs
     src/components/factory_reset.cpp
     src/components/matter_handler.cpp
     src/components/sensors.c
+    src/components/thread_monitor.cpp
     src/drivers/led_controller.c
     src/drivers/sensirion_i2c.c
     src/utils/air_quality_mapper.cpp

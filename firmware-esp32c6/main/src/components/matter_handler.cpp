@@ -1,5 +1,6 @@
 #include <components/matter_handler.h>
 #include <components/device_identity.h>
+#include <components/thread_monitor.h>
 #include <utils/variable_buffer.h>
 #include <utils/air_quality_mapper.h>
 
@@ -281,6 +282,12 @@ int init_matter(void)
     {
         ESP_LOGE(TAG, "Failed to start Matter (err %d).", err);
         return err;
+    }
+
+    rc = init_thread_monitor();
+    if (rc != 0)
+    {
+        ESP_LOGE(TAG, "Failed to start the Thread monitor (err %d).", rc);
     }
 
     // An uncommissioned device has no network to come back to, so there is

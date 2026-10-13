@@ -73,6 +73,32 @@ config FACTORY_RESET_BUTTON_HOLD_MS
 
 endmenu
 
+menu "Thread Configuration"
+
+config THREAD_DETACHED_REBOOT_MINUTES
+    int "Reboot after being detached from Thread this long (minutes)"
+    range 0 1440
+    default 10
+    help
+      A commissioned device that stays detached from its Thread network this
+      long reboots. The radio has been seen to stop being heard by its parent
+      under sustained traffic and not recover until a reset, while a fresh boot
+      reattaches within seconds. 0 disables the reboot. With the whole network
+      down the device keeps rebooting at this interval until it comes back,
+      which costs nothing but the reboots.
+
+config THREAD_DIAGNOSTICS_INTERVAL_S
+    int "Thread radio diagnostics log interval (seconds)"
+    range 0 3600
+    default 30
+    help
+      How often the Thread role, the link to the parent and the radio counters
+      accumulated since the previous line are logged. 0 disables the log; the
+      detached reboot keeps working regardless, checked on the same interval or
+      every 30 s when the log is off.
+
+endmenu
+
 menu "Peripheral Configuration"
 
 config ENABLE_EVENT_LED
