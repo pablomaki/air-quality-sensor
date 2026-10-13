@@ -51,7 +51,9 @@ struct DerivedIdentity
 CHIP_ERROR DeriveIdentity(DerivedIdentity &identity)
 {
     uint8_t hardwareId[kHardwareIdBytes];
-    VerifyOrReturnError(esp_efuse_mac_get_default(hardwareId) == ESP_OK, CHIP_ERROR_INCORRECT_STATE);
+    // The factory MAC-48 rather than esp_efuse_mac_get_default(), which on an
+    // 802.15.4 capable SoC returns the 8 byte EUI-64.
+    VerifyOrReturnError(esp_read_mac(hardwareId, ESP_MAC_EFUSE_FACTORY) == ESP_OK, CHIP_ERROR_INCORRECT_STATE);
 
     memcpy(identity.serialNumber, kSerialNumberPrefix, kSerialNumberPrefixLength);
     ReturnErrorOnFailure(chip::Encoding::BytesToUppercaseHexString(hardwareId, sizeof(hardwareId),
